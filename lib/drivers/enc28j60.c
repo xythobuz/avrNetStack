@@ -34,7 +34,10 @@
 
 uint8_t currentBank = 0;
 
-// ENC28J60 Commands
+// ----------------------------------
+// |      ENC28J60 Command Set      |
+// ----------------------------------
+
 uint8_t readControlRegister(uint8_t a) {
 	uint8_t r;
 	// Opcode: 000
@@ -126,17 +129,61 @@ void systemResetCommand(void) {
 	DEACTIVATE();
 }
 
-// Driver API
+// ----------------------------------
+// |       Internal Functions       |
+// ----------------------------------
+
+void selectBank(uint8_t bank) {
+	if (bank < 4) {
+		currentBank = bank;
+		bitFieldClear(0x1F, 0x03); // Clear bank selection in ECON1
+		if (bank > 0)
+			bitFieldSet(0x1F, bank & 0x03); // Set new bank
+	}
+}
+
+// ----------------------------------
+// |            MAC API             |
+// ----------------------------------
 
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	CSDDR |= (1 << CSPIN); // Chip Select as Output
 	CSPORT |= (1 << CSPIN); // Deselect
 
+	selectBank(0);
+
+	// Initialization as described in the datasheet, p. 35ff
+	// Set Recieve Buffer Size
+	writeControlRegister(0x08, 0xFF); // set ERXSTL
+	writeControlRegister(0x09, 0x05); // set ERXSTH --> 0x05FF
+	writeControlRegister(0x0A, 0xFF); // set ERXNDL
+	writeControlRegister(0x0B, 0x1F); // set ERXNDH --> 0x1FFF
+	writeControlRegister(0x0C, 0xFF); // set ERXRDPTL
+	writeControlRegister(0x0D, 0x05); // set ERXRDPTH --> 0x05FF
+
+	// Set Transmit Buffer Size
+	writeControlRegister(0x04, 0x00); // set ETXSTL
+	writeControlRegister(0x05, 0x00); // set ETXSTH --> 0x0000
+	writeControlRegister(0x06, 0xFD); // set ETXNDL
+	writeControlRegister(0x07, 0x05); // set ETXNDH --> 0x05FD
+	writeControlRegister(0x00, 0x00); // set ERDPTL
+	writeControlRegister(0x01, 0x00); // set ERDPTH --> 0x0000
+
+	// Setup Receive Filters
+	
+	// Wait for OST
+	while(!(readControlRegister(0x1D) & 0x01)); // Wait until CLKRDY == 1
+
+	// Initialize MAC Settings
+	
+	// Initialize PHY Settings
+	
+
 	return 0;
 }
 
 void macReset(void) {
-
+	systemResetCommand();
 }
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
