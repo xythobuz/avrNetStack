@@ -33,11 +33,11 @@ typedef struct {
 	uint8_t    *data;
 } MacPacket;
 
-uint8_t    macInitialize(MacAddress address);
+uint8_t    macInitialize(MacAddress address); // 0 if success, 1 on error
 void       macReset(void);
-uint8_t    macLinkIsUp(void);
+uint8_t    macLinkIsUp(void); // 0 if down, 1 if up
 
-uint8_t    macSendPacket(MacPacket p);
+uint8_t    macSendPacket(MacPacket p); // 0 on success, 1 on error
 
-uint8_t    macPacketsRecieved(void);
-MacPacket* macGetPacket(void);
+uint8_t    macPacketsRecieved(void); // 0 if no packet, 1 if packet ready
+MacPacket* macGetPacket(void); // Returns NULL on error
