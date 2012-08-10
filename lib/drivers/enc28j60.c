@@ -138,7 +138,10 @@ uint16_t readPhyRegister(uint8_t a) {
 	writeControlRegister(0x14, (a & 0x1F)); // Set MIREGADR
 	bitFieldSet(0x12, 0x01); // Set MICMD.MIIRD, read operation begins
 	selectBank(3);
-	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY to go 0
+
+	// while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY to go 0
+	asm volatile ("nop");
+
 	bitFieldClear(0x12, 0x01); // Clear MICMD.MIIRD
 	selectBank(2);
 	reg |= readControlRegister(0x18);
@@ -153,7 +156,9 @@ void writePhyRegister(uint8_t a, uint16_t d) {
 	writeControlRegister(0x16, (uint8_t)(d & 0xFF)); // Set MIWRL
 	writeControlRegister(0x17, (uint8_t)((d & 0xFF00) >> 8)); // Set MIWRH
 	selectBank(3);
-	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY
+
+	// while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY
+	asm volatile ("nop");
 }
 
 void discardPacket(void) {

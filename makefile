@@ -7,7 +7,9 @@ SRC = lib/drivers/enc28j60.c
 # SRC = lib/drivers/uartStub.c
 # SRC = lib/drivers/mrf24wb0ma.c
 # ------------------------------
+
 SRC += lib/spi.c
+SRC += lib/serial.c
 
 TESTSRC = test/main.c
 OBJ = $(SRC:.c=.o)
