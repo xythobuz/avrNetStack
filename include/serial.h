@@ -23,7 +23,7 @@
 #define serial_h_
 
 // RX & TX buffer size in bytes
-#define RX_BUFFER_SIZE 32
+#define RX_BUFFER_SIZE 64
 #define TX_BUFFER_SIZE 32
 
 // Select Baudrate with this macro

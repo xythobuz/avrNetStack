@@ -21,11 +21,8 @@
 #include <avr/io.h>
 #include <stdint.h>
 
-#include "../include/spi.h"
-
 int main(void) {
 
-	spiInit();
 
 	return 0;
 }

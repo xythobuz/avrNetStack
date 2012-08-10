@@ -177,6 +177,8 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	CSDDR |= (1 << CSPIN); // Chip Select as Output
 	CSPORT |= (1 << CSPIN); // Deselect
 
+	spiInit();
+
 	selectBank(0);
 
 	// Initialization as described in the datasheet, p. 35ff
@@ -293,7 +295,7 @@ uint8_t macSendPacket(MacPacket *p) { // 0 on success, 1 on error
 	}
 }
 
-uint8_t macPacketsRecieved(void) { // Returns number of packets ready
+uint8_t macPacketsReceived(void) { // Returns number of packets ready
 	uint8_t r;
 	selectBank(1);
 	r = readControlRegister(0x19); // EPKTCNT
@@ -309,6 +311,10 @@ MacPacket* macGetPacket(void) { // Returns NULL on error
 	uint8_t header[6];
 	uint16_t fullLength;
 	MacPacket *p;
+
+	if (macPacketsReceived() < 1) {
+		return NULL;
+	}
 
 	writeControlRegister(0x00, (uint8_t)(nextPacketPointer & 0xFF)); // Set ERDPTL
 	writeControlRegister(0x01, (uint8_t)((nextPacketPointer & 0xFF00) >> 8)); // Set ERDPTH

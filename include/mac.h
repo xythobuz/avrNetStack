@@ -43,5 +43,5 @@ uint8_t    macLinkIsUp(void); // 0 if down, 1 if up
 
 uint8_t    macSendPacket(MacPacket *p); // 0 on success, 1 on error
 
-uint8_t    macPacketsRecieved(void); // 0 if no packet, 1 if packet ready
+uint8_t    macPacketsReceived(void); // 0 if no packet, 1 if packet ready
 MacPacket* macGetPacket(void); // Returns NULL on error
