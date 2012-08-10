@@ -14,6 +14,8 @@ CSTANDARD = gnu99
 SRC = lib/drivers/$(IC).c
 SRC += lib/spi.c
 SRC += lib/serial.c
+SRC += lib/net/controller.c
+SRC += lib/net/arp.c
 
 TESTSRC = test/main.c
 OBJ = $(SRC:.c=.o)
@@ -37,16 +39,16 @@ all: libavrNetStack.a
 lib: libavrNetStack.a sizelibafter
 
 sizelibafter:
-	avr-size --mcu=$(MCU) -C libavrNetStack-$(IC).a
+	avr-size --mcu=$(MCU) -C libavrNetStack.a
 
 libavrNetStack.a: $(OBJ)
-	avr-ar -c -r -s libavrNetStack-$(IC).a $(OBJ)
+	avr-ar -c -r -s libavrNetStack.a $(OBJ)
 
 %.o: %.c
 	avr-gcc -c $< -o $@ $(CARGS)
 
 test.elf: libavrNetStack.a $(TESTOBJ)
-	avr-gcc $(CARGS) $(TESTOBJ) --output test.elf -Wl,-L.,-lm,-lavrNetStack-$(IC)
+	avr-gcc $(CARGS) $(TESTOBJ) --output test.elf -Wl,-L.,-lm,-lavrNetStack
 	avr-size --mcu=$(MCU) -C test.elf
 
 test.hex: test.elf
@@ -55,6 +57,7 @@ test.hex: test.elf
 clean:
 	$(RM) lib/*.o
 	$(RM) lib/drivers/*.o
+	$(RM) lib/net/*.o
 	$(RM) test/*.o
 	$(RM) *.a
 	$(RM) test.hex

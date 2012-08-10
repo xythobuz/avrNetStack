@@ -21,8 +21,18 @@
 #include <avr/io.h>
 #include <stdint.h>
 
+#include <net/controller.h>
+
+// Thats, the MAC of my WLAN Module, with some bytes swapped...
+MacAddress mac = {0x00, 0x1E, 0x99, 0x02, 0xC0, 0x42};
+
 int main(void) {
 
+	networkInit(mac);
+
+	while(1) {
+		networkHandler();
+	}
 
 	return 0;
 }

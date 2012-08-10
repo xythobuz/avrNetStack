@@ -1,5 +1,5 @@
 /*
- * mrf24wb0ma.c
+ * arp.c
  *
  * Copyright 2012 Thomas Buck <xythobuz@me.com>
  *
@@ -18,32 +18,32 @@
  * You should have received a copy of the GNU General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <avr/io.h>
 #include <stdint.h>
-#include <stdlib.h>
+#include <avr/io.h>
 
 #include <net/mac.h>
+#include <net/ipv4.h>
+#include <net/arp.h>
 
-uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
-	return 1;
+#define ARPTableSize 6
+
+ARPTableEntry arpTable[ARPTableSize];
+
+void arpInit(void) {
+	uint8_t i, j;
+
+	// Reset ARP Table
+	for (i = 0; i < ARPTableSize; i++) {
+		for (j = 0; j < 4; j++) {
+			arpTable[i].ip[j] = 0;
+		}
+		for (j = 0; j < 6; j++) {
+			arpTable[i].mac[j] = 0;
+		}
+		arpTable[i].time = 0;
+	}
 }
 
-void macReset(void) {
+void arpProcessPacket(MacPacket *p) {
 
-}
-
-uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
-	return 0;
-}
-
-uint8_t macSendPacket(MacPacket *p) { // 0 on success, 1 on error
-	return 1;
-}
-
-uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
-	return 0;
-}
-
-MacPacket* macGetPacket(void) { // Returns NULL on error
-	return NULL;
 }

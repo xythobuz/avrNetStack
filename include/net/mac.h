@@ -23,6 +23,8 @@
  * This file defines the standard API implemented by different drivers
  * for eg. the ENC28J60
  */
+#ifndef _mac_h
+#define _mac_h
 
 typedef uint8_t MacAddress[6];
 
@@ -43,5 +45,7 @@ uint8_t    macLinkIsUp(void); // 0 if down, 1 if up
 
 uint8_t    macSendPacket(MacPacket *p); // 0 on success, 1 on error
 
-uint8_t    macPacketsReceived(void); // 0 if no packet, 1 if packet ready
+uint8_t    macPacketsReceived(void); // number of packets ready
 MacPacket* macGetPacket(void); // Returns NULL on error
+
+#endif

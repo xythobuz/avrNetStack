@@ -18,7 +18,11 @@
  * You should have received a copy of the GNU General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef _spi_h
+#define _spi_h
 
 void spiInit(void);
 void spiSendByte(uint8_t d);
 uint8_t spiReadByte(void);
+
+#endif

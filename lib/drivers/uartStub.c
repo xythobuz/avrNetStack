@@ -22,8 +22,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "../../include/net/mac.h"
-#include "../../include/serial.h"
+#include <net/mac.h>
+#include <serial.h>
 
 #define BUFFSIZE 20
 char buffer[BUFFSIZE];

@@ -22,8 +22,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "../../include/net/mac.h"
-#include "../../include/spi.h"
+#include <net/mac.h>
+#include <spi.h>
 
 #define CSPORT PORTB
 #define CSPIN PB0

@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <avr/io.h>
 
+#include <spi.h>
+
 void spiInit(void) {
 #if defined(__AVR_ATmega168__)
 	DDRB |= (1 << PB3) | (1 << PB5);

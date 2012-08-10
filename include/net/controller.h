@@ -1,5 +1,5 @@
 /*
- * mrf24wb0ma.c
+ * controller.h
  *
  * Copyright 2012 Thomas Buck <xythobuz@me.com>
  *
@@ -18,32 +18,18 @@
  * You should have received a copy of the GNU General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <avr/io.h>
-#include <stdint.h>
-#include <stdlib.h>
+#ifndef _controller_h
+#define _controller_h
 
 #include <net/mac.h>
 
-uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
-	return 1;
-}
+#define IPV4 0x0800
+#define ARP 0x0806
+#define WOL 0x0842
+#define RARP 0x8035
+#define IPV6 0x86DD
 
-void macReset(void) {
+void networkInit(MacAddress a);
+void networkHandler(void);
 
-}
-
-uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
-	return 0;
-}
-
-uint8_t macSendPacket(MacPacket *p) { // 0 on success, 1 on error
-	return 1;
-}
-
-uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
-	return 0;
-}
-
-MacPacket* macGetPacket(void) { // Returns NULL on error
-	return NULL;
-}
+#endif

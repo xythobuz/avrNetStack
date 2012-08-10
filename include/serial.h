@@ -19,8 +19,8 @@
  * along with AvrSerialLibrary.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef serial_h_
-#define serial_h_
+#ifndef _serial_h
+#define _serial_h
 
 // RX & TX buffer size in bytes
 #define RX_BUFFER_SIZE 64
@@ -84,4 +84,4 @@ void serialWriteString(char *data);
  */
 void serialClose(void);
 
-#endif /* SERIAL_H_ */
+#endif

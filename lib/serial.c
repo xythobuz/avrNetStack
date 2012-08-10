@@ -23,7 +23,7 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 
-#include "../include/serial.h"
+#include <serial.h>
 
 #if  defined(__AVR_ATmega8__) || defined(__AVR_ATmega16__) || defined(__AVR_ATmega32__) \
   || defined(__AVR_ATmega8515__) || defined(__AVR_ATmega8535__) \
