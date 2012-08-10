@@ -8991,7 +8991,7 @@ Source: www.kingbright.com</description>
 <part name="C3" library="resistor" deviceset="C-EU" device="025-030X050" value="100n"/>
 <part name="C4" library="resistor" deviceset="C-EU" device="025-030X050" value="22p"/>
 <part name="C5" library="resistor" deviceset="C-EU" device="025-030X050" value="22p"/>
-<part name="Q1" library="crystal" deviceset="CRYSTAL" device="HC49S" value="16M"/>
+<part name="Q1" library="crystal" deviceset="CRYSTAL" device="HC49S" value="20M"/>
 <part name="JP1" library="0_RN" deviceset="AVR-ISP" device=""/>
 <part name="GND2" library="supply1" deviceset="GND" device=""/>
 <part name="P+2" library="supply1" deviceset="VCC" device=""/>
