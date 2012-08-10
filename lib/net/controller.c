@@ -18,17 +18,17 @@
  * You should have received a copy of the GNU General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdint.h>
 #include <avr/io.h>
+#include <stdint.h>
 #include <stdlib.h>
 
+#include <time.h>
 #include <net/mac.h>
 #include <net/arp.h>
 #include <net/controller.h>
 
-
-
 void networkInit(MacAddress a) {
+	initSystemTimer();
 	macInitialize(a);
 	arpInit();
 }

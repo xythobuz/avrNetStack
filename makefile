@@ -14,6 +14,7 @@ CSTANDARD = gnu99
 SRC = lib/drivers/$(IC).c
 SRC += lib/spi.c
 SRC += lib/serial.c
+SRC += lib/time.c
 SRC += lib/net/controller.c
 SRC += lib/net/arp.c
 

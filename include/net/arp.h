@@ -23,13 +23,14 @@
 
 #include <net/mac.h>
 #include <net/ipv4.h>
+#include <time.h>
 
 #define ARPTableSize 6
 
 typedef struct {
 	IPv4Address ip;
 	MacAddress mac;
-	uint64_t time;
+	time_t time;
 } ARPTableEntry;
 
 extern ARPTableEntry arpTable[ARPTableSize];

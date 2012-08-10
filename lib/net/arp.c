@@ -18,8 +18,9 @@
  * You should have received a copy of the GNU General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdint.h>
 #include <avr/io.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #include <net/mac.h>
 #include <net/ipv4.h>
@@ -51,6 +52,20 @@ uint8_t isTableEntryFree(uint8_t i) {
 	return 0;
 }
 
+uint8_t oldestEntry(void) {
+	uint8_t i;
+	time_t min = UINT64_MAX;
+	uint8_t pos = 0;
+	for (i = 0; i < ARPTableSize; i++) {
+		// It is not free, or else we would not need to delete it.
+		if (arpTable[i].time < min) {
+			min = arpTable[i].time;
+			pos = i;
+		}
+	}
+	return pos;
+}
+
 uint8_t getFirstFreeEntry(void) {
 	uint8_t i;
 	for (i = 0; i < ARPTableSize; i++) {
@@ -58,6 +73,9 @@ uint8_t getFirstFreeEntry(void) {
 			return i;
 		}
 	}
+	
+	// No free space, so we throw out the oldest
+	return oldestEntry();
 }
 
 // ------------------------
@@ -83,7 +101,8 @@ void arpProcessPacket(MacPacket *p) {
 
 }
 
-// Searches in ARP Table. If entry is found, return non-alloced buffer with mac address.
+// Searches in ARP Table. If entry is found, return non-alloced buffer
+// with mac address and update the time of the entry.
 // If there is no entry, issue arp packet and return NULL. Try again later.
 uint8_t *arpGetMacFromIp(IPv4Address ip) {
 	return NULL;
