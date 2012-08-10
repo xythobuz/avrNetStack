@@ -25,9 +25,44 @@
 #include <net/ipv4.h>
 #include <net/arp.h>
 
-#define ARPTableSize 6
-
 ARPTableEntry arpTable[ARPTableSize];
+
+// ------------------------
+// |     Internal API     |
+// ------------------------
+
+uint8_t isZero(uint8_t *d, uint8_t l) {
+	uint8_t i;
+	for (i = 0; i < l; i++) {
+		if (d[i] != 0) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+uint8_t isTableEntryFree(uint8_t i) {
+	if (i < ARPTableSize) {
+		if (isZero(arpTable[i].ip, 4) && isZero(arpTable[i].mac, 6)
+			&& (arpTable[i].time == 0)) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+uint8_t getFirstFreeEntry(void) {
+	uint8_t i;
+	for (i = 0; i < ARPTableSize; i++) {
+		if (isTableEntryFree(i)) {
+			return i;
+		}
+	}
+}
+
+// ------------------------
+// |     External API     |
+// ------------------------
 
 void arpInit(void) {
 	uint8_t i, j;
@@ -46,4 +81,10 @@ void arpInit(void) {
 
 void arpProcessPacket(MacPacket *p) {
 
+}
+
+// Searches in ARP Table. If entry is found, return non-alloced buffer with mac address.
+// If there is no entry, issue arp packet and return NULL. Try again later.
+uint8_t *arpGetMacFromIp(IPv4Address ip) {
+	return NULL;
 }

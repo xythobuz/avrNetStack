@@ -32,9 +32,13 @@ typedef struct {
 	uint64_t time;
 } ARPTableEntry;
 
-ARPTableEntry arpTable[ARPTableSize];
+extern ARPTableEntry arpTable[ARPTableSize];
 
 void arpInit(void);
-void arpProcessPacket(MacPacket *p);
+void arpProcessPacket(MacPacket *p); // Processes all receiver ARP Packets
+
+// Searches in ARP Table. If entry is found, return non-alloced buffer with mac address.
+// If there is no entry, issue arp packet and return NULL. Try again later.
+uint8_t *arpGetMacFromIp(IPv4Address ip);
 
 #endif
