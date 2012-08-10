@@ -55,20 +55,8 @@ uint8_t readControlRegister(uint8_t a) {
 	return r;
 }
 
-uint8_t readBufferMemory(void) {
-	uint8_t r;
-	// Opcode: 001
-	// Argument: 11010
-	ACTIVATE();
-	spiSendByte(0x3A);
-	r = spiReadByte();
-	DEACTIVATE();
-	return r;
-}
-
-uint8_t *readBufferMemoryArray(uint8_t length) {
-	uint8_t i, *d = (uint8_t *)malloc(length * sizeof(uint8_t));
-	if (d == NULL) { return NULL; }
+uint8_t *readBufferMemory(uint8_t *d, uint8_t length) {
+	uint8_t i;
 	ACTIVATE();
 	spiSendByte(0x3A);
 	for (i = 0; i < length; i++) {
@@ -188,15 +176,8 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	writeControlRegister(0x0C, 0xFF); // set ERXRDPTL
 	writeControlRegister(0x0D, 0x05); // set ERXRDPTH --> 0x05FF
 
-	// Set Transmit Buffer Size
-	writeControlRegister(0x04, 0x00); // set ETXSTL
-	writeControlRegister(0x05, 0x00); // set ETXSTH --> 0x0000
-	writeControlRegister(0x06, 0xFD); // set ETXNDL
-	writeControlRegister(0x07, 0x05); // set ETXNDH --> 0x05FD
-	writeControlRegister(0x00, 0x00); // set ERDPTL
-	writeControlRegister(0x01, 0x00); // set ERDPTH --> 0x0000
-
-	// Setup Receive Filters
+	// Default Receive Filters are acceptable.
+	// We get unicast and broadcast packets as long as the crc is correct.
 	
 	// Wait for OST
 	while(!(readControlRegister(0x1D) & 0x01)); // Wait until CLKRDY == 1
@@ -240,6 +221,14 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	phy |= (1 << 8); // Set HDLDIS to prevent auto loopback in half-duplex mode
 	writePhyRegister(0x10, phy);
 
+	// Enable Auto Increment for Buffer Writes
+	bitFieldSet(0x1E, (1 << 7)); // Set ECON2.AUTOINC
+
+	// If desired, you could enable interrupts here
+
+	// Enable packet reception
+	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
+
 	return 0;
 }
 
@@ -248,17 +237,73 @@ void macReset(void) {
 }
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
-	return 0;
+	uint16_t p = readPhyRegister(0x01); // Read PHSTAT1
+	if (p & (1 << 2)) { // if LLSTAT is set
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
-uint8_t macSendPacket(MacPacket p) { // 0 on success, 1 on error
-	return 1;
+uint8_t macSendPacket(MacPacket *p) { // 0 on success, 1 on error
+	// Place Frame data in buffer, with a preceding control byte
+	// This control byte can be 0x00, as we set everything needed in MACON3
+	uint8_t i = 0x00;
+	uint16_t w;
+
+	selectBank(0);
+	writeControlRegister(0x04, 0x00); // set ETXSTL
+	writeControlRegister(0x05, 0x00); // set ETXSTH --> 0x0000
+
+	// Write packet data into buffer
+	writeControlRegister(0x02, 0x00); // EWRPTL
+	writeControlRegister(0x03, 0x00); // EWRPTH --> 0x0000
+	writeBufferMemory(&i, 1); // Write 0x00 as control byte
+	writeBufferMemory(p->destination, 6); // Write destination MAC
+	writeBufferMemory(p->source, 6); // Write source MAC
+	// big-endian for bytes!
+	i = (uint8_t)((p->typeLength & 0xFF00) >> 8);
+	writeBufferMemory(&i, 1); // MSB of type/length field
+	i = (uint8_t)(p->typeLength & 0xFF);
+	writeBufferMemory(&i, 1); // LSB of type/length field
+	writeBufferMemory(p->data, p->dLength); // Write data payload
+
+	w = p->dLength;
+	w += 0x0D; // (size of header - 1)
+	writeControlRegister(0x06, (uint8_t)(w & 0x00FF)); // ETXNDL
+	writeControlRegister(0x07, (uint8_t)((w & 0xFF00) >> 8)); // ETXNDH --> dLength + 0x0D
+
+	while(readControlRegister(0x1F) & (1 << 7)); // Wait for finish or abort, ECON1.TXRTS
+	if (readControlRegister(0x1D) & (1 << 1)) { // If ECON1.TXRTS is set
+		return 1; // error
+	} else {
+		return 0;
+	}
 }
 
-uint8_t macPacketsRecieved(void) { // 0 if no packet, 1 if packet ready
-	return 0;
+uint8_t macPacketsRecieved(void) { // Returns number of packets ready
+	uint8_t r;
+	selectBank(1);
+	r = readControlRegister(0x19); // EPKTCNT
+	selectBank(0);
+	return r;
 }
+
+uint16_t nextPacketPointer = 0x05FF; // Start of receive buffer
 
 MacPacket* macGetPacket(void) { // Returns NULL on error
+	// Read and store next packet pointer,
+	// check receive status vector for errors, if they exist, throw packet away
+	// else read packet, build MacPacket, return it
+	uint8_t d;
+
+	writeControlRegister(0x00, (uint8_t)(nextPacketPointer & 0xFF)); // Set ERDPTL
+	writeControlRegister(0x01, (uint8_t)((nextPacketPointer & 0xFF00) >> 8)); // Set ERDPTH
+
+	readBufferMemory(&d, 1);
+	nextPacketPointer = (uint16_t)d;
+	readBufferMemory(&d, 1);
+	nextPacketPointer |= ((uint16_t)d << 8);
+
 	return NULL;
 }

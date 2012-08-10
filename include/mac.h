@@ -29,15 +29,17 @@ typedef uint8_t MacAddress[6];
 typedef struct {
 	MacAddress destination;
 	MacAddress source;
-	uint16_t   length;
+	uint16_t   typeLength; // type/length field in packet
+
 	uint8_t    *data;
+	uint16_t   dLength; // real length of data[]
 } MacPacket;
 
 uint8_t    macInitialize(MacAddress address); // 0 if success, 1 on error
 void       macReset(void);
 uint8_t    macLinkIsUp(void); // 0 if down, 1 if up
 
-uint8_t    macSendPacket(MacPacket p); // 0 on success, 1 on error
+uint8_t    macSendPacket(MacPacket *p); // 0 on success, 1 on error
 
 uint8_t    macPacketsRecieved(void); // 0 if no packet, 1 if packet ready
 MacPacket* macGetPacket(void); // Returns NULL on error
