@@ -175,7 +175,32 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	while(!(readControlRegister(0x1D) & 0x01)); // Wait until CLKRDY == 1
 
 	// Initialize MAC Settings
-	
+	// 1) Set MARXEN to recieve frames. Don't configure full-duplex mode
+	selectBank(2);
+	bitFieldSet(0x00, 0x01);
+	// 2) Configure PADCFG, TXCRCEN.
+	bitFieldSet(0x02, 0xF2); // Pad to 64bytes, auto CRC, check Framelength
+	// 3) Configure MACON4, for conformance set DEFER
+	bitFieldSet(0x03, 0x40);
+	// 4) Program MAMXFL to 0x5ee --> max frame length 
+	writeControlRegister(0x0A, 0xEE); // MAMXFLL -> 0xEE
+	writeControlRegister(0x0B, 0x05); // MAMXFLH -> 0x05
+	// 5) Configure MABBIPG with 0x15 (full duplex) or 0x12 (half duplex)
+	writeControlRegister(0x04, 0x12);
+	// 6) Set MAIPGL to 0x12
+	writeControlRegister(0x06, 0x12);
+	// 7) If half duplex, set MAIPGH to 0x0C
+	writeControlRegister(0x07, 0x0C);
+	// 8) For half duplex, set MACLCON1 & 2 to their default values?
+	// 9) Write local MAC Address into MAADR1:MAADR6
+	selectBank(3);
+	writeControlRegister(0x04, address[0]);
+	writeControlRegister(0x05, address[1]);
+	writeControlRegister(0x02, address[2]);
+	writeControlRegister(0x03, address[3]);
+	writeControlRegister(0x00, address[4]);
+	writeControlRegister(0x01, address[5]);
+
 	// Initialize PHY Settings
 	
 
