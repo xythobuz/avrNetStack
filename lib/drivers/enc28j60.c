@@ -142,11 +142,38 @@ void selectBank(uint8_t bank) {
 	}
 }
 
+uint16_t readPhyRegister(uint8_t a) {
+	uint16_t reg = 0;
+
+	selectBank(2);
+	writeControlRegister(0x14, (a & 0x1F)); // Set MIREGADR
+	bitFieldSet(0x12, 0x01); // Set MICMD.MIIRD, read operation begins
+	selectBank(3);
+	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY to go 0
+	bitFieldClear(0x12, 0x01); // Clear MICMD.MIIRD
+	selectBank(2);
+	reg |= readControlRegister(0x18);
+	reg |= (readControlRegister(0x19) << 8);
+	selectBank(0); // Reset bank selection!
+	return reg;
+}
+
+void writePhyRegister(uint8_t a, uint16_t d) {
+	selectBank(2);
+	writeControlRegister(0x14, (a & 0x1F)); // Set MIREGADR
+	writeControlRegister(0x16, (uint8_t)(d & 0xFF)); // Set MIWRL
+	writeControlRegister(0x17, (uint8_t)((d & 0xFF00) >> 8)); // Set MIWRH
+	selectBank(3);
+	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY
+}
+
 // ----------------------------------
 // |            MAC API             |
 // ----------------------------------
 
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
+	uint16_t phy = 0;
+
 	CSDDR |= (1 << CSPIN); // Chip Select as Output
 	CSPORT |= (1 << CSPIN); // Deselect
 
@@ -200,9 +227,18 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	writeControlRegister(0x03, address[3]);
 	writeControlRegister(0x00, address[4]);
 	writeControlRegister(0x01, address[5]);
+	// Always reset bank selection to zero!!
+	selectBank(0);
 
 	// Initialize PHY Settings
-	
+	// Duplex should be configured by LEDB polarity.
+	// We force half-duplex anyways!
+	phy = readPhyRegister(0x00); // Read PHCON1
+	phy &= ~(1 << 8); // Clear PDPXMD --> Half duplex mode!
+	writePhyRegister(0x00, phy);
+	phy = readPhyRegister(0x10); // Read PHCON2
+	phy |= (1 << 8); // Set HDLDIS to prevent auto loopback in half-duplex mode
+	writePhyRegister(0x10, phy);
 
 	return 0;
 }

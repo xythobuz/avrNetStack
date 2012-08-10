@@ -9055,6 +9055,7 @@ Source: www.kingbright.com</description>
 <text x="304.8" y="25.4" size="5.08" layer="97">Ethernet</text>
 <text x="177.8" y="109.22" size="1.27" layer="97">AVR Input is 3V3 tolerant</text>
 <text x="175.26" y="111.76" size="1.27" layer="97">ENC &amp; MRF Input is 5V5 Tolerant</text>
+<text x="332.74" y="109.22" size="1.778" layer="97">Half-Duplex Config</text>
 </plain>
 <instances>
 <instance part="IC1" gate="1" x="73.66" y="63.5"/>
