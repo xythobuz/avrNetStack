@@ -33,6 +33,7 @@
 #define DEACTIVATE() (CSPORT |= (1 << CSPIN))
 
 uint8_t currentBank = 0;
+uint16_t nextPacketPointer = 0x05FF; // Start of receive buffer
 
 // ----------------------------------
 // |      ENC28J60 Command Set      |
@@ -153,6 +154,12 @@ void writePhyRegister(uint8_t a, uint16_t d) {
 	writeControlRegister(0x17, (uint8_t)((d & 0xFF00) >> 8)); // Set MIWRH
 	selectBank(3);
 	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY
+}
+
+void discardPacket(void) {
+	writeControlRegister(0x0C, (uint8_t)(nextPacketPointer & 0xFF)); // set ERXRDPTL
+	writeControlRegister(0x0D, (uint8_t)((nextPacketPointer & 0xFF00) >> 8)); // set ERXRDPTH --> nextPacketPointer
+	bitFieldSet(0x1E, (1 << 6)); // Set ECON2.PKTDEC
 }
 
 // ----------------------------------
@@ -289,13 +296,14 @@ uint8_t macPacketsRecieved(void) { // Returns number of packets ready
 	return r;
 }
 
-uint16_t nextPacketPointer = 0x05FF; // Start of receive buffer
-
 MacPacket* macGetPacket(void) { // Returns NULL on error
 	// Read and store next packet pointer,
 	// check receive status vector for errors, if they exist, throw packet away
 	// else read packet, build MacPacket, return it
 	uint8_t d;
+	uint8_t header[6];
+	uint16_t fullLength;
+	MacPacket *p;
 
 	writeControlRegister(0x00, (uint8_t)(nextPacketPointer & 0xFF)); // Set ERDPTL
 	writeControlRegister(0x01, (uint8_t)((nextPacketPointer & 0xFF00) >> 8)); // Set ERDPTH
@@ -304,6 +312,36 @@ MacPacket* macGetPacket(void) { // Returns NULL on error
 	nextPacketPointer = (uint16_t)d;
 	readBufferMemory(&d, 1);
 	nextPacketPointer |= ((uint16_t)d << 8);
-
-	return NULL;
+	
+	readBufferMemory(header, 6); // Read status vector
+	fullLength = (uint16_t)header[0];
+	fullLength |= (((uint16_t)header[1]) << 8);
+	
+	if (header[2] & (1 << 7)) {
+		// Received OK
+		p = (MacPacket *)malloc(sizeof(MacPacket));
+		if (p == NULL) {
+			// discardPacket();
+			return NULL;
+		}
+		p->dLength = fullLength - MACPreambleSize;
+		p->data = (uint8_t *)malloc(p->dLength * sizeof(uint8_t));
+		if (p->data == NULL) {
+			free(p);
+			// discardPacket();
+			return NULL;
+		}
+		readBufferMemory(p->destination, 6); // Read destination MAC
+		readBufferMemory(p->source, 6); // Read source MAC
+		readBufferMemory(&d, 1);
+		p->typeLength = ((uint16_t)d << 8); // Read type/length MSB
+		readBufferMemory(&d, 1);
+		p->typeLength |= (uint16_t)d; // Read type/length LSB
+		readBufferMemory(p->data, p->dLength); // Read payload
+		discardPacket();
+		return p;
+	} else {
+		discardPacket();
+		return NULL;
+	}
 }
