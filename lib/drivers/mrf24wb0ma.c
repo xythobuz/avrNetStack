@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "../../include/mac.h"
+#include "../../include/net/mac.h"
 
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	return 1;

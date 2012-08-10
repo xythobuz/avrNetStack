@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "../../include/mac.h"
+#include "../../include/net/mac.h"
 #include "../../include/serial.h"
 
 #define BUFFSIZE 20
