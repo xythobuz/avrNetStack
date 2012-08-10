@@ -29,11 +29,23 @@
 
 typedef struct {
 	IPv4Address ip;
-	MacAddress mac;
-	time_t time;
+	MacAddress  mac;
+	time_t      time;
 } ARPTableEntry;
 
 extern ARPTableEntry arpTable[ARPTableSize];
+
+typedef struct {
+	/* const uint16_t hardwareType = 1; // Ethernet
+	const uint16_t protocolType = 0x0800; // IPv4
+	const uint8_t  hardwareAddressLength = 6; // MAC Length
+	const uint8_t  protocolAddressLength = 4; // IP Length */
+	uint16_t       operation; // 1 for request, 2 for reply
+	MACAddress     senderMac;
+	IPv4Address    senderIp;
+	MACAddress     targetMac;
+	IPv4Address    targetIP;
+} ARPPacket;
 
 void arpInit(void);
 void arpProcessPacket(MacPacket *p); // Processes all receiver ARP Packets
