@@ -75,7 +75,7 @@ IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 			ip->options[(i * 4) + 3] = p->data[23 + (i * 4)];
 		}
 	} else {
-		ip->options == NULL;
+		ip->options = NULL;
 	}
 	realLength = ip->totalLength - (ip->internetHeaderLength * 4);
 	ip->data = (uint8_t *)malloc(realLength * sizeof(uint8_t));
@@ -107,7 +107,23 @@ void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway) {
 }
 
 void ipv4ProcessPacket(MacPacket *p) {
+	IPv4Packet *ip = macPacketToIpPacket(p);
+	if (ip == NULL) {
+		free(p->data);
+		free(p);
+		return;
+	}
 
+	// Process IPv4 Packet
+	
+
+	if (ip->options != NULL) {
+		free(ip->options);
+	}
+	if (ip->data != NULL) {
+		free(ip->data);
+	}
+	free(ip);
 }
 
 // Returns 0 if packet was sent. 1 if destination was unknown.

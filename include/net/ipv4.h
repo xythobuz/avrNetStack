@@ -25,11 +25,9 @@
 
 typedef uint8_t IPv4Address[4];
 
-#define IPv4HeaderSize 0x14
-
 typedef struct {
 	uint8_t version;
-	uint8_t internetHeaderLength;
+	uint8_t internetHeaderLength; // This times 4 is the complete header length
 	uint8_t typeOfService;
 	// First 16bit
 
@@ -48,6 +46,7 @@ typedef struct {
 	IPv4Address destinationIp;
 	uint8_t *options; // Not NULL if internetHeaderLength > 5
 	uint8_t *data;
+	uint16_t dLength; // Real length of data buffer
 } IPv4Packet;
 
 extern IPv4Address ownIpAddress;
