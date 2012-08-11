@@ -108,10 +108,10 @@ void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway) {
 
 void ipv4ProcessPacket(MacPacket *p) {
 	IPv4Packet *ip = macPacketToIpPacket(p);
+	free(p->data);
+	free(p);
 	if (ip == NULL) {
-		free(p->data);
-		free(p);
-		return;
+		return; // Not enough memory. Can't process packet!
 	}
 
 	// Process IPv4 Packet

@@ -26,6 +26,7 @@
 #include <net/mac.h>
 #include <net/ipv4.h>
 #include <net/arp.h>
+#include <net/controller.h>
 
 ARPTableEntry arpTable[ARPTableSize];
 /* const uint16_t hardwareType = 1; // Ethernet
@@ -160,6 +161,39 @@ void copyEntry(MacAddress mac, IPv4Address ip, time_t time, uint8_t index) {
 	arpTable[index].time = time;
 }
 
+MacPacket *arpPacketToMacPacket(ArpPacket *ap) {
+	uint8_t i;
+	MacPacket *mp = (MacPacket *)malloc(sizeof(MacPacket));
+	if (mp == NULL) {
+		return NULL;
+	}
+	for (i = 0; i < 6; i++) {
+		mp->destination[i] = ap->targetMac[i];
+		mp->source[i] = ap->senderMac[i];
+	}
+	mp->typeLength = ARP;
+	mp->dLength = ARPPacketSize + HEADERLENGTH;
+	mp->data = (uint8_t *)malloc(mp->dLength * sizeof(uint8_t));
+	if (mp->data == NULL) {
+		free(mp);
+		return NULL;
+	}
+	for (i = 0; i < HEADERLENGTH; i++) {
+		mp->data[i] = pgm_read_byte(&(ArpPacketHeader[i]));
+	}
+	mp->data[HEADERLENGTH] = (uint8_t)(ap->operation & 0xFF00) >> 8;
+	mp->data[HEADERLENGTH + 1] = (uint8_t)(ap->operation & 0x00FF);
+	for (i = 0; i < 6; i++) {
+		mp->data[HEADERLENGTH + 2 + i] = ap->senderMac[i];
+		mp->data[HEADERLENGTH + 12 + i] = ap->targetMac[i];
+		if (i < 4) {
+			mp->data[HEADERLENGTH + 8 + i] = ap->senderIp[i];
+			mp->data[HEADERLENGTH + 18 + i] = ap->targetIp[i];
+		}
+	}
+	return mp;
+}
+
 // ------------------------
 // |     External API     |
 // ------------------------
@@ -180,6 +214,7 @@ void arpInit(void) {
 }
 
 void arpProcessPacket(MacPacket *p) {
+	uint8_t i;
 	ArpPacket *ap = (ArpPacket *)malloc(sizeof(ArpPacket));
 	if (ap == NULL) {
 		// Discard packet, return
@@ -205,9 +240,22 @@ void arpProcessPacket(MacPacket *p) {
 		}
 		// Check if the request is for us. If so, issue an answer!
 		if (isEqualMem(ownMacAddress, ap->targetMac, 6)) {
-			
+			ap->operation = 2; // Reply
+			for (i = 0; i < 6; i++) {
+				ap->targetMac[i] = ap->senderMac[i]; // Goes back to sender
+				ap->targetIp[i] = ap->senderIp[i];
+				ap->senderMac[i] = ownMacAddress[i]; // Comes from us
+				ap->senderIp[i] = ownIpAddress[i];
+			}
+			p = arpPacketToMacPacket(ap);
+			if (p != NULL) {
+				macSendPacket(p); // If it doesn't work, we can't do anything...
+				free(p->data);
+				free(p);
+			}
 		}
 		// Request is not for us. Ignore!
+		free(ap);
 	} else if (ap->operation == 2) {
 		// ARP Reply. Store the information, if not already present
 		// Each packet contains two MAC-IP Combinations. Sender & Target
@@ -219,9 +267,8 @@ void arpProcessPacket(MacPacket *p) {
 			// Target MAC is not stored. Store combination!
 			copyEntry(ap->targetMac, ap->targetIp, getSystemTime(), getFirstFreeEntry());
 		}
+		free(ap);
 	}
-	free(ap);
-	return;
 }
 
 // Searches in ARP Table. If entry is found, return non-alloced buffer

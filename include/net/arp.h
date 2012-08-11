@@ -35,6 +35,8 @@ typedef struct {
 
 extern ARPTableEntry arpTable[ARPTableSize];
 
+#define ARPPacketSize 22 // Without header
+
 typedef struct {
 	uint16_t       operation; // 1 for request, 2 for reply
 	MacAddress     senderMac;
