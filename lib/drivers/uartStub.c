@@ -28,6 +28,8 @@
 #define BUFFSIZE 20
 char buffer[BUFFSIZE];
 
+MacAddress ownMacAddress;
+
 char *buffToString(uint8_t *d, uint8_t length) {
 	uint8_t i;
 	for (i = 0; i < BUFFSIZE; i++) {
@@ -46,7 +48,11 @@ char *wideToString(uint16_t d) {
 }
 
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
+	uint8_t i;
 	serialInit(BAUD(19200, F_CPU), 8, NONE, 1);
+	for (i = 0; i < 6; i++) {
+		ownMacAddress[i] = address[i];
+	}
 	serialWriteString("UART-Stub MAC Initialized!\n");
 	return 0;
 }

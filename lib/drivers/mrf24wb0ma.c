@@ -24,7 +24,13 @@
 
 #include <net/mac.h>
 
+MacAddress ownMacAddress;
+
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
+	uint8_t i;
+	for (i = 0; i < 6; i++) {
+		ownMacAddress[i] = address[i];
+	}
 	return 1;
 }
 

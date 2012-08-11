@@ -35,6 +35,8 @@
 uint8_t currentBank = 0;
 uint16_t nextPacketPointer = 0x05FF; // Start of receive buffer
 
+MacAddress ownMacAddress;
+
 // ----------------------------------
 // |      ENC28J60 Command Set      |
 // ----------------------------------
@@ -173,11 +175,16 @@ void discardPacket(void) {
 
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	uint16_t phy = 0;
+	uint8_t i;
 
 	CSDDR |= (1 << CSPIN); // Chip Select as Output
 	CSPORT |= (1 << CSPIN); // Deselect
 
 	spiInit();
+
+	for (i = 0; i < 6; i++) {
+		ownMacAddress[i] = address[i];
+	}
 
 	selectBank(0);
 

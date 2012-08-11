@@ -30,6 +30,8 @@ typedef uint8_t MacAddress[6];
 
 #define MACPreambleSize 0x0E
 
+extern MacAddress ownMacAddress;
+
 typedef struct {
 	MacAddress destination;
 	MacAddress source;

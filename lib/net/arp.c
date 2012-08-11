@@ -50,6 +50,16 @@ uint8_t isEqual(uint8_t *d1, uint8_t *d2, uint8_t l) {
 	return 1;
 }
 
+uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l) {
+	uint8_t i;
+	for (i = 0; i < l; i++) {
+		if (d1[i] != d2[i]) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
 #define isZero(x, y) isEqual(x, zero, y)
 
 uint8_t isTableEntryFree(uint8_t i) {
@@ -115,6 +125,41 @@ uint8_t macPacketToArpPacket(MacPacket *mp, ArpPacket *ap) {
 	}
 }
 
+int8_t findIpFromMac(MacAddress mac) {
+	uint8_t i;
+	for (i = 0; i < ARPTableSize; i++) {
+		if (!isTableEntryFree(i)) {
+			if (isEqualMem(mac, arpTable[i].mac, 6)) {
+				return (int8_t)i;
+			}
+		}
+	}
+	return -1;
+}
+
+int8_t findMacFromIp(IPv4Address ip) {
+	uint8_t i;
+	for (i = 0; i < ARPTableSize; i++) {
+		if (!isTableEntryFree(i)) {
+			if (isEqualMem(ip, arpTable[i].ip, 4)) {
+				return (int8_t)i;
+			}
+		}
+	}
+	return -1;
+}
+
+void copyEntry(MacAddress mac, IPv4Address ip, time_t time, uint8_t index) {
+	uint8_t i;
+	for (i = 0; i < 6; i++) {
+		if (i < 4) {
+			arpTable[index].ip[i] = ip[i];
+		}
+		arpTable[index].mac[i] = mac[i];
+	}
+	arpTable[index].time = time;
+}
+
 // ------------------------
 // |     External API     |
 // ------------------------
@@ -153,14 +198,30 @@ void arpProcessPacket(MacPacket *p) {
 	free(p); // We don't need the MacPacket anymore
 
 	if (ap->operation == 1) {
-		// ARP Request
+		// ARP Request. Check if we have stored the sender MAC.
+		if (findIpFromMac(ap->senderMac) == -1) {
+			// Sender MAC is not stored. Store combination!
+			copyEntry(ap->senderMac, ap->senderIp, getSystemTime(), getFirstFreeEntry());
+		}
+		// Check if the request is for us. If so, issue an answer!
+		if (isEqualMem(ownMacAddress, ap->targetMac, 6)) {
+			
+		}
+		// Request is not for us. Ignore!
 	} else if (ap->operation == 2) {
 		// ARP Reply. Store the information, if not already present
-	} else {
-		// Unknown ARP Operation
-		free(ap);
-		return;
+		// Each packet contains two MAC-IP Combinations. Sender & Target
+		if (findIpFromMac(ap->senderMac) == -1) {
+			// Sender MAC is not stored. Store combination!
+			copyEntry(ap->senderMac, ap->senderIp, getSystemTime(), getFirstFreeEntry());
+		}
+		if (findIpFromMac(ap->targetMac) == -1) {
+			// Target MAC is not stored. Store combination!
+			copyEntry(ap->targetMac, ap->targetIp, getSystemTime(), getFirstFreeEntry());
+		}
 	}
+	free(ap);
+	return;
 }
 
 // Searches in ARP Table. If entry is found, return non-alloced buffer
