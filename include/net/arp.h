@@ -36,16 +36,12 @@ typedef struct {
 extern ARPTableEntry arpTable[ARPTableSize];
 
 typedef struct {
-	/* const uint16_t hardwareType = 1; // Ethernet
-	const uint16_t protocolType = 0x0800; // IPv4
-	const uint8_t  hardwareAddressLength = 6; // MAC Length
-	const uint8_t  protocolAddressLength = 4; // IP Length */
 	uint16_t       operation; // 1 for request, 2 for reply
-	MACAddress     senderMac;
+	MacAddress     senderMac;
 	IPv4Address    senderIp;
-	MACAddress     targetMac;
-	IPv4Address    targetIP;
-} ARPPacket;
+	MacAddress     targetMac;
+	IPv4Address    targetIp;
+} ArpPacket;
 
 void arpInit(void);
 void arpProcessPacket(MacPacket *p); // Processes all receiver ARP Packets
