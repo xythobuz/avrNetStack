@@ -37,7 +37,60 @@ IPv4Address defaultGateway;
 // ----------------------
 
 IPv4Packet *macPacketToIpPacket(MacPacket *p) {
-	return NULL;
+	uint8_t i, l;
+	uint16_t j, realLength;
+	IPv4Packet *ip = (IPv4Packet *)malloc(sizeof(IPv4Packet));
+	if (ip == NULL) {
+		return NULL;
+	}
+	ip->version = (p->data[0] & 0xF0) >> 4;
+	ip->internetHeaderLength = p->data[0] & 0x0F;
+	ip->typeOfService = p->data[1];
+	ip->totalLength = p->data[3];
+	ip->totalLength |= (p->data[2] << 8);
+	ip->identification = p->data[5];
+	ip->identification |= (p->data[4] << 8);
+	ip->flags = (p->data[6] & 0xE0) >> 5;
+	ip->fragmentOffset = p->data[7];
+	ip->fragmentOffset |= (p->data[6] & 0x1F) << 8;
+	ip->timeToLive = p->data[8];
+	ip->protocol = p->data[9];
+	ip->headerChecksum = p->data[11];
+	ip->headerChecksum |= (p->data[10] << 8);
+	for (i = 0; i < 4; i++) {
+		ip->sourceIp[i] = p->data[12 + i];
+		ip->destinationIp[i] = p->data[16 + i];
+	}
+	l = ip->internetHeaderLength - 5;
+	if (l > 5) {
+		ip->options = (uint8_t *)malloc(l * 4 * sizeof(uint8_t));
+		if (ip->options == NULL) {
+			free(ip);
+			return NULL;
+		}
+		for (i = 0; i < l; i++) {
+			ip->options[(i * 4) + 0] = p->data[20 + (i * 4)];
+			ip->options[(i * 4) + 1] = p->data[21 + (i * 4)];
+			ip->options[(i * 4) + 2] = p->data[22 + (i * 4)];
+			ip->options[(i * 4) + 3] = p->data[23 + (i * 4)];
+		}
+	} else {
+		ip->options == NULL;
+	}
+	realLength = ip->totalLength - (ip->internetHeaderLength * 4);
+	ip->data = (uint8_t *)malloc(realLength * sizeof(uint8_t));
+	if (ip->data == NULL) {
+		if (ip->options != NULL) {
+			free(ip->options);
+		}
+		free(ip);
+		return NULL;
+	}
+	for (j = 0; j < realLength; j++) {
+		ip->data[j] = p->data[(ip->internetHeaderLength * 4) + j];
+	}
+	ip->dLength = realLength;
+	return ip;
 }
 
 // ----------------------

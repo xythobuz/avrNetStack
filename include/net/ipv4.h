@@ -25,18 +25,25 @@
 
 typedef uint8_t IPv4Address[4];
 
+#define IPv4HeaderSize 0x14
+
 typedef struct {
 	uint8_t version;
 	uint8_t internetHeaderLength;
-	uint8_t differentiatedServicesCodePoint;
-	uint8_t explicitCongestionNotification;
-	uint16_t totalLength;
-	uint16_t identification;
-	uint8_t flags;
-	uint16_t fragmentOffset;
+	uint8_t typeOfService;
+	// First 16bit
+
+	uint16_t totalLength; // 16bit
+	uint16_t identification; // 16bit
+	uint8_t flags; // 3bit
+	uint16_t fragmentOffset; // 13bit
+	// Next 48bit
+
 	uint8_t timeToLive;
 	uint8_t protocol;
 	uint16_t headerChecksum;
+	// Next 32bit
+
 	IPv4Address sourceIp;
 	IPv4Address destinationIp;
 	uint8_t *options; // Not NULL if internetHeaderLength > 5
