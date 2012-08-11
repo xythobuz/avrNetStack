@@ -1,5 +1,5 @@
 /*
- * ipv4.h
+ * ipv4.c
  *
  * Copyright 2012 Thomas Buck <xythobuz@me.com>
  *
@@ -18,41 +18,47 @@
  * You should have received a copy of the GNU General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _ipv4_h
-#define _ipv4_h
+#include <avr/io.h>
+#include <stdint.h>
+#include <stdlib.h>
 
+#include <time.h>
 #include <net/mac.h>
+#include <net/arp.h>
+#include <net/controller.h>
+#include <net/ipv4.h>
 
-typedef uint8_t IPv4Address[4];
+IPv4Address ownIpAddress;
+IPv4Address subnetmask;
+IPv4Address defaultGateway;
 
-typedef struct {
-	uint8_t version;
-	uint8_t internetHeaderLength;
-	uint8_t differentiatedServicesCodePoint;
-	uint8_t explicitCongestionNotification;
-	uint16_t totalLength;
-	uint16_t identification;
-	uint8_t flags;
-	uint16_t fragmentOffset;
-	uint8_t timeToLive;
-	uint8_t protocol;
-	uint16_t headerChecksum;
-	IPv4Address sourceIp;
-	IPv4Address destinationIp;
-	uint8_t *options; // Not NULL if internetHeaderLength > 5
-	uint8_t *data;
-} IPv4Packet;
+// ----------------------
+// |    Internal API    |
+// ----------------------
 
-extern IPv4Address ownIpAddress;
-extern IPv4Address subnetmask;
-extern IPv4Address defaultGateway;
+IPv4Packet *macPacketToIpPacket(MacPacket *p) {
+	return NULL;
+}
 
-void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway);
+// ----------------------
+// |    External API    |
+// ----------------------
 
-void ipv4ProcessPacket(MacPacket *p);
+void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway) {
+	uint8_t i;
+	for (i = 0; i < 4; i++) {
+		ownIpAddress[i] = ip[i];
+		subnetmask[i] = subnet[i];
+		defaultGateway[i] = gateway[i];
+	}
+}
+
+void ipv4ProcessPacket(MacPacket *p) {
+
+}
 
 // Returns 0 if packet was sent. 1 if destination was unknown.
 // Try again later, after ARP response could have arrived...
-uint8_t ipv4SendPacket(IPv4Packet *p);
-
-#endif
+uint8_t ipv4SendPacket(IPv4Packet *p) {
+	return 1;
+}

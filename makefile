@@ -17,6 +17,7 @@ SRC += lib/serial.c
 SRC += lib/time.c
 SRC += lib/net/controller.c
 SRC += lib/net/arp.c
+SRC += lib/net/ipv4.c
 
 TESTSRC = test/main.c
 OBJ = $(SRC:.c=.o)
