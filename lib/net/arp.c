@@ -239,7 +239,7 @@ void arpProcessPacket(MacPacket *p) {
 			copyEntry(ap->senderMac, ap->senderIp, getSystemTime(), getFirstFreeEntry());
 		}
 		// Check if the request is for us. If so, issue an answer!
-		if (isEqualMem(ownMacAddress, ap->targetMac, 6)) {
+		if (isEqualMem(ownIpAddress, ap->targetIp, 4)) {
 			ap->operation = 2; // Reply
 			for (i = 0; i < 6; i++) {
 				ap->targetMac[i] = ap->senderMac[i]; // Goes back to sender
@@ -249,7 +249,10 @@ void arpProcessPacket(MacPacket *p) {
 			}
 			p = arpPacketToMacPacket(ap);
 			if (p != NULL) {
-				macSendPacket(p); // If it doesn't work, we can't do anything...
+				if (macSendPacket(p)) { // If it doesn't work, we can't do anything...
+					// ...except trying again.
+					macSendPacket(p);
+				}
 				free(p->data);
 				free(p);
 			}
@@ -271,9 +274,48 @@ void arpProcessPacket(MacPacket *p) {
 	}
 }
 
+uint8_t macReturnBuffer[6];
+
 // Searches in ARP Table. If entry is found, return non-alloced buffer
 // with mac address and update the time of the entry.
 // If there is no entry, issue arp packet and return NULL. Try again later.
 uint8_t *arpGetMacFromIp(IPv4Address ip) {
-	return NULL;
+	uint8_t i;
+	int8_t index = findMacFromIp(ip);
+	ArpPacket *ap;
+	MacPacket *p;
+
+	if (index != -1) {
+		for (i = 0; i < 6; i++) {
+			macReturnBuffer[i] = arpTable[index].mac[i];
+		}
+		arpTable[index].time = getSystemTime();
+		return macReturnBuffer;
+	} else {
+		// No entry found. Issue ARP Request
+		ap = (ArpPacket *)malloc(sizeof(ArpPacket));
+		if (ap == NULL) {
+			return NULL;
+		}
+		ap->operation = 1; // Request
+		for (i = 0; i < 6; i++) {
+			ap->senderMac[i] = ownMacAddress[i];
+			ap->targetMac[i] = 0xFF; // Broadcast
+			if (i < 4) {
+				ap->senderIp[i] = ownIpAddress[i];
+				ap->targetIp[i] = ip[i];
+			}
+		}
+		p = arpPacketToMacPacket(ap);
+		free(ap);
+		if (p == NULL) {
+			return NULL;
+		}
+		if (macSendPacket(p)) { // Can't do anything if error...
+			// ...except try again
+			macSendPacket(p);
+		}
+		free(p);
+		return NULL;
+	}
 }
