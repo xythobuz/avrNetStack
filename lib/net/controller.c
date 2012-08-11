@@ -27,10 +27,15 @@
 #include <net/arp.h>
 #include <net/controller.h>
 
+IPv4Address defIp = {0, 0, 0, 0};
+IPv4Address defSubnet = {0, 0, 0, 0};
+IPv4Address defGateway = {0, 0, 0, 0}; // This data comes from DHCP!
+
 void networkInit(MacAddress a) {
 	initSystemTimer();
 	macInitialize(a);
 	arpInit();
+	ipv4Init(defIp, defSubnet, defGateway);
 }
 
 void networkHandler(void) {
