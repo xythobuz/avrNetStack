@@ -49,13 +49,20 @@ typedef struct {
 	uint16_t dLength; // Real length of data buffer
 } IPv4Packet;
 
+#define ICMP 0x01
+#define IGMP 0x02
+#define TCP 0x06
+#define UDP 0x11
+
 extern IPv4Address ownIpAddress;
 extern IPv4Address subnetmask;
 extern IPv4Address defaultGateway;
 
 void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway);
 
-void ipv4ProcessPacket(MacPacket *p);
+uint8_t ipv4ProcessPacket(MacPacket *p);
+// Returns 0 on success, 1 if not enough mem, 2 if packet invalid.
+// p is freed afterwards!
 
 // Returns 0 if packet was sent. 1 if destination was unknown.
 // Try again later, after ARP response could have arrived...

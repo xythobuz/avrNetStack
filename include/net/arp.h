@@ -46,7 +46,10 @@ typedef struct {
 } ArpPacket;
 
 void arpInit(void);
-void arpProcessPacket(MacPacket *p); // Processes all receiver ARP Packets
+uint8_t arpProcessPacket(MacPacket *p); // Processes all received ARP Packets
+// Returns 0 on success, 1 if there was not enough memory,
+// 2 if the packet was no valid ipv4 ethernet arp packet..
+// p is freed afterwards!
 
 // Searches in ARP Table. If entry is found, return non-alloced buffer with mac address.
 // If there is no entry, issue arp packet and return NULL. Try again later.

@@ -213,21 +213,21 @@ void arpInit(void) {
 	}
 }
 
-void arpProcessPacket(MacPacket *p) {
+uint8_t arpProcessPacket(MacPacket *p) {
 	uint8_t i;
 	ArpPacket *ap = (ArpPacket *)malloc(sizeof(ArpPacket));
 	if (ap == NULL) {
 		// Discard packet, return
 		free(p->data);
 		free(p);
-		return;
+		return 1;
 	}
 	if (macPacketToArpPacket(p, ap) != 0) {
 		// Packet not valid!
 		free(p->data);
 		free(p);
 		free(ap);
-		return;
+		return 2;
 	}
 	free(p->data);
 	free(p); // We don't need the MacPacket anymore
@@ -272,6 +272,7 @@ void arpProcessPacket(MacPacket *p) {
 		}
 		free(ap);
 	}
+	return 0;
 }
 
 uint8_t macReturnBuffer[6];

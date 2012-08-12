@@ -36,6 +36,8 @@ IPv4Address defaultGateway;
 // |    Internal API    |
 // ----------------------
 
+uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l); // Used in arp.c
+
 IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	uint8_t i, l;
 	uint16_t j, realLength;
@@ -93,6 +95,27 @@ IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	return ip;
 }
 
+uint16_t checksum(uint8_t *rawData) {
+	uint32_t a = 0;
+	uint8_t i;
+
+	for (i = 0; i < 20; i += 2) {
+		a += ((rawData[i] << 8) | rawData[i + 1]); // 16bit sum
+	}
+	a = (a & 0x0000FFFF) + ((a & 0xFFFF0000) >> 16); // 1's complement 16bit sum
+	return (uint16_t)~a; // 1's complement of 1's complement 16bit sum
+}
+
+void freePacket(IPv4Packet *ip) {
+	if (ip->options != NULL) {
+		free(ip->options);
+	}
+	if (ip->data != NULL) {
+		free(ip->data);
+	}
+	free(ip);
+}
+
 // ----------------------
 // |    External API    |
 // ----------------------
@@ -106,24 +129,54 @@ void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway) {
 	}
 }
 
-void ipv4ProcessPacket(MacPacket *p) {
+uint8_t ipv4ProcessPacket(MacPacket *p) {
+	uint16_t cs;
 	IPv4Packet *ip = macPacketToIpPacket(p);
+	cs = checksum(p->data); // Calculate checksum before freeing raw data
 	free(p->data);
 	free(p);
 	if (ip == NULL) {
-		return; // Not enough memory. Can't process packet!
+		return 1; // Not enough memory. Can't process packet!
 	}
 
 	// Process IPv4 Packet
-	
+	if (isEqualMem(ip->destinationIp, ownIpAddress, 4)) {
+		// Packet is for us
+		if (cs == 0x0000) {
+			// Checksum field is valid
+			if (!(ip->flags & 0x04)) {
+				// Last fragment
+				if (ip->fragmentOffset == 0x00) {
+					// Packet isn't fragmented
+					if (ip->protocol == ICMP) {
+						// Internet Control Message Protocol Packet
+					} else if (ip->protocol == IGMP) {
+						// Internet Group Management Protocol Packet
+					} else if (ip->protocol == TCP) {
+						// Transmission Control Protocol Packet
+					} else if (ip->protocol == UDP) {
+						// User Datagram Protocol Packet
+					}
+				} else {
+					// Packet is last fragment. Are there already some present?
 
-	if (ip->options != NULL) {
-		free(ip->options);
+				}
+			} else {
+				// More fragments follow. Store this one!
+
+			}
+		} else {
+			// Invalid Checksum
+			freePacket(ip);
+			return 2;
+		}
+	} else {
+		// Packet is not for us.
+		// We are no router!
+		freePacket(ip);
+		return 0;
 	}
-	if (ip->data != NULL) {
-		free(ip->data);
-	}
-	free(ip);
+	return 0;
 }
 
 // Returns 0 if packet was sent. 1 if destination was unknown.
