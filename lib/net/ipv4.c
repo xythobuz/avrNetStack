@@ -37,6 +37,8 @@ IPv4Address defaultGateway;
 // ----------------------
 
 uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l); // Used in arp.c
+IPv4Packet **storedFragments = NULL; // Array of IPv4Packet Pointers
+uint16_t fragmentsStored = 0;
 
 IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	uint8_t i, l;
@@ -107,13 +109,190 @@ uint16_t checksum(uint8_t *rawData) {
 }
 
 void freePacket(IPv4Packet *ip) {
-	if (ip->options != NULL) {
-		free(ip->options);
+	if (ip != NULL) {
+		if (ip->options != NULL) {
+			free(ip->options);
+		}
+		if (ip->data != NULL) {
+			free(ip->data);
+		}
+		free(ip);
 	}
-	if (ip->data != NULL) {
-		free(ip->data);
+}
+
+int16_t findFragment(uint16_t identification, IPv4Address destination) {
+	uint16_t i;
+	for (i = 0; i < fragmentsStored; i++) {
+		if (storedFragments[i] != NULL) {
+			if (isEqualMem(destination, storedFragments[i]->destinationIp, 4)) {
+				if (identification == storedFragments[i]->identification) {
+					return (int16_t)i;
+				}
+			}
+		}
 	}
-	free(ip);
+	return -1;
+}
+
+uint8_t appendFragment(uint16_t in, IPv4Packet *ip) {
+	// Append fragment into existing buffer
+	// TO-DO
+	// WARNING: Currently always appends next incoming
+	// fragment at the end of the currently stored data.
+	// fragmentOffset is not taken into account!
+	// In other words, if fragments arrive out of order, the data
+	// is out of order.
+	uint16_t i;
+	uint8_t *tmp8 = (uint8_t *)realloc(storedFragments[in]->data, storedFragments[in]->dLength + ip->dLength);
+	if (tmp8 == NULL) {
+		freePacket(ip);
+		return 1; // Not enough memory
+	}
+	storedFragments[in]->data = tmp8;
+	// Append actual data
+	for (i = 0; i < ip->dLength; i++) {
+		storedFragments[in]->data[i + storedFragments[in]->dLength] = ip->data[i];
+	}
+	storedFragments[in]->dLength += ip->dLength;
+	storedFragments[in]->totalLength -= (ip->internetHeaderLength * 4);
+	storedFragments[in]->totalLength += ip->totalLength;
+	freePacket(ip);
+	return 0; // Packet appended
+}
+
+uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
+	int16_t in;
+	uint8_t i, r;
+	IPv4Packet **tmp;
+
+	// Process IPv4 Packet
+	if (isEqualMem(ip->destinationIp, ownIpAddress, 4)) {
+		// Packet is for us
+		if ((cs == 0x0000) && (ip->version == 4)) {
+			// Checksum and version fields are valid
+			if (!(ip->flags & 0x04)) {
+				// Last fragment
+				if (ip->fragmentOffset == 0x00) {
+					// Packet isn't fragmented
+					if (ip->protocol == ICMP) {
+						// Internet Control Message Protocol Packet
+					} else if (ip->protocol == IGMP) {
+						// Internet Group Management Protocol Packet
+					} else if (ip->protocol == TCP) {
+						// Transmission Control Protocol Packet
+					} else if (ip->protocol == UDP) {
+						// User Datagram Protocol Packet
+					}
+				} else {
+					// Packet is last fragment. Are there already some present?
+					in = findFragment(ip->identification, ip->destinationIp);
+					if (in == -1) {
+						// Well, we don't have the beginning of the message...
+						freePacket(ip);
+						return 2;
+					} else {
+						i = appendFragment(in, ip);
+						ip = NULL; // Is already freed in appendFragment
+						if (i != 0) {
+							return i;
+						} else {
+							// Finished packet in storedFragmens[in], handle it
+							storedFragments[in]->flags = 0x00; // Not a fragment anymore
+							storedFragments[in]->fragmentOffset = 0x00;
+							r = ipv4ProcessPacketInternal(storedFragments[in], 0x0000);
+							storedFragments[in] = NULL;
+							if (in < (fragmentsStored - 1)) {
+								// Wasn't the last packet, so move the following ones
+								for (i = (in + 1); i < fragmentsStored; i++) {
+									storedFragments[i - 1] = storedFragments[i];
+								}
+							}
+							fragmentsStored--;
+							tmp = (IPv4Packet **)realloc(storedFragments, fragmentsStored * sizeof(IPv4Packet **));
+							if (tmp == NULL) {
+								// Whoopsie...
+								// But we don't really care, it's one rotting IPv4Packet Pointer
+								return 1;
+							}
+							return r;
+						}
+					}
+				}
+			} else {
+				// More fragments follow. Store this one,
+				// if it is the first or we got some fragments already
+				in = findFragment(ip->identification, ip->destinationIp);
+				if ((in == -1) && (ip->fragmentOffset != 0x00)) {
+					// We haven't got the first fragment of this packet...
+					freePacket(ip);
+					return 2;
+				} else if (ip->fragmentOffset == 0x00) {
+					// First fragment, store it...
+					if (in == -1) {
+						// Allocate new memory
+						fragmentsStored++;
+						tmp = (IPv4Packet **)realloc(storedFragments, fragmentsStored * sizeof(IPv4Packet *));
+						if (tmp == NULL) {
+							// Not enough memory
+							fragmentsStored--;
+							freePacket(ip);
+							return 1;
+						}
+						storedFragments = tmp;
+						in = fragmentsStored;
+						storedFragments[in] = (IPv4Packet *)malloc(sizeof(IPv4Packet));
+						if (storedFragments[in] == NULL) {
+							// Delete new space in buffer
+							fragmentsStored--;
+							tmp = (IPv4Packet **)realloc(storedFragments, fragmentsStored * sizeof(IPv4Packet *));
+							if (tmp == NULL) {
+								// Now we are really screwed up
+								// and there's nothing really we could do
+								freePacket(ip);
+								return 1;
+							}
+							storedFragments = tmp;
+							freePacket(ip);
+							return 1;
+						}
+					}
+					// Copy packet into buffer
+					storedFragments[in]->version = ip->version;
+					storedFragments[in]->internetHeaderLength = 5; // Discard options
+					storedFragments[in]->typeOfService = ip->typeOfService;
+					storedFragments[in]->totalLength = ip->totalLength - (ip->internetHeaderLength * 4) + 20;
+					storedFragments[in]->identification = ip->identification;
+					storedFragments[in]->flags = ip->flags;
+					storedFragments[in]->fragmentOffset = 0x00; // First fragment...
+					storedFragments[in]->protocol = ip->protocol;
+					// We dont care for checksum or TTL...
+					for (i = 0; i < 4; i++) {
+						storedFragments[in]->sourceIp[i] = ip->sourceIp[i];
+						// We don't care for destinationIp, as it is for us...
+					}
+					storedFragments[in]->options = NULL;
+					storedFragments[in]->data = ip->data;
+					ip->data = NULL; // Use same data memory
+					storedFragments[in]->dLength = ip->dLength;
+					freePacket(ip);
+					return 0; // Fragment stored
+				} else if ((in != -1) && (ip->fragmentOffset != 0x00)) {
+					return appendFragment(in, ip);
+				}
+			}
+		} else {
+			// Invalid Checksum or version
+			freePacket(ip);
+			return 2;
+		}
+	} else {
+		// Packet is not for us.
+		// We are no router!
+		freePacket(ip);
+		return 0;
+	}
+	freePacket(ip);
+	return 0;
 }
 
 // ----------------------
@@ -138,45 +317,7 @@ uint8_t ipv4ProcessPacket(MacPacket *p) {
 	if (ip == NULL) {
 		return 1; // Not enough memory. Can't process packet!
 	}
-
-	// Process IPv4 Packet
-	if (isEqualMem(ip->destinationIp, ownIpAddress, 4)) {
-		// Packet is for us
-		if (cs == 0x0000) {
-			// Checksum field is valid
-			if (!(ip->flags & 0x04)) {
-				// Last fragment
-				if (ip->fragmentOffset == 0x00) {
-					// Packet isn't fragmented
-					if (ip->protocol == ICMP) {
-						// Internet Control Message Protocol Packet
-					} else if (ip->protocol == IGMP) {
-						// Internet Group Management Protocol Packet
-					} else if (ip->protocol == TCP) {
-						// Transmission Control Protocol Packet
-					} else if (ip->protocol == UDP) {
-						// User Datagram Protocol Packet
-					}
-				} else {
-					// Packet is last fragment. Are there already some present?
-
-				}
-			} else {
-				// More fragments follow. Store this one!
-
-			}
-		} else {
-			// Invalid Checksum
-			freePacket(ip);
-			return 2;
-		}
-	} else {
-		// Packet is not for us.
-		// We are no router!
-		freePacket(ip);
-		return 0;
-	}
-	return 0;
+	return ipv4ProcessPacketInternal(ip, cs);
 }
 
 // Returns 0 if packet was sent. 1 if destination was unknown.
