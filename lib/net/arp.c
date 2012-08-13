@@ -80,7 +80,7 @@ uint8_t oldestEntry(void) {
 	uint8_t pos = 0;
 	for (i = 0; i < arpTableSize; i++) {
 		// It is not free, or else we would not need to delete it.
-		if (arpTable[i].time < min) {
+		if ((arpTable[i].time < min) && (arpTable[i].time != 0)) {
 			min = arpTable[i].time;
 			pos = i;
 		}
@@ -92,7 +92,7 @@ int8_t tooOldEntry(void) {
 	uint8_t i;
 	time_t time = getSystemTime();
 	for (i = 0; i < arpTableSize; i++) {
-		if ((arpTable[i].time + ARPTableTimeToLive) <= time) {
+		if (((arpTable[i].time + ARPTableTimeToLive) <= time) && (arpTable[i].time != 0)) {
 			return i;
 		}
 	}
@@ -228,7 +228,20 @@ MacPacket *arpPacketToMacPacket(ArpPacket *ap) {
 // |     External API     |
 // ------------------------
 
-void arpInit(void) {}
+void arpInit(void) {
+	uint8_t i;
+	arpTable = (ARPTableEntry *)malloc(sizeof(ARPTableEntry));
+	if (arpTable != NULL) {
+		for (i = 0; i < 6; i++) {
+			arpTable[0].mac[i] = 0xFF;
+			if (i < 4) {
+				arpTable[0].ip[i] = 0xFF;
+			}
+		}
+		arpTable[0].time = 0;
+		arpTableSize = 1;
+	}
+}
 
 uint8_t arpProcessPacket(MacPacket *p) {
 	uint8_t i;

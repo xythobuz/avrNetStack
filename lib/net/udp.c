@@ -167,9 +167,23 @@ uint8_t udpSendPacket(UdpPacket *up, IPv4Address target) {
 		free(ip);
 		return 4;
 	}
+	// Fill out IP Header
+	ip->version = 4;
+	ip->internetHeaderLength = 5; // No options
+	ip->typeOfService = 0x00; // Nothing fancy...
+	ip->totalLength = 20 + ip->dLength;
+	ip->flags = 0;
+	ip->fragmentOffset = 0;
+	ip->timeToLive = 0x80;
+	ip->protocol = UDP;
+	for (i = 0; i < 4; i++) {
+		ip->sourceIp[i] = ownIpAddress[i];
+		ip->destinationIp[i] = target[i];
+	}
+	ip->options = NULL;
 	// Insert UDP Packet into IP Payload
 	up->checksum = 0x00;
-	up->checksum = udpChecksum(up);
+	up->checksum = udpChecksum(up, ip);
 	ip->data[0] = (up->source & 0xFF00) >> 8;
 	ip->data[1] = (up->source & 0x00FF);
 	ip->data[2] = (up->destination & 0xFF00) >> 8;
@@ -184,20 +198,6 @@ uint8_t udpSendPacket(UdpPacket *up, IPv4Address target) {
 	ip->dLength = up->dLength + 8;
 	free(up->data);
 	free(up);
-	// Fill out rest of IP Header
-	ip->version = 4;
-	ip->internetHeaderLength = 5; // No options
-	ip->typeOfService = 0x00; // Nothing fancy...
-	ip->totalLength = 20 + ip->dLength;
-	ip->flags = 0;
-	ip->fragmentOffset = 0;
-	ip->timeToLive = 0x80;
-	ip->protocol = UDP;
-	for (i = 0; i < 4; i++) {
-		ip->sourceIp[i] = ownIpAddress[i];
-		ip->destinationIp[i] = target[i];
-	}
-	ip->options = NULL;
 	return ipv4SendPacket(ip);
 }
 

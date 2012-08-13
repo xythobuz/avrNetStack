@@ -351,7 +351,7 @@ uint8_t ipv4ProcessPacket(MacPacket *p) {
 // Checksum is calculated for you. Leave checksum field 0x00
 // If data is too large, packet is fragmented automatically
 uint8_t ipv4SendPacket(IPv4Packet *ip) {
-	uint16_t i, max, fullLength;
+	uint16_t i, max, fullLength = ip->totalLength;
 	MacPacket *mp;
 	uint8_t *targetMac;
 #ifndef DISABLE_IPV4_FRAGMENT
@@ -388,7 +388,6 @@ uint8_t ipv4SendPacket(IPv4Packet *ip) {
 	if (ip->totalLength > 0x500) {
 		// Fragment Packet!
 		fragment = 1;
-		fullLength = ip->totalLength;
 		ip->totalLength = 0x500;
 	}
 #endif
