@@ -97,6 +97,7 @@ IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	return ip;
 }
 
+#ifndef DISABLE_IPV4_CHECKSUM
 uint16_t checksum(uint8_t *rawData) {
 	uint32_t a = 0;
 	uint8_t i;
@@ -107,6 +108,7 @@ uint16_t checksum(uint8_t *rawData) {
 	a = (a & 0x0000FFFF) + ((a & 0xFFFF0000) >> 16); // 1's complement 16bit sum
 	return (uint16_t)~a; // 1's complement of 1's complement 16bit sum
 }
+#endif
 
 void freePacket(IPv4Packet *ip) {
 	if (ip != NULL) {
@@ -120,6 +122,7 @@ void freePacket(IPv4Packet *ip) {
 	}
 }
 
+#ifndef DISABLE_IPV4_FRAGMENT
 int16_t findFragment(uint16_t identification, IPv4Address destination) {
 	uint16_t i;
 	for (i = 0; i < fragmentsStored; i++) {
@@ -157,11 +160,14 @@ uint8_t appendFragment(uint16_t in, IPv4Packet *ip) {
 	freePacket(ip);
 	return 0; // Packet appended
 }
+#endif
 
 uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
+#ifndef DISABLE_IPV4_FRAGMENT
 	int16_t in;
 	uint8_t i, r;
 	IPv4Packet **tmp;
+#endif
 
 	// Process IPv4 Packet
 	if (isEqualMem(ip->destinationIp, ownIpAddress, 4)) {
@@ -174,13 +180,18 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 					// Packet isn't fragmented
 					if (ip->protocol == ICMP) {
 						// Internet Control Message Protocol Packet
+
 					} else if (ip->protocol == IGMP) {
 						// Internet Group Management Protocol Packet
+
 					} else if (ip->protocol == TCP) {
 						// Transmission Control Protocol Packet
+
 					} else if (ip->protocol == UDP) {
 						// User Datagram Protocol Packet
+
 					}
+#ifndef DISABLE_IPV4_FRAGMENT
 				} else {
 					// Packet is last fragment. Are there already some present?
 					in = findFragment(ip->identification, ip->destinationIp);
@@ -245,7 +256,7 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 							tmp = (IPv4Packet **)realloc(storedFragments, fragmentsStored * sizeof(IPv4Packet *));
 							if (tmp == NULL) {
 								// Now we are really screwed up
-								// and there's nothing really we could do
+								// and there's nothing we could do
 								freePacket(ip);
 								return 1;
 							}
@@ -276,6 +287,7 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 					return 0; // Fragment stored
 				} else if ((in != -1) && (ip->fragmentOffset != 0x00)) {
 					return appendFragment(in, ip);
+#endif
 				}
 			}
 		} else {
@@ -307,9 +319,11 @@ void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway) {
 }
 
 uint8_t ipv4ProcessPacket(MacPacket *p) {
-	uint16_t cs;
+	uint16_t cs = 0x0000;
 	IPv4Packet *ip = macPacketToIpPacket(p);
+#ifndef DISABLE_IPV4_CHECKSUM
 	cs = checksum(p->data); // Calculate checksum before freeing raw data
+#endif
 	free(p->data);
 	free(p);
 	if (ip == NULL) {

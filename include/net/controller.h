@@ -23,6 +23,10 @@
 
 #include <net/mac.h>
 
+// Full size: 11528 bytes Flash, 431 bytes RAM
+//#define DISABLE_IPV4_CHECKSUM // Prevent IPv4 Checksum calculation (-108 bytes Flash)
+//#define DISABLE_IPV4_FRAGMENT // Prevent IPv4 Fragmentation (-866  bytes Flash)
+
 #define IPV4 0x0800
 #define ARP 0x0806
 #define WOL 0x0842
