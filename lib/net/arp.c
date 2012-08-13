@@ -88,6 +88,17 @@ uint8_t oldestEntry(void) {
 	return pos;
 }
 
+int8_t tooOldEntry(void) {
+	uint8_t i;
+	time_t time = getSystemTime();
+	for (i = 0; i < arpTableSize; i++) {
+		if ((arpTable[i].time + ARPTableTimeToLive) <= time) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 int8_t getFirstFreeEntry(void) {
 	int8_t i;
 	ARPTableEntry *tp;
@@ -97,6 +108,11 @@ int8_t getFirstFreeEntry(void) {
 		}
 	}
 	
+	i = tooOldEntry();
+	if (i != -1) {
+		return i;
+	}
+
 	if (arpTableSize < ARPMaxTableSize) {
 		// Allocate more space
 		arpTableSize++;

@@ -26,6 +26,8 @@
 #include <time.h>
 #include <net/controller.h>
 
+#define ARPTableTimeToLive 300000 // 5 Minutes (in milliseconds)
+
 typedef struct {
 	IPv4Address ip;
 	MacAddress  mac;
