@@ -41,6 +41,7 @@ IPv4Address defaultGateway;
 uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l); // Used in arp.c
 IPv4Packet **storedFragments = NULL; // Array of IPv4Packet Pointers
 uint16_t fragmentsStored = 0;
+uint16_t risingIdentification = 1;
 
 IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	uint8_t i, l;
@@ -350,12 +351,15 @@ uint8_t ipv4ProcessPacket(MacPacket *p) {
 // Checksum is calculated for you. Leave checksum field 0x00
 // If data is too large, packet is fragmented automatically
 uint8_t ipv4SendPacket(IPv4Packet *ip) {
-	uint16_t i, max;
+	uint16_t i, max, fullLength;
 	MacPacket *mp;
 	uint8_t *targetMac;
 #ifndef DISABLE_IPV4_FRAGMENT
 	uint8_t *tmp;
 	uint8_t fragment = 0;
+#endif
+#ifndef DISABLE_IPV4_CHECKSUM
+	uint16_t cs;
 #endif
 	if ((targetMac = arpGetMacFromIp(ip->destinationIp)) == NULL) {
 		// Target Mac not in ARP Cache. Request issued!
@@ -384,8 +388,11 @@ uint8_t ipv4SendPacket(IPv4Packet *ip) {
 	if (ip->totalLength > 0x500) {
 		// Fragment Packet!
 		fragment = 1;
+		fullLength = ip->totalLength;
+		ip->totalLength = 0x500;
 	}
 #endif
+	ip->identification = risingIdentification++; // Generate own Identification
 	mp->data[0] |= (ip->internetHeaderLength = 0x0F);
 	mp->data[1] = ip->typeOfService;
 	mp->data[2] = (ip->totalLength & 0xFF00) >> 8;
@@ -413,6 +420,12 @@ uint8_t ipv4SendPacket(IPv4Packet *ip) {
 			mp->data[20 + i] = ip->options[i];
 		}
 	}
+	// Calculate Checksum
+#ifndef DISABLE_IPV4_CHECKSUM
+	cs = checksum(mp->data, ip->internetHeaderLength * 4);
+	mp->data[10] = (cs & 0xFF00) >> 8;
+	mp->data[11] = (cs & 0x00FF);
+#endif
 	// Copy IP Payload
 #ifndef DISABLE_IPV4_FRAGMENT
 	if (fragment) {
@@ -432,6 +445,7 @@ uint8_t ipv4SendPacket(IPv4Packet *ip) {
 			return 3;
 		}
 		ip->fragmentOffset = 160; // 0x500 / 8
+		ip->totalLength = fullLength - 0x500;
 		for (i = 0; i < (ip->dLength - max); i++) {
 			ip->data[i] = ip->data[max + i];
 		}

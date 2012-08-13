@@ -40,7 +40,7 @@ uint8_t udpHandlePacket(IPv4Packet *ip);
 
 // 0 on success, 1 if destination unknown, try again later.
 // 2 or 4 if there was not enough RAM. 3 on PHY Error
-// On Return 0, 2 and 3, up was already freed
+// On Return 0, 1, 2 and 3, up was already freed
 uint8_t udpSendPacket(UdpPacket *up, IPv4Address target); // Leave checksum 0x0000
 
 // Overwrites existing handler for this port
