@@ -27,6 +27,7 @@
 #include <net/arp.h>
 #include <net/controller.h>
 #include <net/ipv4.h>
+#include <net/icmp.h>
 
 IPv4Address ownIpAddress;
 IPv4Address subnetmask;
@@ -97,12 +98,12 @@ IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	return ip;
 }
 
-#ifndef DISABLE_IPV4_CHECKSUM
-uint16_t checksum(uint8_t *rawData) {
+#if !defined(DISABLE_IPV4_CHECKSUM) && !defined(DISABLE_ICMP_CHECKSUM)
+uint16_t checksum(uint8_t *rawData, uint8_t l) {
 	uint32_t a = 0;
 	uint8_t i;
 
-	for (i = 0; i < 20; i += 2) {
+	for (i = 0; i < l; i += 2) {
 		a += ((rawData[i] << 8) | rawData[i + 1]); // 16bit sum
 	}
 	a = (a & 0x0000FFFF) + ((a & 0xFFFF0000) >> 16); // 1's complement 16bit sum
@@ -322,7 +323,7 @@ uint8_t ipv4ProcessPacket(MacPacket *p) {
 	uint16_t cs = 0x0000;
 	IPv4Packet *ip = macPacketToIpPacket(p);
 #ifndef DISABLE_IPV4_CHECKSUM
-	cs = checksum(p->data); // Calculate checksum before freeing raw data
+	cs = checksum(p->data, 20); // Calculate checksum before freeing raw data
 #endif
 	free(p->data);
 	free(p);

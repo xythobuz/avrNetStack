@@ -36,6 +36,50 @@ void (*debugOutputHandler)(char *) = NULL;
 #define print(x, y) debugOutputHandler(icmpMessage(x, y))
 void freeIPv4Packet(IPv4Packet *ip); // Defined in ipv4.c
 
+#ifndef DISABLE_ICMP_CHECKSUM
+uint16_t checksum(uint8_t *rawData, uint8_t l); // Defined in ipv4.c
+#endif
+
+IcmpPacket *ipv4PacketToIcmpPacket(IPv4Packet *ip) {
+	uint16_t i;
+	IcmpPacket *ic = (IcmpPacket *)malloc(sizeof(IcmpPacket));
+	if (ic == NULL) {
+		return NULL;
+	}
+	ic->type = ip->data[0];
+	ic->code = ip->data[1];
+	ic->checksum = ip->data[3];
+	ic->checksum |= (ip->data[2] << 8);
+	ic->restOfHeader = ip->data[7];
+	ic->restOfHeader |= ((uint32_t)ip->data[6] << 8);
+	ic->restOfHeader |= ((uint32_t)ip->data[5] << 16);
+	ic->restOfHeader |= ((uint32_t)ip->data[4] << 24);
+	if (ip->dLength > 8) {
+		// There is more data following...
+		ic->data = (uint8_t *)malloc(ip->dLength - 8);
+		if (ic->data == NULL) {
+			free(ic);
+			return NULL;
+		}
+		for (i = 0; i < (ip->dLength - 8); i++) {
+			ic->data[i] = ip->data[8 + i];
+		}
+		ic->dLength = ip->dLength - 8;
+	} else {
+		ic->dLength = 0;
+	}
+	return ic;
+}
+
+void freeIcmpPacket(IcmpPacket *ic) {
+	if (ic != NULL) {
+		if (ic->data != NULL) {
+			free(ic->data);
+		}
+		free(ic);
+	}
+}
+
 // ----------------------
 // |    External API    |
 // ----------------------
@@ -43,7 +87,30 @@ void freeIPv4Packet(IPv4Packet *ip); // Defined in ipv4.c
 // 0 success, 1 not enough mem, 2 invalid
 // ip freed afterwards
 uint8_t icmpProcessPacket(IPv4Packet *ip) {
+#ifndef DISABLE_ICMP_CHECKSUM
+	uint16_t cs;
+#endif
+	IcmpPacket *ic = ipv4PacketToIcmpPacket(ip);
+	if (ic == NULL) {
+		freeIPv4Packet(ip);
+		return 1; // Not enough RAM
+	}
+#ifndef DISABLE_ICMP_CHECKSUM
+	ip->data[2] = 0x00;
+	ip->data[3] = 0x00; // Clear checksum field for calculation
+	cs = checksum(ip->data, 8 + ic->dLength);
+	if (cs != ic->checksum) {
+		freeIcmpPacket(ic);
+		return 2; // Invalid checksum
+	}
+#endif
+	freeIPv4Packet(ip);
 
+	// Process ICMP Packet
+	
+	
+	freeIcmpPacket(ic);
+	return 0;
 }
 
 // ----------------------
@@ -204,5 +271,6 @@ char *icmpMessage(uint8_t type, uint8_t code) {
 	} else {
 		ret(mx_x);
 	}
+	return NULL;
 }
 #endif

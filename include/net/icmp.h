@@ -28,6 +28,8 @@ typedef struct {
 	uint8_t code;
 	uint16_t checksum;
 	uint32_t restOfHeader;
+	uint8_t *data; // Optional
+	uint8_t dLength;
 } IcmpPacket;
 
 // 0 success, 1 not enough mem, 2 invalid
