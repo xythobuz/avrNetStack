@@ -28,7 +28,8 @@
 #include <net/arp.h>
 #include <net/controller.h>
 
-ARPTableEntry arpTable[ARPTableSize];
+ARPTableEntry *arpTable = NULL;
+uint8_t arpTableSize = 0;
 /* const uint16_t hardwareType = 1; // Ethernet
  * const uint16_t protocolType = 0x0800; // IPv4
  * const uint8_t  hardwareAddressLength = 6; // MAC Length
@@ -64,7 +65,7 @@ uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l) {
 #define isZero(x, y) isEqual(x, zero, y)
 
 uint8_t isTableEntryFree(uint8_t i) {
-	if (i < ARPTableSize) {
+	if (i < arpTableSize) {
 		if (isZero(arpTable[i].ip, 4) && isZero(arpTable[i].mac, 6)
 			&& (arpTable[i].time == 0)) {
 			return 1;
@@ -77,7 +78,7 @@ uint8_t oldestEntry(void) {
 	uint8_t i;
 	time_t min = UINT64_MAX;
 	uint8_t pos = 0;
-	for (i = 0; i < ARPTableSize; i++) {
+	for (i = 0; i < arpTableSize; i++) {
 		// It is not free, or else we would not need to delete it.
 		if (arpTable[i].time < min) {
 			min = arpTable[i].time;
@@ -87,14 +88,25 @@ uint8_t oldestEntry(void) {
 	return pos;
 }
 
-uint8_t getFirstFreeEntry(void) {
-	uint8_t i;
-	for (i = 0; i < ARPTableSize; i++) {
+int8_t getFirstFreeEntry(void) {
+	int8_t i;
+	ARPTableEntry *tp;
+	for (i = 0; i < arpTableSize; i++) {
 		if (isTableEntryFree(i)) {
 			return i;
 		}
 	}
 	
+	if (arpTableSize < ARPMaxTableSize) {
+		// Allocate more space
+		arpTableSize++;
+		tp = (ARPTableEntry *)realloc(arpTable, (arpTableSize * sizeof(ARPTableEntry)));
+		if (tp != NULL) {
+			arpTable = tp;
+			return (arpTableSize - 1);
+		}
+	}
+
 	// No free space, so we throw out the oldest
 	return oldestEntry();
 }
@@ -128,7 +140,7 @@ uint8_t macPacketToArpPacket(MacPacket *mp, ArpPacket *ap) {
 
 int8_t findIpFromMac(MacAddress mac) {
 	uint8_t i;
-	for (i = 0; i < ARPTableSize; i++) {
+	for (i = 0; i < arpTableSize; i++) {
 		if (!isTableEntryFree(i)) {
 			if (isEqualMem(mac, arpTable[i].mac, 6)) {
 				return (int8_t)i;
@@ -140,7 +152,7 @@ int8_t findIpFromMac(MacAddress mac) {
 
 int8_t findMacFromIp(IPv4Address ip) {
 	uint8_t i;
-	for (i = 0; i < ARPTableSize; i++) {
+	for (i = 0; i < arpTableSize; i++) {
 		if (!isTableEntryFree(i)) {
 			if (isEqualMem(ip, arpTable[i].ip, 4)) {
 				return (int8_t)i;
@@ -152,13 +164,15 @@ int8_t findMacFromIp(IPv4Address ip) {
 
 void copyEntry(MacAddress mac, IPv4Address ip, time_t time, uint8_t index) {
 	uint8_t i;
-	for (i = 0; i < 6; i++) {
-		if (i < 4) {
-			arpTable[index].ip[i] = ip[i];
+	if ((arpTable != NULL) && (arpTableSize > index)) {
+		for (i = 0; i < 6; i++) {
+			if (i < 4) {
+				arpTable[index].ip[i] = ip[i];
+			}
+			arpTable[index].mac[i] = mac[i];
 		}
-		arpTable[index].mac[i] = mac[i];
+		arpTable[index].time = time;
 	}
-	arpTable[index].time = time;
 }
 
 MacPacket *arpPacketToMacPacket(ArpPacket *ap) {
@@ -198,20 +212,7 @@ MacPacket *arpPacketToMacPacket(ArpPacket *ap) {
 // |     External API     |
 // ------------------------
 
-void arpInit(void) {
-	uint8_t i, j;
-
-	// Reset ARP Table
-	for (i = 0; i < ARPTableSize; i++) {
-		for (j = 0; j < 4; j++) {
-			arpTable[i].ip[j] = 0;
-		}
-		for (j = 0; j < 6; j++) {
-			arpTable[i].mac[j] = 0;
-		}
-		arpTable[i].time = 0;
-	}
-}
+void arpInit(void) {}
 
 uint8_t arpProcessPacket(MacPacket *p) {
 	uint8_t i;

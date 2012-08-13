@@ -25,15 +25,14 @@
 #include <net/ipv4.h>
 #include <time.h>
 
-#define ARPTableSize 6
+// Max. this times 14bytes is max. allocated RAM
+#define ARPMaxTableSize 8 // Should be less than 127
 
 typedef struct {
 	IPv4Address ip;
 	MacAddress  mac;
 	time_t      time;
 } ARPTableEntry;
-
-extern ARPTableEntry arpTable[ARPTableSize];
 
 #define ARPPacketSize 22 // Without header
 
