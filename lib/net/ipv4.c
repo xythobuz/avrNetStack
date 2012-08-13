@@ -135,25 +135,23 @@ int16_t findFragment(uint16_t identification, IPv4Address destination) {
 }
 
 uint8_t appendFragment(uint16_t in, IPv4Packet *ip) {
-	// Append fragment into existing buffer
-	// TO-DO
-	// WARNING: Currently always appends next incoming
-	// fragment at the end of the currently stored data.
-	// fragmentOffset is not taken into account!
-	// In other words, if fragments arrive out of order, the data
-	// is out of order.
+	// Append / Insert fragment into existing buffer
+	uint8_t *tmp;
 	uint16_t i;
-	uint8_t *tmp8 = (uint8_t *)realloc(storedFragments[in]->data, storedFragments[in]->dLength + ip->dLength);
-	if (tmp8 == NULL) {
-		freePacket(ip);
-		return 1; // Not enough memory
+	if (storedFragments[in]->dLength <= (ip->fragmentOffset * 8)) {
+		// Buffer is not large enough
+		tmp = (uint8_t *)realloc(storedFragments[in]->data, (ip->fragmentOffset * 8) + ip->dLength);
+		if (tmp == NULL) {
+			freePacket(ip);
+			return 1;
+		}
+		storedFragments[in]->data = tmp;
+		storedFragments[in]->dLength = (ip->fragmentOffset * 8) + ip->dLength;
 	}
-	storedFragments[in]->data = tmp8;
-	// Append actual data
+	// Insert actual data
 	for (i = 0; i < ip->dLength; i++) {
-		storedFragments[in]->data[i + storedFragments[in]->dLength] = ip->data[i];
+		storedFragments[in]->data[(ip->fragmentOffset * 8) + i] = ip->data[i];
 	}
-	storedFragments[in]->dLength += ip->dLength;
 	storedFragments[in]->totalLength -= (ip->internetHeaderLength * 4);
 	storedFragments[in]->totalLength += ip->totalLength;
 	freePacket(ip);
