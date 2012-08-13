@@ -30,16 +30,18 @@ typedef struct {
 	uint16_t length;
 	uint16_t checksum;
 	uint8_t *data;
+	uint16_t dLength;
 } UdpPacket;
 
 void udpInit(void);
 
 // 0 on success, 1 not enough mem, 2 invalid
 uint8_t udpHandlePacket(IPv4Packet *ip);
-uint8_t udpSendPacket(UdpPacket *up);
+uint8_t udpSendPacket(UdpPacket *up, IPv4Address target);
 
 // Overwrites existing handler for this port
 // 0 on succes, 1 on not enough RAM
-uint8_t udpRegisterHandler(void (*handler)(UdpPacket *), uint16_t port);
+// Handler has to free the UdpPacket!
+uint8_t udpRegisterHandler(uint8_t (*handler)(UdpPacket *), uint16_t port);
 
 #endif

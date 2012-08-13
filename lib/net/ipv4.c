@@ -99,10 +99,10 @@ IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	return ip;
 }
 
-#ifndef DISABLE_IPV4_CHECKSUM
-uint16_t checksum(uint8_t *rawData, uint8_t l) {
+#if (!defined(DISABLE_IPV4_CHECKSUM)) || (!defined(DISABLE_UDP_CHECKSUM))
+uint16_t checksum(uint8_t *rawData, uint16_t l) {
 	uint32_t a = 0;
-	uint8_t i;
+	uint16_t i;
 
 	for (i = 0; i < l; i += 2) {
 		a += ((rawData[i] << 8) | rawData[i + 1]); // 16bit sum

@@ -34,6 +34,7 @@
 // #define DISABLE_ICMP_CHECKSUM // Prevent ICMP Checksum calculation
 // #define DISABLE_ICMP_ECHO     // Prevent answering to Echo Requests (Ping)
 // #define DISABLE_UDP           // Disable the complete UDP Protocol
+// #define DISABLE_UDP_CHECKSUM  // Prevent UDP Checksum calculation
 
 // -----------------------------------
 // |            RAM Usage            |
