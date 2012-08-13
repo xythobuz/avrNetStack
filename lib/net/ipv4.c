@@ -28,6 +28,7 @@
 #include <net/controller.h>
 #include <net/ipv4.h>
 #include <net/icmp.h>
+#include <net/udp.h>
 
 IPv4Address ownIpAddress;
 IPv4Address subnetmask;
@@ -181,7 +182,12 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 					// Packet isn't fragmented
 					if (ip->protocol == ICMP) {
 						// Internet Control Message Protocol Packet
+#ifndef DISABLE_ICMP
 						return icmpProcessPacket(ip);
+#else
+						freeIPv4Packet(ip);
+						return 0;
+#endif
 					} else if (ip->protocol == IGMP) {
 						// Internet Group Management Protocol Packet
 
@@ -190,7 +196,12 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 
 					} else if (ip->protocol == UDP) {
 						// User Datagram Protocol Packet
-
+#ifndef DISABLE_UDP
+						return udpHandlePacket(ip);
+#else
+						freeIPv4Packet(ip);
+						return 0;
+#endif
 					}
 #ifndef DISABLE_IPV4_FRAGMENT
 				} else {

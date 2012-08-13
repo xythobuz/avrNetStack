@@ -25,6 +25,8 @@
 
 #include <net/icmp.h>
 
+#ifndef DISABLE_ICMP
+
 #ifndef DISABLE_ICMP_STRINGS
 void (*debugOutputHandler)(char *) = NULL;
 #endif
@@ -97,6 +99,8 @@ void freeIcmpPacket(IcmpPacket *ic) {
 // ----------------------
 // |    External API    |
 // ----------------------
+
+void icmpInit(void) {}
 
 // 0 success, 1 not enough mem, 2 invalid
 // ip freed afterwards
@@ -299,3 +303,5 @@ char *icmpMessage(uint8_t type, uint8_t code) {
 	return NULL;
 }
 #endif
+
+#endif // DISABLE_ICMP

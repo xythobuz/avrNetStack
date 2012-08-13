@@ -25,6 +25,8 @@
 #include <time.h>
 #include <net/mac.h>
 #include <net/arp.h>
+#include <net/icmp.h>
+#include <net/udp.h>
 #include <net/controller.h>
 
 IPv4Address defIp = {0, 0, 0, 0};
@@ -36,6 +38,12 @@ void networkInit(MacAddress a) {
 	macInitialize(a);
 	arpInit();
 	ipv4Init(defIp, defSubnet, defGateway);
+#ifndef DISABLE_ICMP
+	icmpInit();
+#endif
+#ifndef DISABLE_UDP
+	udpInit();
+#endif
 }
 
 void networkHandler(void) {

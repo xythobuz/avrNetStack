@@ -32,6 +32,8 @@ typedef struct {
 	uint16_t dLength;
 } IcmpPacket;
 
+void icmpInit(void);
+
 // 0 success, 1 not enough mem, 2 invalid
 // ip freed afterwards
 uint8_t icmpProcessPacket(IPv4Packet *ip);

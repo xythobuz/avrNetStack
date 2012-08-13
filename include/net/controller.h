@@ -29,9 +29,11 @@
 
 // #define DISABLE_IPV4_FRAGMENT // Prevent IPv4 Fragmentation
 // #define DISABLE_IPV4_CHECKSUM // Prevent IPv4 Checksum calculation
+// #define DISABLE_ICMP          // Disable complete ICMP Protocol
 // #define DISABLE_ICMP_STRINGS  // Don't store ICMP Names in Flash
 // #define DISABLE_ICMP_CHECKSUM // Prevent ICMP Checksum calculation
 // #define DISABLE_ICMP_ECHO     // Prevent answering to Echo Requests (Ping)
+// #define DISABLE_UDP           // Disable the complete UDP Protocol
 
 // -----------------------------------
 // |            RAM Usage            |
@@ -52,5 +54,15 @@ void networkHandler(void);
 #define WOL 0x0842
 #define RARP 0x8035
 #define IPV6 0x86DD
+
+// -----------------------------------
+// |          Dependencies           |
+// -----------------------------------
+
+#ifdef DISABLE_ICMP
+#define DISABLE_ICMP_STRINGS
+#define DISABLE_ICMP_CHECKSUM
+#define DISABLE_ICMP_ECHO
+#endif
 
 #endif
