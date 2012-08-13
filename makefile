@@ -3,8 +3,8 @@ IC = enc28j60
 #IC = mrf24wb0ma
 # ------------------------------
 
-MCU = atmega168
-F_CPU = 20000000
+MCU = atmega32
+F_CPU = 16000000
 RM = rm -rf
 OPT = s
 EXTRAINCDIR = include

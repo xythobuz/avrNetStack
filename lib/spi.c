@@ -25,9 +25,13 @@
 
 void spiInit(void) {
 #if defined(__AVR_ATmega168__)
-	DDRB |= (1 << PB3) | (1 << PB5);
+	DDRB |= (1 << PB3) | (1 << PB5); // MOSI & SCK
 #elif defined(__AVR_ATmega2560__)
 	DDRB |= (1 << PB2) | (1 << PB1);
+#elif defined(__AVR_ATmega32__)
+	DDRB |= (1 << PB5) | (1 << PB7);
+#else
+#error MCU not supported by SPI module. DIY!
 #endif
 
 	SPCR |= (1 << MSTR) | (1 << SPE); // Enable SPI, Master mode

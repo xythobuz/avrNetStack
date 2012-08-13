@@ -33,7 +33,7 @@
 
 volatile time_t systemTime = 0; // Overflows in 500 million years... :)
 
-#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560)
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)
 void initSystemTimer() {
 	TCCR2A |= (1 << WGM21); // CTC Mode
 #if F_CPU == 16000000
@@ -47,11 +47,31 @@ void initSystemTimer() {
 #endif
 	TIMSK2 |= (1 << OCIE2A); // Enable compare match interrupt
 }
+#elif defined(__AVR_ATmega32__)
+void initSystemTimer() {
+	TCCR2 |= (1 << WGM21); // CTC Mode
+#if F_CPU == 16000000
+		TCCR2 |= (1 << CS22); // Prescaler: 64
+		OCR2 = 250;
+#elif F_CPU == 20000000
+		TCCR2 |= (1 << CS22) | (1 << CS21); // Prescaler 256
+		OCR2 = 78;
+#else
+#error F_CPU not compatible with timer module. DIY!
+#endif
+	TIMSK |= (1 << OCIE2); // Enable compare match interrupt
+}	
 #else
 #error MCU not compatible with timer module. DIY!
 #endif
 
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)
 ISR(TIMER2_COMPA_vect) {
+#elif defined(__AVR_ATmega32__)
+ISR(TIMER2_COMP_vect) {
+#else
+#error MCU not compatible with timer module. DIY!
+#endif
 	systemTime++;
 }
 
