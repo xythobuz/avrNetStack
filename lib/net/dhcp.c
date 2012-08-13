@@ -35,49 +35,63 @@ uint8_t dhcpHandler(UdpPacket *up) {
 
 uint8_t dhcpIssueRequest(void) {
 	IPv4Address dest = {255, 255, 255, 255};
-	UdpPacket up;
+	UdpPacket *up = (UdpPacket *)malloc(sizeof(UdpPacket));
 	time_t time = getSystemTime();
 	uint8_t i;
+	if (up == NULL) {
+		return 1;
+	}
 	/*
 	 * Option 53: DHCP Message Type, 1byte, DHCP Discover, 0x01
 	 */
-	up.dLength = DHCPHeaderLength + 2;
-	up.source = 68;
-	up.destination = 67;
-	up.data = (uint8_t *)malloc(up.dLength * sizeof(uint8_t));
-	if (up.data == NULL) {
+	up->dLength = DHCPHeaderLength + 2;
+	up->source = 68;
+	up->destination = 67;
+	up->data = (uint8_t *)malloc(up->dLength * sizeof(uint8_t));
+	if (up->data == NULL) {
+		free(up);
 		return 1;
 	}
 	// Build DHCPDISCOVER Message
-	up.data[0] = 0x01; // OP
-	up.data[1] = 0x01; // HTYPE
-	up.data[2] = 0x06; // HLEN
-	up.data[3] = 0x00; // HOPS
-	up.data[8] = (time & 0xFF00) >> 8;
-	up.data[9] = (time & 0x00FF); // SECS
-	up.data[10] = 0x00;
-	up.data[11] = 0x00; // FLAGS
+	up->data[0] = 0x01; // OP
+	up->data[1] = 0x01; // HTYPE
+	up->data[2] = 0x06; // HLEN
+	up->data[3] = 0x00; // HOPS
+	up->data[8] = (time & 0xFF00) >> 8;
+	up->data[9] = (time & 0x00FF); // SECS
+	up->data[10] = 0x00;
+	up->data[11] = 0x00; // FLAGS
 	for (i = 0; i < 4; i++) {
-		up.data[4 + i] = 0x00; // XID
-		up.data[12 + i] = 0x00; // CIADDR
-		up.data[16 + i] = 0x00; // YIADDR
-		up.data[20 + i] = 0x00; // SIADDR
-		up.data[24 + i] = 0x00; // GIADDR
-		up.data[36 + i] = 0x00; // CHADDR?
-		up.data[40 + i] = 0x00; // CHADDR?
+		up->data[4 + i] = 0x00; // XID
+		up->data[12 + i] = 0x00; // CIADDR
+		up->data[16 + i] = 0x00; // YIADDR
+		up->data[20 + i] = 0x00; // SIADDR
+		up->data[24 + i] = 0x00; // GIADDR
+		up->data[36 + i] = 0x00; // CHADDR?
+		up->data[40 + i] = 0x00; // CHADDR?
 	}
 	for (i = 0; i < 6; i++) {
-		up.data[28 + i] = ownMacAddress[i];
+		up->data[28 + i] = ownMacAddress[i];
 	}
 	for (i = 0; i < 192; i++) {
 		// BOOTP legacy
-		up.data[44 + i] = 0x00;
+		up->data[44 + i] = 0x00;
 	}
-	up.data[236] = 0x63;
-	up.data[237] = 0x82;
-	up.data[238] = 0x53;
-	up.data[239] = 0x63; // Magic Cookie
-	up.data[240] = 53; // DHCP Message Type
-	up.data[241] = 0x01; // "DHCP Discover"
-	return udpSendPacket(&up, dest);
+	up->data[236] = 0x63;
+	up->data[237] = 0x82;
+	up->data[238] = 0x53;
+	up->data[239] = 0x63; // Magic Cookie
+	up->data[240] = 53; // DHCP Message Type
+	up->data[241] = 0x01; // "DHCP Discover"
+
+	i = udpSendPacket(up, dest);
+	if ((i != 0) && (i != 1) && (i != 2) && (i != 3)) {
+		i = udpSendPacket(up, dest);
+		if ((i != 0) && (i != 1) && (i != 2) && (i != 3)) {
+			free(up->data);
+			free(up);
+		}
+		return i;
+	}
+	return i;
 }
