@@ -67,8 +67,10 @@ uint8_t ipv4ProcessPacket(MacPacket *p);
 
 // Returns 0 if packet was sent. 1 if destination was unknown.
 // Try again later, after ARP response could have arrived...
+// Returns 2 if there was not enough memory.
 // Checksum is calculated for you. Leave checksum field 0x00
 // If data is too large, packet is fragmented automatically
+// Returns 3 on PHY Error. If Return is 0 or 3, the IPv4Packet is freed!
 uint8_t ipv4SendPacket(IPv4Packet *p);
 
 #endif

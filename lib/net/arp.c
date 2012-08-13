@@ -333,7 +333,6 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 			// ...except try again
 			macSendPacket(p);
 		}
-		free(p);
 		return NULL;
 	}
 }

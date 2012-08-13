@@ -56,9 +56,9 @@ IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	ip->totalLength |= (p->data[2] << 8);
 	ip->identification = p->data[5];
 	ip->identification |= (p->data[4] << 8);
-	ip->flags = (p->data[6] & 0xE0) >> 5;
+	ip->flags = (p->data[6] & 0x07);
 	ip->fragmentOffset = p->data[7];
-	ip->fragmentOffset |= (p->data[6] & 0x1F) << 8;
+	ip->fragmentOffset |= (p->data[6] & 0xF8) << 5;
 	ip->timeToLive = p->data[8];
 	ip->protocol = p->data[9];
 	ip->headerChecksum = p->data[11];
@@ -344,8 +344,73 @@ uint8_t ipv4ProcessPacket(MacPacket *p) {
 	return ipv4ProcessPacketInternal(ip, cs);
 }
 
+/* typedef struct {
+	MacAddress destination;
+	MacAddress source;
+	uint16_t   typeLength; // type/length field in packet
+
+	uint8_t    *data;
+	uint16_t   dLength; // real length of data[]
+} MacPacket; */
+
 // Returns 0 if packet was sent. 1 if destination was unknown.
 // Try again later, after ARP response could have arrived...
-uint8_t ipv4SendPacket(IPv4Packet *p) {
-	return 1;
+// Returns 2 if there was not enough memory.
+// Checksum is calculated for you. Leave checksum field 0x00
+// If data is too large, packet is fragmented automatically
+uint8_t ipv4SendPacket(IPv4Packet *ip) {
+	uint16_t i;
+	MacPacket *mp;
+	uint8_t *targetMac;
+	if ((targetMac = arpGetMacFromIp(ip->destinationIp)) == NULL) {
+		// Target Mac not in ARP Cache. Request issued!
+		return 1;
+	}
+	if ((mp = (MacPacket *)malloc(sizeof(MacPacket))) == NULL) {
+		// Not enough memory to send packet!
+		return 2;
+	}
+	// Copy Mac Addresses
+	for (i = 0; i < 6; i++) {
+		mp->destination[i] = targetMac[i];
+		mp->source[i] = ownMacAddress[i];
+	}
+	mp->typeLength = IPV4; // 0x0800
+	mp->dLength = ip->dLength + (ip->internetHeaderLength * 4);
+	if ((mp->data = (uint8_t *)malloc(mp->dLength * sizeof(uint8_t))) == NULL) {
+		free(mp);
+		return 2;
+	}
+	mp->data[0] = (ip->version & 0x0F) << 4;
+	if (ip->options == NULL) {
+		ip->internetHeaderLength = 5;
+	}
+	mp->data[0] |= (ip->internetHeaderLength = 0x0F);
+	mp->data[1] = ip->typeOfService;
+	mp->data[2] = (ip->totalLength & 0xFF00) >> 8;
+	mp->data[3] = (ip->totalLength & 0x00FF);
+	mp->data[4] = (ip->identification & 0xFF00) >> 8;
+	mp->data[5] = (ip->identification & 0x00FF);
+	mp->data[6] = (ip->flags & 0x07) | ((ip->fragmentOffset & 0x1F00) >> 5);
+	mp->data[7] = (ip->fragmentOffset & 0x00FF);
+	mp->data[8] = ip->timeToLive;
+	mp->data[9] = ip->protocol;
+	mp->data[10] = 0x00;
+	mp->data[11] = 0x00; // Checksum is calculated later
+	for (i = 0; i < 4; i++) {
+		mp->data[12 + i] = ownIpAddress[i]; // Don't care for "sourceIp"
+		mp->data[16 + i] = ip->destinationIp[i];
+	}
+	if (ip->internetHeaderLength > 5) {
+		// Copy options
+		for (i = 0; i < ((ip->internetHeaderLength * 4) - 20); i++) {
+			mp->data[20 + i] = ip->options[i];
+		}
+	}
+	// Copy IP Payload
+	for (i = 0; i < ip->dLength; i++) {
+		mp->data[(ip->internetHeaderLength * 4) + i] = ip->data[i];
+	}
+	freeIPv4Packet(ip);
+	return 3 * macSendPacket(mp);
 }

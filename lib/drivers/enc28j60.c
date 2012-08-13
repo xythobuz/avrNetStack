@@ -294,6 +294,9 @@ uint8_t macSendPacket(MacPacket *p) { // 0 on success, 1 on error
 	writeControlRegister(0x06, (uint8_t)(w & 0x00FF)); // ETXNDL
 	writeControlRegister(0x07, (uint8_t)((w & 0xFF00) >> 8)); // ETXNDH --> dLength + 0x0D
 
+	free(p->data);
+	free(p);
+
 	while(readControlRegister(0x1F) & (1 << 7)); // Wait for finish or abort, ECON1.TXRTS
 	if (readControlRegister(0x1D) & (1 << 1)) { // If ECON1.TXRTS is set
 		return 1; // error
