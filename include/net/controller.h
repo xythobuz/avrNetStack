@@ -23,10 +23,9 @@
 
 #include <net/mac.h>
 
-// Full size: 11528 bytes Flash, 431 bytes RAM
-//#define DISABLE_IPV4_CHECKSUM // Prevent IPv4 Checksum calculation (-108 Flash)
-//#define DISABLE_IPV4_FRAGMENT // Prevent IPv4 Fragmentation (-866 Flash)
-//#define DISABLE_ICMP_STRINGS // Don't store ICMP Names in Flash (-2180 Flash, -45 RAM)
+//#define DISABLE_IPV4_CHECKSUM // Prevent IPv4 Checksum calculation
+//#define DISABLE_IPV4_FRAGMENT // Prevent IPv4 Fragmentation
+//#define DISABLE_ICMP_STRINGS // Don't store ICMP Names in Flash
 
 #define IPV4 0x0800
 #define ARP 0x0806

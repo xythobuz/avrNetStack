@@ -110,7 +110,7 @@ uint16_t checksum(uint8_t *rawData) {
 }
 #endif
 
-void freePacket(IPv4Packet *ip) {
+void freeIPv4Packet(IPv4Packet *ip) {
 	if (ip != NULL) {
 		if (ip->options != NULL) {
 			free(ip->options);
@@ -145,7 +145,7 @@ uint8_t appendFragment(uint16_t in, IPv4Packet *ip) {
 		// Buffer is not large enough
 		tmp = (uint8_t *)realloc(storedFragments[in]->data, (ip->fragmentOffset * 8) + ip->dLength);
 		if (tmp == NULL) {
-			freePacket(ip);
+			freeIPv4Packet(ip);
 			return 1;
 		}
 		storedFragments[in]->data = tmp;
@@ -157,7 +157,7 @@ uint8_t appendFragment(uint16_t in, IPv4Packet *ip) {
 	}
 	storedFragments[in]->totalLength -= (ip->internetHeaderLength * 4);
 	storedFragments[in]->totalLength += ip->totalLength;
-	freePacket(ip);
+	freeIPv4Packet(ip);
 	return 0; // Packet appended
 }
 #endif
@@ -180,7 +180,7 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 					// Packet isn't fragmented
 					if (ip->protocol == ICMP) {
 						// Internet Control Message Protocol Packet
-
+						return icmpProcessPacket(ip);
 					} else if (ip->protocol == IGMP) {
 						// Internet Group Management Protocol Packet
 
@@ -197,7 +197,7 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 					in = findFragment(ip->identification, ip->destinationIp);
 					if (in == -1) {
 						// Well, we don't have the beginning of the message...
-						freePacket(ip);
+						freeIPv4Packet(ip);
 						return 2;
 					} else {
 						i = appendFragment(in, ip);
@@ -233,7 +233,7 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 				in = findFragment(ip->identification, ip->destinationIp);
 				if ((in == -1) && (ip->fragmentOffset != 0x00)) {
 					// We haven't got the first fragment of this packet...
-					freePacket(ip);
+					freeIPv4Packet(ip);
 					return 2;
 				} else if (ip->fragmentOffset == 0x00) {
 					// First fragment, store it...
@@ -244,7 +244,7 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 						if (tmp == NULL) {
 							// Not enough memory
 							fragmentsStored--;
-							freePacket(ip);
+							freeIPv4Packet(ip);
 							return 1;
 						}
 						storedFragments = tmp;
@@ -257,11 +257,11 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 							if (tmp == NULL) {
 								// Now we are really screwed up
 								// and there's nothing we could do
-								freePacket(ip);
+								freeIPv4Packet(ip);
 								return 1;
 							}
 							storedFragments = tmp;
-							freePacket(ip);
+							freeIPv4Packet(ip);
 							return 1;
 						}
 					}
@@ -283,7 +283,7 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 					storedFragments[in]->data = ip->data;
 					ip->data = NULL; // Use same data memory
 					storedFragments[in]->dLength = ip->dLength;
-					freePacket(ip);
+					freeIPv4Packet(ip);
 					return 0; // Fragment stored
 				} else if ((in != -1) && (ip->fragmentOffset != 0x00)) {
 					return appendFragment(in, ip);
@@ -292,16 +292,16 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 			}
 		} else {
 			// Invalid Checksum or version
-			freePacket(ip);
+			freeIPv4Packet(ip);
 			return 2;
 		}
 	} else {
 		// Packet is not for us.
 		// We are no router!
-		freePacket(ip);
+		freeIPv4Packet(ip);
 		return 0;
 	}
-	freePacket(ip);
+	freeIPv4Packet(ip);
 	return 0;
 }
 

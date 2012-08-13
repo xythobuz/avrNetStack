@@ -25,19 +25,37 @@
 
 #include <net/icmp.h>
 
+#ifndef DISABLE_ICMP_STRINGS
+void (*debugOutputHandler)(char *) = NULL;
+#endif
+
 // ----------------------
 // |    Internal API    |
 // ----------------------
 
+#define print(x, y) debugOutputHandler(icmpMessage(x, y))
+void freeIPv4Packet(IPv4Packet *ip); // Defined in ipv4.c
+
 // ----------------------
 // |    External API    |
 // ----------------------
+
+// 0 success, 1 not enough mem, 2 invalid
+// ip freed afterwards
+uint8_t icmpProcessPacket(IPv4Packet *ip) {
+
+}
 
 // ----------------------
 // |    Messages API    |
 // ----------------------
 #ifndef DISABLE_ICMP_STRINGS
 #include <avr/pgmspace.h>
+
+void icmpRegisterMessageCallback(void (*debugOutput)(char *)) {
+	debugOutputHandler = debugOutput;
+}
+
 char m0_0[] PROGMEM  = "Echo Reply";
 char m3_0[] PROGMEM  = "Destination network unreachable";
 char m3_1[] PROGMEM  = "Destination host unreachable";

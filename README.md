@@ -10,7 +10,7 @@ In the future, a PCB will be designed that can act as WLAN / LAN Module for your
 
 ### Controller Module
 
-Controls the operation of the whole network stack. It contains only two functions accessible by the main program, networkInit and networkHandler. The former is to be called once afer System Reset, and performs initialization of all necessary hardware and buffers, etc. The latter is to be called in the main infinite loop of the program. It performs packet receiving and handling.
+Controls the operation of the whole network stack. It contains only two functions accessible by the main program, networkInit and networkHandler. The former is to be called once afer System Reset, and performs initialization of all necessary hardware and buffers, etc. The latter is to be called in the main infinite loop of the program. It performs packet receiving and handling. Also, some definitions can be uncommented in the controller.h file to deactivate parts of the stack. This could allow you to run a subset of the stack on a smaller AVR.
 
 ### MAC Module
 

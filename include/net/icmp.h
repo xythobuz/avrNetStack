@@ -21,7 +21,21 @@
 #ifndef _icmp_h
 #define _icmp_h
 
+#include <net/ipv4.h>
+
+typedef struct {
+	uint8_t type;
+	uint8_t code;
+	uint16_t checksum;
+	uint32_t restOfHeader;
+} IcmpPacket;
+
+// 0 success, 1 not enough mem, 2 invalid
+// ip freed afterwards
+uint8_t icmpProcessPacket(IPv4Packet *ip);
+
 #ifndef DISABLE_ICMP_ERROR_STRINGS
+void icmpRegisterMessageCallback(void (*debugOutput)(char *));
 char *icmpMessage(uint8_t type, uint8_t code);
 #endif
 
