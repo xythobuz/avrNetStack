@@ -66,4 +66,8 @@ void networkHandler(void);
 #define DISABLE_ICMP_ECHO
 #endif
 
+#ifdef DISABLE_UDP
+#define DISABLE_UDP_CHECKSUM
+#endif
+
 #endif

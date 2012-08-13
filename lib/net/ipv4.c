@@ -344,24 +344,19 @@ uint8_t ipv4ProcessPacket(MacPacket *p) {
 	return ipv4ProcessPacketInternal(ip, cs);
 }
 
-/* typedef struct {
-	MacAddress destination;
-	MacAddress source;
-	uint16_t   typeLength; // type/length field in packet
-
-	uint8_t    *data;
-	uint16_t   dLength; // real length of data[]
-} MacPacket; */
-
 // Returns 0 if packet was sent. 1 if destination was unknown.
 // Try again later, after ARP response could have arrived...
 // Returns 2 if there was not enough memory.
 // Checksum is calculated for you. Leave checksum field 0x00
 // If data is too large, packet is fragmented automatically
 uint8_t ipv4SendPacket(IPv4Packet *ip) {
-	uint16_t i;
+	uint16_t i, max;
 	MacPacket *mp;
 	uint8_t *targetMac;
+#ifndef DISABLE_IPV4_FRAGMENT
+	uint8_t *tmp;
+	uint8_t fragment = 0;
+#endif
 	if ((targetMac = arpGetMacFromIp(ip->destinationIp)) == NULL) {
 		// Target Mac not in ARP Cache. Request issued!
 		return 1;
@@ -385,12 +380,23 @@ uint8_t ipv4SendPacket(IPv4Packet *ip) {
 	if (ip->options == NULL) {
 		ip->internetHeaderLength = 5;
 	}
+#ifndef DISABLE_IPV4_FRAGMENT
+	if (ip->totalLength > 0x500) {
+		// Fragment Packet!
+		fragment = 1;
+	}
+#endif
 	mp->data[0] |= (ip->internetHeaderLength = 0x0F);
 	mp->data[1] = ip->typeOfService;
 	mp->data[2] = (ip->totalLength & 0xFF00) >> 8;
 	mp->data[3] = (ip->totalLength & 0x00FF);
 	mp->data[4] = (ip->identification & 0xFF00) >> 8;
 	mp->data[5] = (ip->identification & 0x00FF);
+#ifndef DISABLE_IPV4_FRAGMENT
+	if (fragment) {
+		ip->flags |= 0x04; // More fragments
+	}
+#endif
 	mp->data[6] = (ip->flags & 0x07) | ((ip->fragmentOffset & 0x1F00) >> 5);
 	mp->data[7] = (ip->fragmentOffset & 0x00FF);
 	mp->data[8] = ip->timeToLive;
@@ -408,9 +414,37 @@ uint8_t ipv4SendPacket(IPv4Packet *ip) {
 		}
 	}
 	// Copy IP Payload
-	for (i = 0; i < ip->dLength; i++) {
+#ifndef DISABLE_IPV4_FRAGMENT
+	if (fragment) {
+		max = 0x500 - (ip->internetHeaderLength * 4);
+	} else {
+#endif
+		max = ip->dLength;
+#ifndef DISABLE_IPV4_FRAGMENT
+	}
+#endif
+	for (i = 0; i < max; i++) {
 		mp->data[(ip->internetHeaderLength * 4) + i] = ip->data[i];
 	}
+#ifndef DISABLE_IPV4_FRAGMENT
+	if (fragment) {
+		if (macSendPacket(mp) != 0) {
+			return 3;
+		}
+		ip->fragmentOffset = 160; // 0x500 / 8
+		for (i = 0; i < (ip->dLength - max); i++) {
+			ip->data[i] = ip->data[max + i];
+		}
+		tmp = (uint8_t *)realloc(ip->data, (ip->dLength - max));
+		if (tmp == NULL) {
+			freeIPv4Packet(ip);
+			return 2;
+		}
+		ip->data = tmp;
+		ip->dLength -= max;
+		return ipv4SendPacket(ip);
+	}
+#endif
 	freeIPv4Packet(ip);
 	return 3 * macSendPacket(mp);
 }

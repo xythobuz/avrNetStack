@@ -157,7 +157,12 @@ uint8_t udpHandlePacket(IPv4Packet *ip) {
 }
 
 uint8_t udpSendPacket(UdpPacket *up, IPv4Address target) {
-	return 1;
+	IPv4Packet *ip = (IPv4Packet *)malloc(sizeof(IPv4Packet));
+	if (ip == NULL) {
+		return 4;
+	}
+
+	return 0;
 }
 
 // Overwrites existing handler for this port
