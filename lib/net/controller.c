@@ -27,11 +27,12 @@
 #include <net/arp.h>
 #include <net/icmp.h>
 #include <net/udp.h>
+#include <net/dhcp.h>
 #include <net/controller.h>
 
 IPv4Address defIp = {0, 0, 0, 0};
 IPv4Address defSubnet = {0, 0, 0, 0};
-IPv4Address defGateway = {0, 0, 0, 0}; // This data comes from DHCP!
+IPv4Address defGateway = {0, 0, 0, 0};
 
 void networkInit(MacAddress a) {
 	initSystemTimer();
@@ -43,6 +44,10 @@ void networkInit(MacAddress a) {
 #endif
 #ifndef DISABLE_UDP
 	udpInit();
+  #ifndef DISABLE_DHCP
+	udpRegisterHandler(&dhcpHandler, 68);
+	dhcpIssueRequest();
+  #endif
 #endif
 }
 

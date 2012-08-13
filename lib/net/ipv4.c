@@ -33,6 +33,7 @@
 IPv4Address ownIpAddress;
 IPv4Address subnetmask;
 IPv4Address defaultGateway;
+IPv4Address broadcastIp = {255, 255, 255, 255};
 
 // ----------------------
 // |    Internal API    |
@@ -173,7 +174,7 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 #endif
 
 	// Process IPv4 Packet
-	if (isEqualMem(ip->destinationIp, ownIpAddress, 4)) {
+	if ((isEqualMem(ip->destinationIp, ownIpAddress, 4)) || (isEqualMem(ip->destinationIp, broadcastIp, 4))) {
 		// Packet is for us
 		if ((cs == 0x0000) && (ip->version == 4)) {
 			// Checksum and version fields are valid
