@@ -22,6 +22,7 @@
 #define _ipv4_h
 
 #include <net/mac.h>
+#include <net/controller.h>
 
 typedef uint8_t IPv4Address[4];
 
