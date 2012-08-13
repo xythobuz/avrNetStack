@@ -35,6 +35,7 @@
 // #define DISABLE_ICMP_ECHO     // Prevent answering to Echo Requests (Ping)
 // #define DISABLE_UDP           // Disable the complete UDP Protocol
 // #define DISABLE_UDP_CHECKSUM  // Prevent UDP Checksum calculation
+// #define DISABLE_DHCP          // Disable DHCP. Enter valid IP etc. in controller.c
 
 // -----------------------------------
 // |            RAM Usage            |
