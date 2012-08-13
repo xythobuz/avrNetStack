@@ -29,12 +29,13 @@ typedef struct {
 	uint16_t checksum;
 	uint32_t restOfHeader;
 	uint8_t *data; // Optional
-	uint8_t dLength;
+	uint16_t dLength;
 } IcmpPacket;
 
 // 0 success, 1 not enough mem, 2 invalid
 // ip freed afterwards
 uint8_t icmpProcessPacket(IPv4Packet *ip);
+uint8_t icmpSendPacket(IcmpPacket *ic); // Return as icmpProcessPacket, ic freed afterwards
 
 #ifndef DISABLE_ICMP_ERROR_STRINGS
 void icmpRegisterMessageCallback(void (*debugOutput)(char *));

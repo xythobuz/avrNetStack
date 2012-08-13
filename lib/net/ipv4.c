@@ -98,7 +98,7 @@ IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	return ip;
 }
 
-#if !defined(DISABLE_IPV4_CHECKSUM) && !defined(DISABLE_ICMP_CHECKSUM)
+#ifndef DISABLE_IPV4_CHECKSUM
 uint16_t checksum(uint8_t *rawData, uint8_t l) {
 	uint32_t a = 0;
 	uint8_t i;

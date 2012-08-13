@@ -23,10 +23,11 @@
 
 #include <net/mac.h>
 
-// #define DISABLE_IPV4_CHECKSUM // Prevent IPv4 Checksum calculation
 // #define DISABLE_IPV4_FRAGMENT // Prevent IPv4 Fragmentation
-// #define DISABLE_ICMP_STRINGS // Don't store ICMP Names in Flash
-// #define DISABLE_ICMP_CHECKSUM // Prevenc ICMP Checksum calculation
+// #define DISABLE_IPV4_CHECKSUM // Prevent IPv4 Checksum calculation
+// #define DISABLE_ICMP_STRINGS  // Don't store ICMP Names in Flash
+// #define DISABLE_ICMP_CHECKSUM // Prevent ICMP Checksum calculation
+// #define DISABLE_ICMP_ECHO     // Prevent answering to Echo Requests (Ping)
 
 #define IPV4 0x0800
 #define ARP 0x0806

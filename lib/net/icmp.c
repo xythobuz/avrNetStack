@@ -37,7 +37,21 @@ void (*debugOutputHandler)(char *) = NULL;
 void freeIPv4Packet(IPv4Packet *ip); // Defined in ipv4.c
 
 #ifndef DISABLE_ICMP_CHECKSUM
-uint16_t checksum(uint8_t *rawData, uint8_t l); // Defined in ipv4.c
+uint16_t checksumIcmp(IcmpPacket *ic) {
+	uint32_t a = 0;
+	uint16_t i;
+	a += ((uint16_t)ic->type << 8) | ic->code;
+	// a += ic->checksum;
+	a += (ic->restOfHeader & 0xFF000000) >> 16;
+	a += (ic->restOfHeader & 0x00FF0000) >> 16;
+	a += (ic->restOfHeader & 0x0000FFFF);
+	for (i = 0; i < ic->dLength; i += 2) {
+		a += ((ic->data[i] << 8) | ic->data[i + 1]);
+	}
+	// a now 16bit sum
+	a = (a & 0x0000FFFF) + ((a & 0xFFFF0000) > 16); // 1's complement 16bit sum
+	return (uint16_t)~a; // 1's complement of 1's complement 16bit sum
+}
 #endif
 
 IcmpPacket *ipv4PacketToIcmpPacket(IPv4Packet *ip) {
@@ -91,26 +105,37 @@ uint8_t icmpProcessPacket(IPv4Packet *ip) {
 	uint16_t cs;
 #endif
 	IcmpPacket *ic = ipv4PacketToIcmpPacket(ip);
+	freeIPv4Packet(ip);
 	if (ic == NULL) {
-		freeIPv4Packet(ip);
 		return 1; // Not enough RAM
 	}
 #ifndef DISABLE_ICMP_CHECKSUM
-	ip->data[2] = 0x00;
-	ip->data[3] = 0x00; // Clear checksum field for calculation
-	cs = checksum(ip->data, 8 + ic->dLength);
+	cs = checksumIcmp(ic);
 	if (cs != ic->checksum) {
 		freeIcmpPacket(ic);
 		return 2; // Invalid checksum
 	}
 #endif
-	freeIPv4Packet(ip);
 
-	// Process ICMP Packet
-	
+	// Handle ICMP Packet
+#ifndef DISABLE_ICMP_ECHO
+	if (ic->type == 8) {
+		// Echo Request
+		ic->type = 0; // Now Echo Reply
+#ifndef DISABLE_ICMP_CHECKSUM
+		cs = checksumIcmp(ic);
+		ic->checksum = cs;
+#endif
+		return icmpSendPacket(ic);
+	}
+#endif // DISABLE_ICMP_ECHO
 	
 	freeIcmpPacket(ic);
 	return 0;
+}
+
+uint8_t icmpSendPacket(IcmpPacket *ic) {
+	return 1;
 }
 
 // ----------------------
