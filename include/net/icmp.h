@@ -21,5 +21,8 @@
 #ifndef _icmp_h
 #define _icmp_h
 
+#ifndef DISABLE_ICMP_ERROR_STRINGS
+char *icmpMessage(uint8_t type, uint8_t code);
+#endif
 
 #endif
