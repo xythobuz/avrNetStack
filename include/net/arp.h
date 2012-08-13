@@ -24,9 +24,7 @@
 #include <net/mac.h>
 #include <net/ipv4.h>
 #include <time.h>
-
-// Max. this times 14bytes is max. allocated RAM
-#define ARPMaxTableSize 8 // Should be less than 127
+#include <net/controller.h>
 
 typedef struct {
 	IPv4Address ip;

@@ -23,19 +23,34 @@
 
 #include <net/mac.h>
 
+// -----------------------------------
+// |        Feature Selection        |
+// -----------------------------------
+
 // #define DISABLE_IPV4_FRAGMENT // Prevent IPv4 Fragmentation
 // #define DISABLE_IPV4_CHECKSUM // Prevent IPv4 Checksum calculation
 // #define DISABLE_ICMP_STRINGS  // Don't store ICMP Names in Flash
 // #define DISABLE_ICMP_CHECKSUM // Prevent ICMP Checksum calculation
 // #define DISABLE_ICMP_ECHO     // Prevent answering to Echo Requests (Ping)
 
+// -----------------------------------
+// |            RAM Usage            |
+// -----------------------------------
+
+// This times 14bytes is max. allocated RAM for ARP Cache
+#define ARPMaxTableSize 8 // Should be less than 127
+
+// -----------------------------------
+// |          External API           |
+// -----------------------------------
+
+void networkInit(MacAddress a);
+void networkHandler(void);
+
 #define IPV4 0x0800
 #define ARP 0x0806
 #define WOL 0x0842
 #define RARP 0x8035
 #define IPV6 0x86DD
-
-void networkInit(MacAddress a);
-void networkHandler(void);
 
 #endif
