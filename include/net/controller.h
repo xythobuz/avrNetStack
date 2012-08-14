@@ -30,9 +30,10 @@
 // #define DISABLE_IPV4_FRAGMENT // Prevent IPv4 Fragmentation
 // #define DISABLE_IPV4_CHECKSUM // Prevent IPv4 Checksum calculation
 // #define DISABLE_ICMP          // Disable complete ICMP Protocol
-// #define DISABLE_ICMP_STRINGS  // Don't store ICMP Names in Flash
+#define DISABLE_ICMP_STRINGS  // Don't store ICMP Names in Flash
 // #define DISABLE_ICMP_CHECKSUM // Prevent ICMP Checksum calculation
 // #define DISABLE_ICMP_ECHO     // Prevent answering to Echo Requests (Ping)
+// #define DISABLE_ICMP_UDP_MSG  // Don't send ICMP Error receiving packet for unhandled port.
 // #define DISABLE_UDP           // Disable the complete UDP Protocol, needed for eg. DHCP
 // #define DISABLE_UDP_CHECKSUM  // Prevent UDP Checksum calculation
 // #define DISABLE_DHCP          // Disable DHCP. Enter valid IP etc. in controller.c
@@ -65,11 +66,13 @@ void networkHandler(void);
 #define DISABLE_ICMP_STRINGS
 #define DISABLE_ICMP_CHECKSUM
 #define DISABLE_ICMP_ECHO
+#define DISABLE_ICMP_UDP_MSG
 #endif
 
 #ifdef DISABLE_UDP
 #define DISABLE_UDP_CHECKSUM
 #define DISABLE_DHCP
+#define DISABLE_ICMP_UDP_MSG
 #endif
 
 #endif

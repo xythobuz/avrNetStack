@@ -134,7 +134,7 @@ uint8_t icmpProcessPacket(IPv4Packet *ip) {
 #ifndef DISABLE_ICMP_CHECKSUM
 		cs = checksumIcmp(ic);
 		ic->checksum = cs;
-#endif
+#endif // DISABLE_ICMP_CHECKSUM
 		return icmpSendPacket(ic, source);
 	}
 #endif // DISABLE_ICMP_ECHO
