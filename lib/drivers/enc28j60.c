@@ -25,9 +25,9 @@
 #include <net/mac.h>
 #include <spi.h>
 
-#define CSPORT PORTB
-#define CSPIN PB0
-#define CSDDR DDRB
+#define CSPORT PORTA
+#define CSPIN PA1
+#define CSDDR DDRA
 
 #define ACTIVATE() (CSPORT &= ~(1 << CSPIN))
 #define DEACTIVATE() (CSPORT |= (1 << CSPIN))
