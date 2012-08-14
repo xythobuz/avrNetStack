@@ -38,6 +38,8 @@ void (*debugOutputHandler)(char *) = NULL;
 #define print(x, y) debugOutputHandler(icmpMessage(x, y))
 void freeIPv4Packet(IPv4Packet *ip); // Defined in ipv4.c
 
+IPv4Address source;
+
 #ifndef DISABLE_ICMP_CHECKSUM
 uint16_t checksumIcmp(IcmpPacket *ic) {
 	uint32_t a = 0;
@@ -61,6 +63,9 @@ IcmpPacket *ipv4PacketToIcmpPacket(IPv4Packet *ip) {
 	IcmpPacket *ic = (IcmpPacket *)malloc(sizeof(IcmpPacket));
 	if (ic == NULL) {
 		return NULL;
+	}
+	for (i = 0; i < 4; i++) {
+		source[i] = ip->sourceIp[i];
 	}
 	ic->type = ip->data[0];
 	ic->code = ip->data[1];
@@ -130,7 +135,7 @@ uint8_t icmpProcessPacket(IPv4Packet *ip) {
 		cs = checksumIcmp(ic);
 		ic->checksum = cs;
 #endif
-		return icmpSendPacket(ic);
+		return icmpSendPacket(ic, source);
 	}
 #endif // DISABLE_ICMP_ECHO
 	
@@ -138,8 +143,71 @@ uint8_t icmpProcessPacket(IPv4Packet *ip) {
 	return 0;
 }
 
-uint8_t icmpSendPacket(IcmpPacket *ic) {
-	return 1;
+uint8_t icmpSendPacket(IcmpPacket *ic, IPv4Address target) {
+	uint16_t i;
+#ifndef DISABLE_ICMP_CHECKSUM
+	uint16_t cs;
+#endif
+	IPv4Packet *ip = (IPv4Packet *)malloc(sizeof(IPv4Packet));
+	if (ip == NULL) {
+		return 4;
+	}
+	if (ic->data == NULL) 
+		ic->dLength = 0;
+	ip->dLength = ic->dLength + 8;
+	ip->data = (uint8_t *)malloc(ip->dLength * sizeof(uint8_t));
+	if (ip->data == NULL) {
+		free(ip);
+		return 4;
+	}
+	
+	// Fill out IP Header
+	ip->version = 4;
+	ip->internetHeaderLength = 5; // No options
+	ip->typeOfService = 0x00; // Nothing fancy...
+	ip->totalLength = 20 + ip->dLength;
+	ip->flags = 0;
+	ip->fragmentOffset = 0;
+	ip->timeToLive = 0x80;
+	ip->protocol = ICMP;
+	for (i = 0; i < 4; i++) {
+		ip->sourceIp[i] = ownIpAddress[i];
+		ip->destinationIp[i] = target[i];
+	}
+	ip->options = NULL;
+
+	// Insert ICMP Packet into IP Payload
+	ip->data[0] = ic->type;
+	ip->data[1] = ic->code;
+#ifndef DISABLE_ICMP_CHECKSUM
+	ic->checksum = 0x00;
+	cs = checksumIcmp(ic);
+	ip->data[2] = (cs & 0xFF00) >> 8;
+	ip->data[3] = (cs & 0X00FF);
+#else
+	ip->data[2] = (ic->checksum & 0xFF00) >> 8;
+	ip->data[3] = (ic->checksum & 0X00FF);
+#endif
+	ip->data[4] = (ic->restOfHeader & 0xFF000000) >> 24;
+	ip->data[5] = (ic->restOfHeader & 0x00FF0000) >> 16;
+	ip->data[6] = (ic->restOfHeader & 0x0000FF00) >> 8;
+	ip->data[7] = (ic->restOfHeader & 0x000000FF);
+	if (ic->data != NULL) {
+		for (i = 0; i < ic->dLength; i++) {
+			ip->data[8 + i] = ic->data[i];
+		}
+	}
+
+	freeIcmpPacket(ic);
+	i = ipv4SendPacket(ip);
+	if (!((i == 0) || (i == 3))) {
+		i = ipv4SendPacket(ip);
+		if (!((i == 0) || (i == 3))) {
+			freeIPv4Packet(ip);
+			return i;
+		}
+	}
+	return i;
 }
 
 // ----------------------

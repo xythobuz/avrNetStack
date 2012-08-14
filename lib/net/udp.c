@@ -200,7 +200,15 @@ uint8_t udpSendPacket(UdpPacket *up, IPv4Address target) {
 	ip->dLength = up->dLength + 8;
 	free(up->data);
 	free(up);
-	return ipv4SendPacket(ip);
+	i = ipv4SendPacket(ip);
+	if (!((i == 0) || (i == 3))) {
+		i = ipv4SendPacket(ip);
+		if (!((i == 0) || (i == 3))) {
+			freeIPv4Packet(ip);
+			return i;
+		}
+	}
+	return i;
 }
 
 // Overwrites existing handler for this port
