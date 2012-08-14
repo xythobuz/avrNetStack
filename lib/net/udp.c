@@ -24,6 +24,8 @@
 
 #include <net/udp.h>
 
+#ifndef DISABLE_UDP
+
 typedef struct {
 	uint16_t port;
 	uint8_t (*func)(UdpPacket *);
@@ -225,3 +227,5 @@ uint8_t udpRegisterHandler(uint8_t (*handler)(UdpPacket *), uint16_t port) {
 	registeredHandlers++;
 	return 0;
 }
+
+#endif // DISABLE_UDP

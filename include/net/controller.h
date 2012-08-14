@@ -33,7 +33,7 @@
 // #define DISABLE_ICMP_STRINGS  // Don't store ICMP Names in Flash
 // #define DISABLE_ICMP_CHECKSUM // Prevent ICMP Checksum calculation
 // #define DISABLE_ICMP_ECHO     // Prevent answering to Echo Requests (Ping)
-// #define DISABLE_UDP           // Disable the complete UDP Protocol
+// #define DISABLE_UDP           // Disable the complete UDP Protocol, needed for eg. DHCP
 // #define DISABLE_UDP_CHECKSUM  // Prevent UDP Checksum calculation
 // #define DISABLE_DHCP          // Disable DHCP. Enter valid IP etc. in controller.c
 
@@ -69,6 +69,7 @@ void networkHandler(void);
 
 #ifdef DISABLE_UDP
 #define DISABLE_UDP_CHECKSUM
+#define DISABLE_DHCP
 #endif
 
 #endif
