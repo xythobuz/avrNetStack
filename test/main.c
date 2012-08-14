@@ -20,18 +20,76 @@
  */
 #include <avr/io.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <net/controller.h>
 #include <net/icmp.h>
+#include <time.h>
+#include <serial.h>
 
 // Thats, the MAC of my WLAN Module, with some bytes swapped...
 MacAddress mac = {0x00, 0x1E, 0x99, 0x02, 0xC0, 0x42};
 
-int main(void) {
+char buff[80];
 
+char *timeToString(time_t s) {
+	return ultoa(s, buff, 10);
+}
+
+void printStats(time_t sum, time_t max, time_t min, time_t count) {
+	time_t avg = sum / count;
+	serialWriteString("NetworkHandler Statistics:\nMax: ");
+	serialWriteString(timeToString(max));
+	serialWriteString("\nMin: ");
+	serialWriteString(timeToString(min));
+	serialWriteString("\nAverage: ");
+	serialWriteString(timeToString(avg));
+	serialWriteString("\nTimes called: ");
+	serialWriteString(timeToString(count));
+	serialWrite('\n');
+}
+
+void icmpCallBack(char *s) {
+	serialWriteString("ICMP: ");
+	serialWriteString(s);
+	serialWrite('\n');
+}
+
+int main(void) {
+	char c;
+	time_t start, end, average = 0, max = 0, min = UINT64_MAX, count = 0;
+
+	serialInit(BAUD(38400, F_CPU), 8, NONE, 1);
 	networkInit(mac);
+	icmpRegisterMessageCallback(icmpCallBack);
 	while(1) {
+		// Network Handler Stats
+		start = getSystemTime();
 		networkHandler();
+		count++;
+		end = getSystemTime();
+		average += diffTime(start, end);
+		if (diffTime(start, end) > max) {
+			max = diffTime(start, end);
+		}
+		if (diffTime(start, end) < min) {
+			min = diffTime(start, end);
+		}
+
+		if (serialHasChar()) {
+			c = serialGet();
+			switch(c) {
+				case 's':
+					printStats(average, max, min, count);
+					break;
+				case '?': case 'v':
+					serialWriteString("avrNetStack Debug\n");
+					break;
+				default:
+					serialWrite(c);
+					break;
+			}
+		}
 	}
 
 	return 0;
