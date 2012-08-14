@@ -21,6 +21,7 @@ SRC += lib/net/icmp.c
 SRC += lib/net/udp.c
 SRC += lib/net/dhcp.c
 SRC += lib/net/utils.c
+SRC += lib/net/dns.c
 
 TESTSRC = test/main.c
 OBJ = $(SRC:.c=.o)

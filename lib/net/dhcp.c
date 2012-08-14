@@ -48,7 +48,7 @@ uint8_t dhcpHandler(UdpPacket *up) {
 			if (acked == 1) {
 				 // Thats the DHCPACK, we can use the lease
 				if (up->dLength > 240) {
-					// We got out IP in self, the Server IP in server
+					// We got our IP in self, the Server IP in server
 					// Looking for subnet mask and gateway
 					if (up->data[242] == 0x01) {
 						for (i = 0; i < 4; i++) {

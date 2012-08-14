@@ -34,9 +34,10 @@
 // #define DISABLE_ICMP_CHECKSUM // Prevent ICMP Checksum calculation
 // #define DISABLE_ICMP_ECHO     // Prevent answering to Echo Requests (Ping)
 // #define DISABLE_ICMP_UDP_MSG  // Don't send ICMP Error receiving packet for unhandled port.
-// #define DISABLE_UDP           // Disable the complete UDP Protocol, needed for eg. DHCP
+// #define DISABLE_UDP           // Disable the complete UDP Protocol, needed for DHCP, DNS
 // #define DISABLE_UDP_CHECKSUM  // Prevent UDP Checksum calculation
 // #define DISABLE_DHCP          // Disable DHCP. Enter valid IP etc. in controller.c
+// #define DISABLE_DNS           // Disable DNS. Uses UDP, not TCP!
 
 // -----------------------------------
 // |            RAM Usage            |
