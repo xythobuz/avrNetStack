@@ -23,6 +23,7 @@
 #include <stdlib.h>
 
 #include <net/icmp.h>
+#include <net/utils.h>
 #include <net/udp.h>
 
 #ifndef DISABLE_UDP
@@ -40,10 +41,6 @@ extern IPv4Address broadcastIp;
 // --------------------------
 // |      Internal API      |
 // --------------------------
-
-void freeIPv4Packet(IPv4Packet *ip);
-void freeIcmpPacket(IcmpPacket *ic);
-uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l);
 
 int16_t findHandler(uint16_t port) {
 	uint16_t i;
@@ -123,15 +120,6 @@ uint16_t udpChecksum(UdpPacket *up, IPv4Packet *ip) {
 	return i;
 }
 #endif
-
-void freeUdpPacket(UdpPacket *up) {
-	if (up != NULL) {
-		if (up->data != NULL) {
-			free(up->data);
-		}
-		free(up);
-	}
-}
 
 // --------------------------
 // |      External API      |

@@ -29,6 +29,7 @@
 #include <net/ipv4.h>
 #include <net/icmp.h>
 #include <net/udp.h>
+#include <net/utils.h>
 
 IPv4Address ownIpAddress;
 IPv4Address subnetmask;
@@ -39,7 +40,6 @@ IPv4Address broadcastIp = {255, 255, 255, 255};
 // |    Internal API    |
 // ----------------------
 
-uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l); // Used in arp.c
 IPv4Packet **storedFragments = NULL; // Array of IPv4Packet Pointers
 uint16_t fragmentsStored = 0;
 uint16_t risingIdentification = 1;
@@ -113,18 +113,6 @@ uint16_t checksum(uint8_t *rawData, uint16_t l) {
 	return (uint16_t)~a; // 1's complement of 1's complement 16bit sum
 }
 #endif
-
-void freeIPv4Packet(IPv4Packet *ip) {
-	if (ip != NULL) {
-		if (ip->options != NULL) {
-			free(ip->options);
-		}
-		if (ip->data != NULL) {
-			free(ip->data);
-		}
-		free(ip);
-	}
-}
 
 #ifndef DISABLE_IPV4_FRAGMENT
 int16_t findFragment(uint16_t identification, IPv4Address destination) {

@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <net/utils.h>
 #include <net/icmp.h>
 
 #ifndef DISABLE_ICMP
@@ -34,9 +35,6 @@ void (*debugOutputHandler)(char *) = NULL;
 // ----------------------
 // |    Internal API    |
 // ----------------------
-
-#define print(x, y) debugOutputHandler(icmpMessage(x, y))
-void freeIPv4Packet(IPv4Packet *ip); // Defined in ipv4.c
 
 IPv4Address source;
 
@@ -90,15 +88,6 @@ IcmpPacket *ipv4PacketToIcmpPacket(IPv4Packet *ip) {
 		ic->dLength = 0;
 	}
 	return ic;
-}
-
-void freeIcmpPacket(IcmpPacket *ic) {
-	if (ic != NULL) {
-		if (ic->data != NULL) {
-			free(ic->data);
-		}
-		free(ic);
-	}
 }
 
 // ----------------------

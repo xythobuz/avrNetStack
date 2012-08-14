@@ -26,6 +26,7 @@
 #include <net/mac.h>
 #include <net/ipv4.h>
 #include <net/arp.h>
+#include <net/utils.h>
 #include <net/controller.h>
 
 ARPTableEntry *arpTable = NULL;
@@ -41,26 +42,6 @@ uint8_t zero[6] PROGMEM = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 // ------------------------
 // |     Internal API     |
 // ------------------------
-
-uint8_t isEqual(uint8_t *d1, uint8_t *d2, uint8_t l) {
-	uint8_t i;
-	for (i = 0; i < l; i++) {
-		if (d1[i] != pgm_read_byte(&(d2[i]))) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
-uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l) {
-	uint8_t i;
-	for (i = 0; i < l; i++) {
-		if (d1[i] != d2[i]) {
-			return 0;
-		}
-	}
-	return 1;
-}
 
 #define isZero(x, y) isEqual(x, zero, y)
 
