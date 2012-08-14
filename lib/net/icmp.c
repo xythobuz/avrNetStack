@@ -126,6 +126,12 @@ uint8_t icmpProcessPacket(IPv4Packet *ip) {
 	}
 #endif
 
+#ifndef DISABLE_ICMP_STRINGS
+	if (debugOutputHandler != NULL) {
+		debugOutputHandler(icmpMessage(ic->type, ic->code));
+	}
+#endif
+
 	// Handle ICMP Packet
 #ifndef DISABLE_ICMP_ECHO
 	if (ic->type == 8) {
