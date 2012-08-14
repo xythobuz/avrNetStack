@@ -23,9 +23,23 @@
 
 typedef uint64_t time_t;
 
+typedef struct {
+	uint16_t milliseconds;
+	uint8_t seconds;
+	uint8_t minutes;
+	uint8_t hours;
+	uint8_t day;
+	uint8_t month;
+	uint16_t year;
+} Time;
+
+volatile extern Time currentTime;
+
 void initSystemTimer(void);
-time_t getSystemTime(void);
-time_t getSystemTimeSeconds(void);
+time_t getSystemTime(void); // System uptime in ms
+time_t getSystemTimeSeconds(void); // System uptime in seconds
 time_t diffTime(time_t a, time_t b);
+uint8_t daysInMonth(uint8_t month, uint16_t year);
+void setTime(Time t);
 
 #endif

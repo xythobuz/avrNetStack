@@ -21,6 +21,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <avr/interrupt.h>
 
 #include <net/controller.h>
 #include <net/icmp.h>
@@ -62,6 +63,7 @@ int main(void) {
 	serialInit(BAUD(38400, F_CPU), 8, NONE, 1);
 	networkInit(mac);
 	icmpRegisterMessageCallback(icmpCallBack);
+	sei(); // Enable Interrupts
 	while(1) {
 		// Network Handler Stats
 		start = getSystemTime();
