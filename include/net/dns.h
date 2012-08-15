@@ -21,6 +21,23 @@
 #ifndef _dns_h
 #define _dns_h
 
+#include <net/ipv4.h>
+#include <time.h>
+#include <net/controller.h>
+
+typedef struct DnsTableEntry DnsTableEntry;
+
+struct DnsTableEntry {
+	IPv4Address ip;
+	char *name;
+	time_t time;
+	DnsTableEntry *next;
+};
+
+extern DnsTableEntry *dnsTable;
+
+// #define MAXDNSCACHESIZE 5 // Doesn't need to be defined
+
 uint8_t dnsHandler(UdpPacket *up);
 
 // Returns 0 on success, 1 on no mem, 2 on invalid

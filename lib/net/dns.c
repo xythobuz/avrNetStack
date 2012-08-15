@@ -24,9 +24,36 @@
 
 #include <net/ipv4.h>
 #include <net/udp.h>
+#include <time.h>
 #include <net/controller.h>
+#include <net/utils.h>
+#include <net/dns.h>
 
 #ifndef DISABLE_DNS
+
+DnsTableEntry *dnsTable = NULL;
+
+// --------------------------
+// |      Internal API      |
+// --------------------------
+
+#ifdef MAXDNSCACHESIZE
+
+uint16_t dnsCacheSize(void) {
+	uint16_t i = 0;
+	DnsTableEntry *d = dnsTable;
+	while (d != NULL) {
+		i++;
+		d = d->next;
+	}
+	return i;
+}
+
+#endif // MAXDNSCACHESIZE
+
+// --------------------------
+// |      External API      |
+// --------------------------
 
 uint8_t dnsHandler(UdpPacket *up) {
 	return 0;
