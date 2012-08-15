@@ -32,10 +32,8 @@ typedef struct DnsTableEntry DnsTableEntry;
 struct DnsTableEntry {
 	IPv4Address ip;
 	uint8_t *name;
-#ifdef MAXDNSCACHESIZE
 	time_t time;
 	uint32_t ttl; // Time To Live in seconds
-#endif
 	DnsTableEntry *next;
 };
 

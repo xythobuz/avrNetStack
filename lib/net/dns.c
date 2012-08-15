@@ -223,7 +223,7 @@ uint8_t dnsHandler(UdpPacket *up) {
 		// This is a query, not a Response!
 		// Or not a "standard query"
 #ifndef DISABLE_DNS_STRINGS
-		print("DNS: Invalid packet\n");
+		print("DNS: Invalid packet (1)\n");
 #endif
 		free(dp);
 		freeUdpPacket(up);
@@ -248,30 +248,60 @@ uint8_t dnsHandler(UdpPacket *up) {
 	}
 	for (i = 0; i < dp->anCount; i++) {
 		// Go through answers
-		if (i == 0) {
-			off = toDnsRecord(up->data, off, dr);
+		off = toDnsRecord(up->data, off, dr);
+		if (dr->type == 0x01) {
+			// Answer contains host address. We want this!
+			break;
 		} else {
-			off = toDnsRecord(up->data, off, NULL); // We only want the first answer
+			if (dr->name != NULL) {
+				free(dr->name);
+				dr->name = NULL;
+			}
+			if (dr->rdata != NULL) {
+				free(dr->rdata);
+				dr->rdata = NULL;
+			}
 		}
 	}
 
-	// We don't care for "Authority" or "Additional"
+	// Are the answers valid for IPv4?
+	if (!((dr->type == 0x01) && (dr->rlength == 4) && (dr->class == 0x01))) {
+		// Not valid!
+#ifndef DISABLE_DNS_STRINGS
+		print("DNS: Invalid packet (2)\n");
+#endif
+		free(dp);
+		freeUdpPacket(up);
+		freeDnsQuestion(dq);
+		freeDnsRecord(dr);
+		return 0;
+	}
+
+	// We don't care for "Authority" or "Additional" sections
 	free(up->data);
 	up->data = NULL;
 
-	// Have we sent this query
+	// Have we sent this query?
 	while (d != NULL) {
 		if (strlen((char *)d->name) == strlen((char *)dq->name)) {
 			if (isEqualMem(d->name, dq->name, strlen((char *)d->name))) {
-				// Yes, it is from us. Insert IP
+				// Yes, it is from us. Insert data
 				for (i = 0; i < 4; i++) {
-					
+					d->ip[i] = dr->rdata[i];
 				}
-				break;
+				d->ttl = dr->ttl;
+				d->time = getSystemTime();
+				freeDnsRecord(dr);
+				freeDnsQuestion(dq);
+				free(dp);
+				freeUdpPacket(up);
+				return 0;
 			}
 		}
 		d = d->next;
 	}
+	// Apparently not. Insert it anyways, if we are allowed to...
+	
 
 	freeDnsRecord(dr);
 	freeDnsQuestion(dq);
