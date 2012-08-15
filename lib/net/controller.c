@@ -29,6 +29,7 @@
 #include <net/udp.h>
 #include <net/dhcp.h>
 #include <net/dns.h>
+#include <net/ntp.h>
 #include <net/controller.h>
 
 IPv4Address defIp = {0, 0, 0, 0};
@@ -51,6 +52,10 @@ void networkInit(MacAddress a) {
   #endif
   #ifndef DISABLE_DNS
 	udpRegisterHandler(&dnsHandler, 53);
+  #endif
+  #ifndef DISABLE_NTP
+	udpRegisterHandler(&ntpHandler, 123);
+	ntpIssueRequest();
   #endif
 #endif
 }

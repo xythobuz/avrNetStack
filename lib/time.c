@@ -73,15 +73,15 @@ void initSystemTimer() {
 	currentTime.year = 1970;
 }
 
-void setTime(Time t) {
-	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		currentTime.milliseconds = t.milliseconds;
-		currentTime.seconds = t.seconds;
-		currentTime.minutes = t.minutes;
-		currentTime.hours = t.hours;
-		currentTime.day = t.day;
-		currentTime.month = t.month;
-		currentTime.year = t.year;
+void setTime(Time *t) {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		currentTime.milliseconds = t->milliseconds;
+		currentTime.seconds = t->seconds;
+		currentTime.minutes = t->minutes;
+		currentTime.hours = t->hours;
+		currentTime.day = t->day;
+		currentTime.month = t->month;
+		currentTime.year = t->year;
 	}
 }
 
@@ -148,4 +148,79 @@ time_t diffTime(time_t a, time_t b) {
 	} else {
 		return b - a;
 	}
+}
+
+void incrementSeconds(time_t sec) {
+	time_t i;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		for (i = 0; i < sec; i++) {
+			currentTime.seconds++;
+			if (currentTime.seconds >= 60) {
+				currentTime.seconds = 0;
+				currentTime.minutes++;
+				if (currentTime.minutes >= 60) {
+					currentTime.minutes = 0;
+					currentTime.hours++;
+					if (currentTime.hours >= 24) {
+						currentTime.hours = 0;
+						currentTime.day++;
+						if (currentTime.day >= daysInMonth(currentTime.month, currentTime.year)) {
+							currentTime.day = 1;
+							currentTime.month++;
+							if (currentTime.month >= 13) {
+								currentTime.year++;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void setNtpTimestamp(time_t ntp) {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		currentTime.year = 1900;
+		currentTime.month = 1;
+		currentTime.day = 1;
+		currentTime.hours = 0;
+		currentTime.minutes = 0;
+		currentTime.seconds = 0;
+		incrementSeconds(ntp);
+	}
+}
+
+void setTimestamp(time_t unix) {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		currentTime.year = 1970;
+		currentTime.month = 1;
+		currentTime.day = 1;
+		currentTime.hours = 0;
+		currentTime.minutes = 0;
+		currentTime.seconds = 0;
+		incrementSeconds(unix);
+	}
+}
+
+// From: http://de.wikipedia.org/wiki/Unixzeit#Beispiel-Implementierung :)
+time_t getUnixTimestamp(void) {
+	const uint16_t tage_bis_monatsanfang[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+
+	const uint16_t jahr = currentTime.year;
+	const uint8_t monat = currentTime.month;
+	const uint8_t tag = currentTime.day;
+	const uint8_t stunde = currentTime.hours;
+	const uint8_t minute = currentTime.minutes;
+	const uint8_t sekunde = currentTime.seconds;
+
+	time_t unix_zeit;
+	uint16_t jahre = jahr - 1970;
+	uint16_t schaltjahre = ((jahr - 1) - 1968) / 4 - ((jahr - 1) - 1900) / 100 + ((jahr - 1) - 1600) / 400;
+
+	unix_zeit = sekunde + (time_t)60 * minute + 60 * 60 * stunde + (tage_bis_monatsanfang[monat - 1] + tag - 1) * 60 * 60 * 24 + (jahre * 365 + schaltjahre) * 60 * 60 * 24;
+
+	if ((monat > 2) && (jahr % 4 == 0 && (jahr % 100 != 0 || jahr % 400 == 0)))
+		unix_zeit += (time_t)60 * 60 * 24;
+ 
+	return unix_zeit;
 }

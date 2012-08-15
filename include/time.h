@@ -21,7 +21,7 @@
 #ifndef _time_h
 #define _time_h
 
-typedef uint64_t time_t;
+typedef uint64_t time_t; // For milliseconds since system start or UNIX timestamp
 
 typedef struct {
 	uint16_t milliseconds;
@@ -36,10 +36,17 @@ typedef struct {
 volatile extern Time currentTime;
 
 void initSystemTimer(void);
+
 time_t getSystemTime(void); // System uptime in ms
 time_t getSystemTimeSeconds(void); // System uptime in seconds
+
 time_t diffTime(time_t a, time_t b);
+
 uint8_t daysInMonth(uint8_t month, uint16_t year);
-void setTime(Time t);
+void setTime(Time *t);
+
+void setTimestamp(time_t unix);
+void setNtpTimestamp(time_t ntp);
+time_t getUnixTimestamp(void); // Really expensive...
 
 #endif

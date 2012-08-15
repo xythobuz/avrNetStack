@@ -1,5 +1,5 @@
 /*
- * udp.h
+ * ntp.h
  *
  * Copyright 2012 Thomas Buck <xythobuz@me.com>
  *
@@ -18,34 +18,24 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _udp_h
-#define _udp_h
+/*
+ * A SNTP Implementation that (probably) updates time.h's currentTime
+ * sometime after ntpIssueRequest was successfully called (returned 0).
+ * Implemented as described in RFC1361 (http://tools.ietf.org/html/rfc1361)
+ */
+#ifndef _ntp_h
+#define _ntp_h
 
 #include <net/ipv4.h>
 #include <net/controller.h>
 
-typedef struct {
-	uint16_t source;
-	uint16_t destination;
-	uint16_t length; // Minimum Headerlength (8)
-	uint16_t checksum;
-	uint8_t *data;
-	uint16_t dLength;
-} UdpPacket;
+#ifndef DISABLE_DNS
+extern char ntpServerDomain[];
+#endif
 
-void udpInit(void);
+extern IPv4Address ntpServer;
 
-// 0 on success, 1 if not enough mem, 2 invalid
-uint8_t udpHandlePacket(IPv4Packet *ip);
-
-// 0 on success, 1 if destination unknown, try again later.
-// 2 or 4 if there was not enough RAM. 3 on PHY Error
-// On Return 0, 1, 2 and 3, up was already freed
-uint8_t udpSendPacket(UdpPacket *up, IPv4Address target); // Leave checksum 0x0000
-
-// Overwrites existing handler for this port
-// 0 on succes, 1 on not enough RAM
-// Handler has to free the UdpPacket!
-uint8_t udpRegisterHandler(uint8_t (*handler)(UdpPacket *), uint16_t port);
+uint8_t ntpHandler(UdpPacket *up);
+uint8_t ntpIssueRequest(void);
 
 #endif

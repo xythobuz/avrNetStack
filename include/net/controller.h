@@ -38,6 +38,7 @@
 // #define DISABLE_UDP_CHECKSUM  // Prevent UDP Checksum calculation
 // #define DISABLE_DHCP          // Disable DHCP. Enter valid IP etc. in controller.c
 // #define DISABLE_DNS           // Disable DNS. Uses UDP, not TCP!
+// #define DISABLE_NTP           // Disable NTP.
 
 // -----------------------------------
 // |            RAM Usage            |
@@ -74,6 +75,8 @@ void networkHandler(void);
 #define DISABLE_UDP_CHECKSUM
 #define DISABLE_DHCP
 #define DISABLE_ICMP_UDP_MSG
+#define DISABLE_DNS
+#define DISABLE_NTP
 #endif
 
 #endif
