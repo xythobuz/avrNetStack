@@ -23,6 +23,7 @@
 #include <stdlib.h>
 
 #include <time.h>
+#include <serial.h>
 #include <net/mac.h>
 #include <net/arp.h>
 #include <net/icmp.h>
@@ -43,6 +44,7 @@ void networkInit(MacAddress a) {
 	ipv4Init(defIp, defSubnet, defGateway);
 #ifndef DISABLE_ICMP
 	icmpInit();
+	icmpRegisterMessageCallback(&serialWriteString);
 #endif
 #ifndef DISABLE_UDP
 	udpInit();
@@ -52,6 +54,7 @@ void networkInit(MacAddress a) {
   #endif
   #ifndef DISABLE_DNS
 	udpRegisterHandler(&dnsHandler, 53);
+	dnsRegisterMessageCallback(&serialWriteString);
   #endif
   #ifndef DISABLE_NTP
 	udpRegisterHandler(&ntpHandler, 123);

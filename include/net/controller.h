@@ -38,6 +38,7 @@
 // #define DISABLE_UDP_CHECKSUM  // Prevent UDP Checksum calculation
 // #define DISABLE_DHCP          // Disable DHCP. Enter valid IP etc. in controller.c
 // #define DISABLE_DNS           // Disable DNS. Uses UDP, not TCP!
+// #define DISABLE_DNS_STRINGS   // Disable DNS Debug Output
 // #define DISABLE_NTP           // Disable NTP.
 
 // -----------------------------------

@@ -36,7 +36,7 @@
 #define NTPFirstByte 0x0B // Version 1, Mode 3 (Client)
 
 #ifndef DISABLE_DNS
-char ntpServerDomain[] = "0.de.pool.ntp.org";
+uint8_t ntpServerDomain[] = "0.de.pool.ntp.org";
 #endif
 
 IPv4Address ntpServer = {78, 46, 85, 230};

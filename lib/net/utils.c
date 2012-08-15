@@ -25,6 +25,37 @@
 
 #include <net/icmp.h>
 #include <net/udp.h>
+#include <net/dns.h>
+
+void freeDnsRecord(DnsRecord *dr) {
+	if (dr != NULL) {
+		if (dr->name != NULL) {
+			free(dr->name);
+		}
+		if (dr->rdata != NULL) {
+			free(dr->rdata);
+		}
+		free(dr);
+	}
+}
+
+void freeDnsTableEntry(DnsTableEntry *d) {
+	if (d != NULL) {
+		if (d->name != NULL) {
+			free(d->name);
+		}
+		free(d);
+	}
+}
+
+void freeDnsQuestion(DnsQuestion *d) {
+	if (d != NULL) {
+		if (d->name != NULL) {
+			free(d->name);
+		}
+		free(d);
+	}
+}
 
 void freeUdpPacket(UdpPacket *up) {
 	if (up != NULL) {

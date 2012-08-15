@@ -25,6 +25,7 @@
 #include <net/controller.h>
 
 typedef struct {
+	IPv4Address sourceIp;
 	uint16_t source;
 	uint16_t destination;
 	uint16_t length; // Minimum Headerlength (8)

@@ -25,22 +25,56 @@
 #include <time.h>
 #include <net/controller.h>
 
+// #define MAXDNSCACHESIZE 5 // Doesn't need to be defined
+
 typedef struct DnsTableEntry DnsTableEntry;
 
 struct DnsTableEntry {
 	IPv4Address ip;
-	char *name;
+	uint8_t *name;
+#ifdef MAXDNSCACHESIZE
 	time_t time;
+	uint32_t ttl; // Time To Live in seconds
+#endif
 	DnsTableEntry *next;
 };
 
 extern DnsTableEntry *dnsTable;
 
-// #define MAXDNSCACHESIZE 5 // Doesn't need to be defined
+typedef struct {
+	uint8_t *name; // 3www8xythobuz3org0
+	uint16_t qType;
+	uint16_t qClass;
+} DnsQuestion;
+
+typedef struct {
+	uint8_t *name;
+	uint16_t type;
+	uint16_t class;
+	uint32_t ttl;
+	uint16_t rlength;
+	uint8_t *rdata;
+} DnsRecord;
+
+typedef struct {
+	uint16_t id;
+
+	// From MSB to LSB:
+	// QR(1bit), Opcode(4bit), AA(1),
+	// TC(1), RD(1), RA(1), Z(3), RCODE(4)
+	uint16_t flags;
+
+	uint16_t qdCount;
+	uint16_t anCount;
+	uint16_t nsCount;
+	uint16_t arCount;
+} DnsPacket;
+
+void dnsRegisterMessageCallback(void (*debugOutput)(char *));
 
 uint8_t dnsHandler(UdpPacket *up);
 
 // Returns 0 on success, 1 on no mem, 2 on invalid
-uint8_t dnsGetIp(char *domain, IPv4Address ip);
+uint8_t dnsGetIp(uint8_t *domain, IPv4Address ip);
 
 #endif

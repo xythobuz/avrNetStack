@@ -58,9 +58,9 @@ IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	ip->totalLength |= (p->data[2] << 8);
 	ip->identification = p->data[5];
 	ip->identification |= (p->data[4] << 8);
-	ip->flags = (p->data[6] & 0x07);
+	ip->flags = (p->data[6] & 0xE0);
 	ip->fragmentOffset = p->data[7];
-	ip->fragmentOffset |= (p->data[6] & 0xF8) << 5;
+	ip->fragmentOffset |= (p->data[6] & 0x1F) << 8;
 	ip->timeToLive = p->data[8];
 	ip->protocol = p->data[9];
 	ip->headerChecksum = p->data[11];
@@ -392,7 +392,7 @@ uint8_t ipv4SendPacket(IPv4Packet *ip) {
 		ip->flags |= 0x04; // More fragments
 	}
 #endif
-	mp->data[6] = (ip->flags & 0x07) | ((ip->fragmentOffset & 0x1F00) >> 5);
+	mp->data[6] = ((ip->flags & 0x07) << 4) | ((ip->fragmentOffset & 0x1F00) >> 8);
 	mp->data[7] = (ip->fragmentOffset & 0x00FF);
 	mp->data[8] = ip->timeToLive;
 	mp->data[9] = ip->protocol;

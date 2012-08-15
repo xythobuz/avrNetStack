@@ -35,7 +35,6 @@ typedef struct {
 
 UdpHandler *handlers = NULL;
 uint16_t registeredHandlers = 0;
-IPv4Address source;
 IPv4Address target;
 extern IPv4Address broadcastIp;
 // --------------------------
@@ -61,7 +60,7 @@ UdpPacket *ipv4PacketToUdpPacket(IPv4Packet *ip) {
 		return NULL;
 	}
 	for (i = 0; i < 4; i++) {
-		source[i] = ip->sourceIp[i];
+		up->sourceIp[i] = ip->sourceIp[i];
 		target[i] = ip->destinationIp[i];
 	}
 	up->source = ((uint16_t)ip->data[0] << 8);
@@ -205,10 +204,10 @@ uint8_t udpHandlePacket(IPv4Packet *ip) {
 		ic->data[cs + 6] = (up->checksum & 0xFF00) >> 8;
 		ic->data[cs + 7] = (up->checksum & 0x00FF);
 		freeIPv4Packet(ip);
-		cs = icmpSendPacket(ic, source);
+		cs = icmpSendPacket(ic, up->sourceIp);
 		if (!((cs == 0) || (cs == 1) || (cs == 2) || (cs == 3))) {
 			// ic is still there
-			cs = icmpSendPacket(ic, source);
+			cs = icmpSendPacket(ic, up->sourceIp);
 			if (!((cs == 0) || (cs == 1) || (cs == 2) || (cs == 3))) {
 				freeIcmpPacket(ic);
 			}

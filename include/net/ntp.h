@@ -30,7 +30,7 @@
 #include <net/controller.h>
 
 #ifndef DISABLE_DNS
-extern char ntpServerDomain[];
+extern uint8_t ntpServerDomain[];
 #endif
 
 extern IPv4Address ntpServer;

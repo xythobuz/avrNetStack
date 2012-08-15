@@ -24,7 +24,11 @@
 #include <net/udp.h>
 #include <net/ipv4.h>
 #include <net/icmp.h>
+#include <net/dns.h>
 
+void freeDnsRecord(DnsRecord *dr);
+void freeDnsTableEntry(DnsTableEntry *d);
+void freeDnsQuestion(DnsQuestion *d);
 void freeUdpPacket(UdpPacket *up);
 void freeIPv4Packet(IPv4Packet *ip);
 void freeIcmpPacket(IcmpPacket *ic);
