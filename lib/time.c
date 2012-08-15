@@ -35,8 +35,19 @@
 volatile time_t systemTime = 0; // Overflows in 500 million years... :)
 volatile Time currentTime;
 
-#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)
+
 void initSystemTimer() {
+	currentTime.milliseconds = 0;
+	currentTime.seconds = 0;
+	currentTime.minutes = 0;
+	currentTime.hours = 0;
+	currentTime.day = 1;
+	currentTime.month = 1;
+	currentTime.year = 1970;
+
+	// Timer initialization
+	// Currently works with ATmega168, 32, 2560
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)
 	TCCR2A |= (1 << WGM21); // CTC Mode
 #if F_CPU == 16000000
 		TCCR2B |= (1 << CS22); // Prescaler: 64
@@ -49,7 +60,6 @@ void initSystemTimer() {
 #endif
 	TIMSK2 |= (1 << OCIE2A); // Enable compare match interrupt
 #elif defined(__AVR_ATmega32__)
-void initSystemTimer() {
 	TCCR2 |= (1 << WGM21); // CTC Mode
 #if F_CPU == 16000000
 		TCCR2 |= (1 << CS22); // Prescaler: 64
@@ -64,13 +74,8 @@ void initSystemTimer() {
 #else
 #error MCU not compatible with timer module. DIY!
 #endif
-	currentTime.milliseconds = 0;
-	currentTime.seconds = 0;
-	currentTime.minutes = 0;
-	currentTime.hours = 0;
-	currentTime.day = 1;
-	currentTime.month = 1;
-	currentTime.year = 1970;
+
+	// Timer initialized!
 }
 
 void setTime(Time *t) {
@@ -100,6 +105,7 @@ uint8_t daysInMonth(uint8_t month, uint16_t year) {
 	}
 }
 
+// ISR Name is MCU dependent
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)
 ISR(TIMER2_COMPA_vect) {
 #elif defined(__AVR_ATmega32__)
@@ -107,6 +113,7 @@ ISR(TIMER2_COMP_vect) {
 #else
 #error MCU not compatible with timer module. DIY!
 #endif
+
 	systemTime++;
 	currentTime.milliseconds++;
 	if (currentTime.milliseconds >= 1000) {
@@ -150,26 +157,24 @@ time_t diffTime(time_t a, time_t b) {
 	}
 }
 
-void incrementSeconds(time_t sec) {
+void incrementSeconds(Time *t, time_t sec) {
 	time_t i;
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		for (i = 0; i < sec; i++) {
-			currentTime.seconds++;
-			if (currentTime.seconds >= 60) {
-				currentTime.seconds = 0;
-				currentTime.minutes++;
-				if (currentTime.minutes >= 60) {
-					currentTime.minutes = 0;
-					currentTime.hours++;
-					if (currentTime.hours >= 24) {
-						currentTime.hours = 0;
-						currentTime.day++;
-						if (currentTime.day >= daysInMonth(currentTime.month, currentTime.year)) {
-							currentTime.day = 1;
-							currentTime.month++;
-							if (currentTime.month >= 13) {
-								currentTime.year++;
-							}
+	for (i = 0; i < sec; i++) {
+		t->seconds++;
+		if (t->seconds >= 60) {
+			t->seconds = 0;
+			t->minutes++;
+			if (t->minutes >= 60) {
+				t->minutes = 0;
+				t->hours++;
+				if (t->hours >= 24) {
+					t->hours = 0;
+					t->day++;
+					if (t->day >= daysInMonth(t->month, t->year)) {
+						t->day = 1;
+						t->month++;
+						if (t->month >= 13) {
+							t->year++;
 						}
 					}
 				}
@@ -179,27 +184,33 @@ void incrementSeconds(time_t sec) {
 }
 
 void setNtpTimestamp(time_t ntp) {
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		currentTime.year = 1900;
-		currentTime.month = 1;
-		currentTime.day = 1;
-		currentTime.hours = 0;
-		currentTime.minutes = 0;
-		currentTime.seconds = 0;
-		incrementSeconds(ntp);
+	Time *t = (Time *)malloc(sizeof(Time));
+	if (t == NULL) {
+		return;
 	}
+	t->year = 1900;
+	t->month = 1;
+	t->day = 1;
+	t->hours = 0;
+	t->minutes = 0;
+	t->seconds = 0;
+	incrementSeconds(t, ntp);
+	free(t);
 }
 
 void setTimestamp(time_t unix) {
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		currentTime.year = 1970;
-		currentTime.month = 1;
-		currentTime.day = 1;
-		currentTime.hours = 0;
-		currentTime.minutes = 0;
-		currentTime.seconds = 0;
-		incrementSeconds(unix);
+	Time *t = (Time *)malloc(sizeof(Time));
+	if (t == NULL) {
+		return;
 	}
+	t->year = 1970;
+	t->month = 1;
+	t->day = 1;
+	t->hours = 0;
+	t->minutes = 0;
+	t->seconds = 0;
+	incrementSeconds(t, unix);
+	free(t);
 }
 
 // From: http://de.wikipedia.org/wiki/Unixzeit#Beispiel-Implementierung :)
