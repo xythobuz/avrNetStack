@@ -145,6 +145,79 @@ uint8_t toDnsRecord(uint8_t *data, uint8_t off, DnsRecord *dr) {
 	return max + 10 + rlength;
 }
 
+#ifndef DISABLE_DNS_DOMAIN_VALIDATION
+uint8_t stringContains(uint8_t *s, uint8_t c) {
+	uint8_t count = 0;
+	while (*s != '\0') {
+		if (*(s++) == c)
+			count++;
+	}
+	return count;
+}
+#endif
+
+uint8_t stringPartLength(uint8_t *s, uint8_t c, uint8_t part) {
+	uint8_t curPart = 0, count = 0;
+	while (*s != '\0') {
+		if (*s == c) {
+			curPart++;
+		} else if (curPart == part) {
+			count++;
+		}
+		s++;
+	}
+	return count;
+}
+
+void stringCopyPart(uint8_t *s, uint8_t c, uint8_t part, uint8_t *d, uint8_t size) {
+	uint8_t curPart = 0;
+	while (*s != '\0') {
+		if (*s == c) {
+			curPart++;
+		} else if (curPart == part) {
+			memccpy(d, s, c, size);
+			return;
+		}
+		s++;
+	}
+}
+
+uint8_t *toDnsName(uint8_t *domain) {
+	// Give it something like "www.google.com" to receive:
+	// 3"www"6"google"3"com"0
+	// to use as name in a dns request
+	uint8_t parts, size, v, i, p, sum = 1; // Null byte at end
+	uint8_t *name;
+#ifndef DISABLE_DNS_DOMAIN_VALIDATION
+	if ((parts = stringContains(domain, '.')) == 0) {
+		return NULL; // Contains no dot...
+	}
+	if (strstr((char *)domain, "..") != NULL) {
+		// There are two dots after another in this domain
+		return NULL;
+	}
+#endif
+	parts++;
+	for (i = 0; i < parts; i++) {
+		v = stringPartLength(domain, '.', i);
+		sum += v + 1; // length byte
+	}
+	name = (uint8_t *)malloc(sum * sizeof(uint8_t));
+	if (name == NULL) {
+		return NULL; // No memory
+	}
+	p = 0;
+	for (i = 0; i < parts; i++) {
+		// Copy parts with length byte
+		size = stringPartLength(domain, '.', i);
+		name[p++] = size;
+		stringCopyPart(domain, '.', i, (name + p), size);
+		p += size;
+	}
+	name[p] = 0; // last null byte
+	return name;
+}
+
 // --------------------------
 // |      External API      |
 // --------------------------

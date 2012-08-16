@@ -27,19 +27,20 @@
 // |        Feature Selection        |
 // -----------------------------------
 
-// #define DISABLE_IPV4_FRAGMENT // Prevent IPv4 Fragmentation
-// #define DISABLE_IPV4_CHECKSUM // Prevent IPv4 Checksum calculation
-// #define DISABLE_ICMP          // Disable complete ICMP Protocol
-// #define DISABLE_ICMP_STRINGS  // Don't store ICMP Names in Flash
-// #define DISABLE_ICMP_CHECKSUM // Prevent ICMP Checksum calculation
-// #define DISABLE_ICMP_ECHO     // Prevent answering to Echo Requests (Ping)
-// #define DISABLE_ICMP_UDP_MSG  // Don't send ICMP Error receiving packet for unhandled port.
-// #define DISABLE_UDP           // Disable the complete UDP Protocol, needed for DHCP, DNS
-// #define DISABLE_UDP_CHECKSUM  // Prevent UDP Checksum calculation
-// #define DISABLE_DHCP          // Disable DHCP. Enter valid IP etc. in controller.c
-// #define DISABLE_DNS           // Disable DNS. Uses UDP, not TCP!
-// #define DISABLE_DNS_STRINGS   // Disable DNS Debug Output
-// #define DISABLE_NTP           // Disable NTP.
+// #define DISABLE_IPV4_FRAGMENT         // Prevent IPv4 Fragmentation
+// #define DISABLE_IPV4_CHECKSUM         // Prevent IPv4 Checksum calculation
+// #define DISABLE_ICMP                  // Disable complete ICMP Protocol
+// #define DISABLE_ICMP_STRINGS          // Don't store ICMP Names in Flash
+// #define DISABLE_ICMP_CHECKSUM         // Prevent ICMP Checksum calculation
+// #define DISABLE_ICMP_ECHO             // Prevent answering to Echo Requests (Ping)
+// #define DISABLE_ICMP_UDP_MSG          // Don't send ICMP Error for unhandled port.
+// #define DISABLE_UDP                   // Disable the complete UDP Protocol
+// #define DISABLE_UDP_CHECKSUM          // Prevent UDP Checksum calculation
+// #define DISABLE_DHCP                  // Disable DHCP. Enter valid IP etc. in controller.c
+// #define DISABLE_DNS                   // Disable DNS. Uses UDP, not TCP!
+// #define DISABLE_DNS_STRINGS           // Disable DNS Debug Output
+// #define DISABLE_DNS_DOMAIN_VALIDATION // Don't check if domains are valid
+// #define DISABLE_NTP                   // Disable NTP.
 
 // -----------------------------------
 // |            RAM Usage            |
