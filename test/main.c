@@ -32,33 +32,19 @@
 #include <time.h>
 #include <serial.h>
 
-#define VERSION "avrNetStack-Debug"
+char *getString(uint8_t id);
 
 // Thats, the MAC of my WLAN Module, with some bytes swapped...
 MacAddress mac = {0x00, 0x1E, 0x99, 0x02, 0xC0, 0x42};
 
-void printStats(time_t sum, time_t max, time_t min, time_t count) {
-	time_t avg = sum / count;
-	serialWriteString("NetworkHandler Statistics:\nMax: ");
-	serialWriteString(timeToString(max));
-	serialWriteString("\nMin: ");
-	serialWriteString(timeToString(min));
-	serialWriteString("\nAverage: ");
-	serialWriteString(timeToString(avg));
-	serialWriteString("\nTimes called: ");
-	serialWriteString(timeToString(count));
-	serialWrite('\n');
-}
-
 void icmpCallBack(char *s) {
-	serialWriteString("ICMP Packet: ");
+	serialWriteString(getString(5));
 	serialWriteString(s);
 	serialWrite('\n');
 }
 
 int main(void) {
 	char c;
-	time_t start, end, average = 0, max = 0, min = UINT64_MAX, count = 0;
 	uint8_t i;
 	uint16_t j;
 
@@ -77,34 +63,31 @@ int main(void) {
 
 	PORTA &= ~(0xC0); // LEDs off
 
-	serialWriteString(VERSION);
-	serialWriteString(" initialized!\n");
+	serialWriteString(getString(0));
+	serialWriteString(getString(1));
 
 	if (!macLinkIsUp()) {
-		serialWriteString("Link is down...\n");
+		serialWriteString(getString(2));
 	} else {
-		serialWriteString("Link is up!\n");
+		serialWriteString(getString(3));
 	}
 
 	serialWrite('\n');
 
 	while(1) {
-		// Network Handler Stats
-		start = getSystemTime();
-
 		i = networkHandler();
 		if (i != 255) {
 			if (i != 0) {
-				serialWriteString("Handler returned: ");
+				serialWriteString(getString(4));
 				serialWriteString(timeToString(i));
 				serialWrite('\n');
 			}
 			
 			j = networkLastProtocol();
 			if (j != ARP) {
-				serialWriteString("Last Protocol: ");
+				serialWriteString(getString(6));
 				if (j == IPV4) {
-					serialWriteString("IPv4");
+					serialWriteString(getString(7));
 				} else {
 					serialWriteString(hexToString(j));
 				}
@@ -112,43 +95,30 @@ int main(void) {
 			}
 		}
 
-		count++;
-		end = getSystemTime();
-		average += diffTime(start, end);
-		if (diffTime(start, end) > max) {
-			max = diffTime(start, end);
-		}
-		if (diffTime(start, end) < min) {
-			min = diffTime(start, end);
-		}
-
 		if (serialHasChar()) {
 			c = serialGet();
 			switch(c) {
 				case 'n':
 					i = ntpIssueRequest();
-					serialWriteString("NTP Request: ");
+					serialWriteString(getString(8));
 					serialWriteString(timeToString(i));
 					serialWriteString("\n\n");
 					break;
 				case 'd':
 					i = dhcpIssueRequest();
-					serialWriteString("DHCP Request: ");
+					serialWriteString(getString(9));
 					serialWriteString(timeToString(i));
 					serialWriteString("\n\n");
 					break;
-				case 's':
-					printStats(average, max, min, count);
-					break;
 				case 'h':
-					serialWriteString("Commands: q, v, s, d, n\n");
+					serialWriteString(getString(10));
 					break;
 				case 'v':
-					serialWriteString(VERSION);
+					serialWriteString(getString(0));
 					serialWrite('\n');
 					break;
 				case 'q':
-					serialWriteString("Good Bye...\n\n");
+					serialWriteString(getString(11));
 					wdt_enable(WDTO_15MS);
 					while(1);
 				default:

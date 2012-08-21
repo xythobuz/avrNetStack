@@ -25,6 +25,7 @@ SRC += lib/net/dns.c
 SRC += lib/net/ntp.c
 
 TESTSRC = test/main.c
+TESTSRC += test/strings.c
 OBJ = $(SRC:.c=.o)
 TESTOBJ = $(TESTSRC:.c=.o)
 CARGS = -mmcu=$(MCU)
