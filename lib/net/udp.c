@@ -28,6 +28,8 @@
 
 #ifndef DISABLE_UDP
 
+uint8_t isBroadcastIp(uint8_t *d);
+
 typedef struct {
 	uint16_t port;
 	uint8_t (*func)(UdpPacket *);
@@ -36,7 +38,6 @@ typedef struct {
 UdpHandler *handlers = NULL;
 uint16_t registeredHandlers = 0;
 IPv4Address target;
-extern IPv4Address broadcastIp;
 // --------------------------
 // |      Internal API      |
 // --------------------------
@@ -160,7 +161,7 @@ uint8_t udpHandlePacket(IPv4Packet *ip) {
 	}
 	// No handler registered
 #ifndef DISABLE_ICMP_UDP_MSG
-	if (!isEqualMem(target, broadcastIp, 4)) {
+	if (!isBroadcastIp(target)) {
 		// Issue ICMP Port not reachable Message
 		ic = (IcmpPacket *)malloc(sizeof(IcmpPacket));
 		if (ic == NULL) {

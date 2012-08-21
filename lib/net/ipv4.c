@@ -36,7 +36,6 @@
 IPv4Address ownIpAddress;
 IPv4Address subnetmask;
 IPv4Address defaultGateway;
-IPv4Address broadcastIp = {255, 255, 255, 255};
 
 // ----------------------
 // |    Internal API    |
@@ -103,6 +102,23 @@ IPv4Packet *macPacketToIpPacket(MacPacket *p) {
 	return ip;
 }
 
+uint8_t isBroadcastIp(uint8_t *d) {
+	uint8_t i;
+	for (i = 0; i < 4; i++) {
+		if (subnetmask[i] == 255) {
+			if (!((d[i] == 255) || (d[i] == defaultGateway[i]))) {
+				// ip does not match subnet or broadcast
+				return 0;
+			}
+		} else {
+			if (d[i] != 255) {
+				return 0;
+			}
+		}
+	}
+	return 1;
+}
+
 #if (!defined(DISABLE_IPV4_CHECKSUM)) || (!defined(DISABLE_UDP_CHECKSUM))
 uint16_t checksum(uint8_t *rawData, uint16_t l) {
 	uint32_t a = 0;
@@ -164,9 +180,18 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 #endif
 
 	// Process IPv4 Packet
-	if ((isEqualMem(ip->destinationIp, ownIpAddress, 4)) || (isEqualMem(ip->destinationIp, broadcastIp, 4))) {
+	if ((isEqualMem(ip->destinationIp, ownIpAddress, 4)) || (isBroadcastIp(ip->destinationIp))) {
 		// Packet is for us
-		debugPrint("IPv4 Packet for us!\n");
+#if DEBUG == 1
+		debugPrint("IPv4 Packet for us (");
+		for (i = 0; i < 4; i++) {
+			debugPrint(timeToString(ip->destinationIp[i]));
+			if (i < 3) {
+				debugPrint(".");
+			}
+		}
+		debugPrint(")\n");
+#endif
 		if ((cs == 0x0000) && (ip->version == 4)) {
 			// Checksum and version fields are valid
 			if (!(ip->flags & 0x04)) {
@@ -312,7 +337,16 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 	} else {
 		// Packet is not for us.
 		// We are no router!
-		debugPrint("IPv4 Packet not for us!\n");
+#if DEBUG == 1
+		debugPrint("IPv4 Packet not for us (");
+		for (i = 0; i < 4; i++) {
+			debugPrint(timeToString(ip->destinationIp[i]));
+			if (i < 3) {
+				debugPrint(".");
+			}
+		}
+		debugPrint(")\n");
+#endif
 		freeIPv4Packet(ip);
 		return 0;
 	}
