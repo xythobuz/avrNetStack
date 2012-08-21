@@ -60,10 +60,18 @@ int main(void) {
 	char c;
 	time_t start, end, average = 0, max = 0, min = UINT64_MAX, count = 0;
 
-	serialInit(BAUD(38400, F_CPU), 8, NONE, 1);
+	serialInit(BAUD(39400, F_CPU), 8, NONE, 1);
+
+	DDRA = 0xC0;
+	PORTA |= 0xC0; // LEDs on
+
+	sei(); // Enable Interrupts so we get UART data before entering networkInit
+
 	networkInit(mac);
 	icmpRegisterMessageCallback(icmpCallBack);
-	sei(); // Enable Interrupts
+
+	PORTA &= ~(0xC0); // LEDs off
+
 	while(1) {
 		// Network Handler Stats
 		start = getSystemTime();
@@ -92,6 +100,8 @@ int main(void) {
 					break;
 			}
 		}
+
+		PORTA ^= (1 << PA6);
 	}
 
 	return 0;

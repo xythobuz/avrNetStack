@@ -23,6 +23,8 @@
 
 #include <spi.h>
 
+#include <serial.h> // debug output
+
 void spiInit(void) {
 #if defined(__AVR_ATmega168__)
 	DDRB |= (1 << PB3) | (1 << PB5); // MOSI & SCK
@@ -39,8 +41,10 @@ void spiInit(void) {
 }
 
 void spiSendByte(uint8_t d) {
+	serialWriteString("SPI Send Byte()...");
 	SPDR = d;
 	while (!(SPSR & (1 << SPIF))); // Wait for transmission
+	serialWriteString(" Done!\n");
 }
 
 uint8_t spiReadByte(void) {

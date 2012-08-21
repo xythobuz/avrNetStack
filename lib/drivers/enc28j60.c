@@ -25,6 +25,8 @@
 #include <net/mac.h>
 #include <spi.h>
 
+#include <serial.h> // For debug output
+
 #define CSPORT PORTA
 #define CSPIN PA1
 #define CSDDR DDRA
@@ -181,12 +183,15 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	CSPORT |= (1 << CSPIN); // Deselect
 
 	spiInit();
+	serialWriteString("----> SPI initialized!\n");
 
 	for (i = 0; i < 6; i++) {
 		ownMacAddress[i] = address[i];
 	}
 
 	selectBank(0);
+
+	serialWriteString("----> Starting ENC28J60 initialization sequence...\n");
 
 	// Initialization as described in the datasheet, p. 35ff
 	// Set Recieve Buffer Size
@@ -249,6 +254,8 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 	// Enable packet reception
 	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
+
+	serialWriteString("----> ENC28J60 initialized!\n");
 
 	return 0;
 }

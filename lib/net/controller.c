@@ -38,27 +38,42 @@ IPv4Address defSubnet = {0, 0, 0, 0};
 IPv4Address defGateway = {0, 0, 0, 0};
 
 void networkInit(MacAddress a) {
+	serialWriteString("Initializing Networking Stack...\n");
+
 	initSystemTimer();
+	serialWriteString("--> Timer initialized!\n");
+
 	macInitialize(a);
+	serialWriteString("--> MAC initialized!\n");
+
 	arpInit();
+	serialWriteString("--> ARP initialized!\n");
+
 	ipv4Init(defIp, defSubnet, defGateway);
+	serialWriteString("--> IPv4 initialized!\n");
+
 #ifndef DISABLE_ICMP
 	icmpInit();
 	icmpRegisterMessageCallback(&serialWriteString);
+	serialWriteString("--> ICMP initialized!\n");
 #endif
 #ifndef DISABLE_UDP
 	udpInit();
+	serialWriteString("--> UDP initialized!\n");
   #ifndef DISABLE_DHCP
 	udpRegisterHandler(&dhcpHandler, 68);
 	dhcpIssueRequest();
+	serialWriteString("--> DHCP initialized!\n");
   #endif
   #ifndef DISABLE_DNS
 	udpRegisterHandler(&dnsHandler, 53);
 	dnsRegisterMessageCallback(&serialWriteString);
+	serialWriteString("--> DNS initialized!\n");
   #endif
   #ifndef DISABLE_NTP
 	udpRegisterHandler(&ntpHandler, 123);
 	ntpIssueRequest();
+	serialWriteString("--> NTP initialized!\n");
   #endif
 #endif
 }

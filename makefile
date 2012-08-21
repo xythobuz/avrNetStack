@@ -41,6 +41,9 @@ CARGS += -DF_CPU=$(F_CPU)
 
 test: test.hex
 
+program: test.hex
+	avrdude -p atmega32 -c stk500v2 -P /dev/tty.usbmodem641 -e -U test.hex
+
 all: libavrNetStack.a
 
 lib: libavrNetStack.a sizelibafter
