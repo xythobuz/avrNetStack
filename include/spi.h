@@ -22,7 +22,8 @@
 #define _spi_h
 
 void spiInit(void);
-void spiSendByte(uint8_t d);
-uint8_t spiReadByte(void);
+uint8_t spiSendByte(uint8_t d);
+
+#define spiReadByte() spiSendByte(0x42)
 
 #endif

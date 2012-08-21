@@ -23,15 +23,13 @@
 
 #include <spi.h>
 
-#include <serial.h> // debug output
-
 void spiInit(void) {
 #if defined(__AVR_ATmega168__)
-	DDRB |= (1 << PB3) | (1 << PB5); // MOSI & SCK
+	DDRB |= (1 << PB3) | (1 << PB5) | (1 << PB2); // MOSI & SCK & SS
 #elif defined(__AVR_ATmega2560__)
-	DDRB |= (1 << PB2) | (1 << PB1);
+	DDRB |= (1 << PB2) | (1 << PB1) | (1 << PB0);
 #elif defined(__AVR_ATmega32__)
-	DDRB |= (1 << PB5) | (1 << PB7);
+	DDRB |= (1 << PB5) | (1 << PB7) | (1 << PB4);
 #else
 #error MCU not supported by SPI module. DIY!
 #endif
@@ -40,15 +38,8 @@ void spiInit(void) {
 	SPSR |= (1 << SPI2X); // Double speed --> F_CPU/2
 }
 
-void spiSendByte(uint8_t d) {
-	serialWriteString("SPI Send Byte()...");
+uint8_t spiSendByte(uint8_t d) {
 	SPDR = d;
-	while (!(SPSR & (1 << SPIF))); // Wait for transmission
-	serialWriteString(" Done!\n");
-}
-
-uint8_t spiReadByte(void) {
-	SPDR = 0x00; // Send 0 byte. While sending this a byte is recieved...
 	while (!(SPSR & (1 << SPIF))); // Wait for transmission
 	return SPDR;
 }

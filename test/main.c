@@ -28,6 +28,8 @@
 #include <time.h>
 #include <serial.h>
 
+#define VERSION "avrNetStack-Debug"
+
 // Thats, the MAC of my WLAN Module, with some bytes swapped...
 MacAddress mac = {0x00, 0x1E, 0x99, 0x02, 0xC0, 0x42};
 
@@ -51,7 +53,7 @@ void printStats(time_t sum, time_t max, time_t min, time_t count) {
 }
 
 void icmpCallBack(char *s) {
-	serialWriteString("ICMP: ");
+	serialWriteString("ICMP Packet: ");
 	serialWriteString(s);
 	serialWrite('\n');
 }
@@ -71,6 +73,9 @@ int main(void) {
 	icmpRegisterMessageCallback(icmpCallBack);
 
 	PORTA &= ~(0xC0); // LEDs off
+
+	serialWriteString(VERSION);
+	serialWriteString(" initialized!\n");
 
 	while(1) {
 		// Network Handler Stats
@@ -92,8 +97,12 @@ int main(void) {
 				case 's':
 					printStats(average, max, min, count);
 					break;
-				case '?': case 'v':
-					serialWriteString("avrNetStack Debug\n");
+				case 'h':
+					serialWriteString("Commands: v, s\n");
+					break;
+				case 'v':
+					serialWriteString(VERSION);
+					serialWrite('\n');
 					break;
 				default:
 					serialWrite(c);

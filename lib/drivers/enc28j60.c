@@ -25,8 +25,6 @@
 #include <net/mac.h>
 #include <spi.h>
 
-#include <serial.h> // For debug output
-
 #define CSPORT PORTA
 #define CSPIN PA1
 #define CSDDR DDRA
@@ -183,7 +181,6 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	CSPORT |= (1 << CSPIN); // Deselect
 
 	spiInit();
-	serialWriteString("----> SPI initialized!\n");
 
 	for (i = 0; i < 6; i++) {
 		ownMacAddress[i] = address[i];
@@ -191,10 +188,8 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 	selectBank(0);
 
-	serialWriteString("----> Starting ENC28J60 initialization sequence...\n");
-
 	// Initialization as described in the datasheet, p. 35ff
-	// Set Recieve Buffer Size
+	// Set Receive Buffer Size
 	writeControlRegister(0x08, 0xFF); // set ERXSTL
 	writeControlRegister(0x09, 0x05); // set ERXSTH --> 0x05FF
 	writeControlRegister(0x0A, 0xFF); // set ERXNDL
@@ -206,7 +201,7 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	// We get unicast and broadcast packets as long as the crc is correct.
 	
 	// Wait for OST
-	while(!(readControlRegister(0x1D) & 0x01)); // Wait until CLKRDY == 1
+	while(!(readControlRegister(0x1D) & 0x01)); // Wait until ESTAT.CLKRDY == 1
 
 	// Initialize MAC Settings
 	// 1) Set MARXEN to recieve frames. Don't configure full-duplex mode
@@ -254,8 +249,6 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 	// Enable packet reception
 	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
-
-	serialWriteString("----> ENC28J60 initialized!\n");
 
 	return 0;
 }
