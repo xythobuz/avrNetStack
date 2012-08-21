@@ -271,11 +271,17 @@ uint8_t arpProcessPacket(MacPacket *p) {
 				if (macSendPacket(p)) { // If it doesn't work, we can't do anything...
 					// ...except trying again.
 					debugPrint(" Again...");
-					macSendPacket(p);
+					if (macSendPacket(p)) {
+						free(p->data);
+						free(p);
+						debugPrint(" Error!\n");
+						return 1;
+					}
 				}
-				debugPrint(" Done!");
 				free(p->data);
 				free(p);
+				debugPrint(" Done!\n");
+				return 0;
 			} else {
 				return 1;
 			}

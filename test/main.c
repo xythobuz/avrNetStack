@@ -94,7 +94,10 @@ int main(void) {
 		serialWriteString(getString(3));
 	}
 
+	wdt_enable(WDTO_2S);
+
 	while(1) {
+		wdt_reset();
 		i = networkHandler();
 		if (i != 255) {
 			if (i != 0) {
