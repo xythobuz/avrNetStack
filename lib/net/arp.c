@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
+#define DEBUG 0 // 0 to receive no debug serial output
+
 #include <net/mac.h>
 #include <net/ipv4.h>
 #include <net/arp.h>

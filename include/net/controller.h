@@ -56,8 +56,6 @@
 // |          External API           |
 // -----------------------------------
 
-#define DEBUG 1 // 0 to receive no debug serial output
-
 #if DEBUG == 1
 #define debugPrint(x) serialWriteString(x)
 #else

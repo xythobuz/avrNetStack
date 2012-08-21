@@ -22,6 +22,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define DEBUG 0 // 0 to receive no debug serial output
+
 #include <time.h>
 #include <serial.h>
 #include <net/mac.h>
