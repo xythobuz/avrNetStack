@@ -60,6 +60,7 @@ IcmpPacket *ipv4PacketToIcmpPacket(IPv4Packet *ip) {
 	uint16_t i;
 	IcmpPacket *ic = (IcmpPacket *)malloc(sizeof(IcmpPacket));
 	if (ic == NULL) {
+		freeIPv4Packet(ip);
 		return NULL;
 	}
 	for (i = 0; i < 4; i++) {
@@ -78,6 +79,7 @@ IcmpPacket *ipv4PacketToIcmpPacket(IPv4Packet *ip) {
 		ic->data = (uint8_t *)malloc(ip->dLength - 8);
 		if (ic->data == NULL) {
 			free(ic);
+			freeIPv4Packet(ip);
 			return NULL;
 		}
 		for (i = 0; i < (ip->dLength - 8); i++) {
@@ -87,6 +89,7 @@ IcmpPacket *ipv4PacketToIcmpPacket(IPv4Packet *ip) {
 	} else {
 		ic->dLength = 0;
 	}
+	freeIPv4Packet(ip);
 	return ic;
 }
 

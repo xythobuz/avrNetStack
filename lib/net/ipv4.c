@@ -194,12 +194,14 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 #endif
 		if ((cs == 0x0000) && (ip->version == 4)) {
 			// Checksum and version fields are valid
+			debugPrint("IPv4 Packet valid!\n");
 			if (!(ip->flags & 0x04)) {
 				// Last fragment
 				if (ip->fragmentOffset == 0x00) {
 					// Packet isn't fragmented
 					if (ip->protocol == ICMP) {
 						// Internet Control Message Protocol Packet
+						debugPrint("Is ICMP Packet!\n");
 #ifndef DISABLE_ICMP
 						return icmpProcessPacket(ip);
 #else
@@ -208,12 +210,19 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 #endif
 					} else if (ip->protocol == IGMP) {
 						// Internet Group Management Protocol Packet
+						debugPrint("Is IGMP Packet!\n");
 
+						freeIPv4Packet(ip);
+						return 0;
 					} else if (ip->protocol == TCP) {
 						// Transmission Control Protocol Packet
+						debugPrint("Is TCP Packet!\n");
 
+						freeIPv4Packet(ip);
+						return 0;
 					} else if (ip->protocol == UDP) {
 						// User Datagram Protocol Packet
+						debugPrint("Is UDP Packet!\n");
 #ifndef DISABLE_UDP
 						return udpHandlePacket(ip);
 #else
