@@ -33,8 +33,6 @@
 #include <net/ntp.h>
 #include <net/controller.h>
 
-// #define DEBUG
-
 IPv4Address defIp = {0, 0, 0, 0};
 IPv4Address defSubnet = {0, 0, 0, 0};
 IPv4Address defGateway = {0, 0, 0, 0};
@@ -50,12 +48,6 @@ char *hexToString(uint64_t s) {
 	buff[1] = 'x';
 	ultoa(s, (buff + 2), 16);
 	return buff;
-}
-
-void debugPrint(char *s) {
-#ifdef DEBUG
-	serialWriteString(s);
-#endif
 }
 
 void networkInit(MacAddress a) {

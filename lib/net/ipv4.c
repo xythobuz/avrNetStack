@@ -164,6 +164,7 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 	// Process IPv4 Packet
 	if ((isEqualMem(ip->destinationIp, ownIpAddress, 4)) || (isEqualMem(ip->destinationIp, broadcastIp, 4))) {
 		// Packet is for us
+		debugPrint("IPv4 Packet for us!\n");
 		if ((cs == 0x0000) && (ip->version == 4)) {
 			// Checksum and version fields are valid
 			if (!(ip->flags & 0x04)) {
@@ -294,12 +295,14 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 			}
 		} else {
 			// Invalid Checksum or version
+			debugPrint("IPv4 Packet invalid!\n");
 			freeIPv4Packet(ip);
 			return 2;
 		}
 	} else {
 		// Packet is not for us.
 		// We are no router!
+		debugPrint("IPv4 Packet not for us!\n");
 		freeIPv4Packet(ip);
 		return 0;
 	}

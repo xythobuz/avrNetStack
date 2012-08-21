@@ -22,6 +22,7 @@
 #define _controller_h
 
 #include <time.h>
+#include <serial.h>
 #include <net/mac.h>
 
 // -----------------------------------
@@ -55,11 +56,18 @@
 // |          External API           |
 // -----------------------------------
 
+#define DEBUG 1 // 0 to receive no debug serial output
+
+#if DEBUG == 1
+#define debugPrint(x) serialWriteString(x)
+#else
+#define debugPrint(x)
+#endif
+
 extern char buff[BUFFSIZE];
 
 char *timeToString(time_t s);
 char *hexToString(uint64_t s);
-void debugPrint(char *s);
 void networkInit(MacAddress a);
 uint8_t networkHandler(void); // 0xFF if nothing to do
 // 42 if unhandled protocol --> networkLastProtocol()

@@ -30,8 +30,6 @@
 #include <serial.h> // debug output
 #include <net/controller.h>
 
-// #define DEBUG
-
 ARPTableEntry *arpTable = NULL;
 uint8_t arpTableSize = 0;
 /* const uint16_t hardwareType = 1; // Ethernet
@@ -274,7 +272,7 @@ uint8_t arpProcessPacket(MacPacket *p) {
 				free(p);
 			}
 		} else {
-#ifdef DEBUG
+#if DEBUG == 1
 			debugPrint(" for ");
 			for (i = 0; i < 4; i++) {
 				debugPrint(timeToString(ap->targetIp[i]));
