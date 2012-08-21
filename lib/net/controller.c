@@ -37,7 +37,20 @@ IPv4Address defIp = {0, 0, 0, 0};
 IPv4Address defSubnet = {0, 0, 0, 0};
 IPv4Address defGateway = {0, 0, 0, 0};
 
-inline void debugPrint(char *s) {
+char buff[BUFFSIZE];
+
+char *timeToString(time_t s) {
+	return ultoa(s, buff, 10);
+}
+
+char *hexToString(uint64_t s) {
+	buff[0] = '0';
+	buff[1] = 'x';
+	ultoa(s, (buff + 2), 16);
+	return buff;
+}
+
+void debugPrint(char *s) {
 #ifdef DEBUG
 	serialWriteString(s);
 #endif
@@ -58,9 +71,6 @@ void networkInit(MacAddress a) {
 	udpInit();
   #ifndef DISABLE_DHCP
 	udpRegisterHandler(&dhcpHandler, 68);
-	debugPrint("Sending DHCP Request...");
-	dhcpIssueRequest();
-	debugPrint(" Done\n");
   #endif
   #ifndef DISABLE_DNS
 	udpRegisterHandler(&dnsHandler, 53);
@@ -68,25 +78,26 @@ void networkInit(MacAddress a) {
   #endif
   #ifndef DISABLE_NTP
 	udpRegisterHandler(&ntpHandler, 123);
-	debugPrint("Sending NTP Request...");
-	ntpIssueRequest();
-	debugPrint(" Done\n");
   #endif
 #endif
 }
 
-void networkHandler(void) {
+uint16_t tl = 0;
+
+uint8_t networkHandler(void) {
 	MacPacket *p;
 	
-	if (macLinkIsUp() && (macPacketsReceived() > 0)) {
+	// if (macLinkIsUp() && (macPacketsReceived() > 0)) {
+	if (macPacketsReceived() > 0) {
 		p = macGetPacket();
 		if (p != NULL) {
+			tl = p->typeLength;
 			if (p->typeLength == IPV4) {
 				// IPv4 Packet
-
+				return ipv4ProcessPacket(p);
 			} else if (p->typeLength == ARP) {
 				// Address Resolution Protocol Packet
-				arpProcessPacket(p);
+				return arpProcessPacket(p);
 			} else if (p->typeLength == WOL) {
 				// Wake on Lan Packet
 
@@ -95,18 +106,20 @@ void networkHandler(void) {
 
 			} else if (p->typeLength <= 0x0600) {
 				// Ethernet type I packet. typeLength = Real data length
-
 			} else if (p->typeLength == IPV6) {
 				// IPv6 Packet
 
-			} else {
-				// Unknown Protocol
-
 			}
 
-			// Packet was handled, free it
+			// Packet unhandled, free it
 			free(p->data);
 			free(p);
+			return 42;
 		}
 	}
+	return 0xFF;
+}
+
+uint16_t networkLastProtocol(void) {
+	return tl;
 }

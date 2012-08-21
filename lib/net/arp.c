@@ -27,7 +27,10 @@
 #include <net/ipv4.h>
 #include <net/arp.h>
 #include <net/utils.h>
+#include <serial.h> // debug output
 #include <net/controller.h>
+
+// #define DEBUG
 
 ARPTableEntry *arpTable = NULL;
 uint8_t arpTableSize = 0;
@@ -235,6 +238,7 @@ uint8_t arpProcessPacket(MacPacket *p) {
 	}
 	if (macPacketToArpPacket(p, ap) != 0) {
 		// Packet not valid!
+		debugPrint("ARP Packet not valid!\n");
 		free(p->data);
 		free(p);
 		free(ap);
@@ -245,12 +249,14 @@ uint8_t arpProcessPacket(MacPacket *p) {
 
 	if (ap->operation == 1) {
 		// ARP Request. Check if we have stored the sender MAC.
+		debugPrint("ARP Request");
 		if (findIpFromMac(ap->senderMac) == -1) {
 			// Sender MAC is not stored. Store combination!
 			copyEntry(ap->senderMac, ap->senderIp, getSystemTime(), getFirstFreeEntry());
 		}
 		// Check if the request is for us. If so, issue an answer!
 		if (isEqualMem(ownIpAddress, ap->targetIp, 4)) {
+			debugPrint(" for us!");
 			ap->operation = 2; // Reply
 			for (i = 0; i < 6; i++) {
 				ap->targetMac[i] = ap->senderMac[i]; // Goes back to sender
@@ -267,10 +273,22 @@ uint8_t arpProcessPacket(MacPacket *p) {
 				free(p->data);
 				free(p);
 			}
+		} else {
+#ifdef DEBUG
+			debugPrint(" for ");
+			for (i = 0; i < 4; i++) {
+				debugPrint(timeToString(ap->targetIp[i]));
+				if (i < 3) {
+					debugPrint(".");
+				}
+			}
+#endif
 		}
 		// Request is not for us. Ignore!
+		debugPrint("\n");
 		free(ap);
 	} else if (ap->operation == 2) {
+		debugPrint("ARP Reply!\n");
 		// ARP Reply. Store the information, if not already present
 		// Each packet contains two MAC-IP Combinations. Sender & Target
 		if (findIpFromMac(ap->senderMac) == -1) {

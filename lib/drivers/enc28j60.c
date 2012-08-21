@@ -336,7 +336,7 @@ MacPacket* macGetPacket(void) { // Returns NULL on error
 	readBufferMemory(&d, 1);
 	nextPacketPointer |= ((uint16_t)d << 8);
 	
-	readBufferMemory(header, 6); // Read status vector
+	readBufferMemory(header, 4); // Read status vector
 	fullLength = (uint16_t)header[0];
 	fullLength |= (((uint16_t)header[1]) << 8);
 	
@@ -359,7 +359,7 @@ MacPacket* macGetPacket(void) { // Returns NULL on error
 		readBufferMemory(&d, 1);
 		p->typeLength = ((uint16_t)d << 8); // Read type/length MSB
 		readBufferMemory(&d, 1);
-		p->typeLength |= (uint16_t)d; // Read type/length LSB
+		p->typeLength |= d; // Read type/length LSB
 		readBufferMemory(p->data, p->dLength); // Read payload
 		discardPacket();
 		return p;

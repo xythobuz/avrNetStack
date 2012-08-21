@@ -27,6 +27,7 @@
 #define _ntp_h
 
 #include <net/ipv4.h>
+#include <net/udp.h>
 #include <net/controller.h>
 
 #ifndef DISABLE_DNS

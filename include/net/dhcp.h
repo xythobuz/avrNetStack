@@ -21,6 +21,7 @@
 #ifndef _dhcp_h
 #define _dhcp_h
 
+#include <net/udp.h>
 #include <net/controller.h>
 
 // 0 on success, 1 no mem, 2 invalid

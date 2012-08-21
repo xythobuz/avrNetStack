@@ -27,6 +27,8 @@
 #include <net/controller.h>
 #include <net/mac.h>
 #include <net/icmp.h>
+#include <net/dhcp.h>
+#include <net/ntp.h>
 #include <time.h>
 #include <serial.h>
 
@@ -34,12 +36,6 @@
 
 // Thats, the MAC of my WLAN Module, with some bytes swapped...
 MacAddress mac = {0x00, 0x1E, 0x99, 0x02, 0xC0, 0x42};
-
-char buff[80];
-
-char *timeToString(time_t s) {
-	return ultoa(s, buff, 10);
-}
 
 void printStats(time_t sum, time_t max, time_t min, time_t count) {
 	time_t avg = sum / count;
@@ -63,6 +59,8 @@ void icmpCallBack(char *s) {
 int main(void) {
 	char c;
 	time_t start, end, average = 0, max = 0, min = UINT64_MAX, count = 0;
+	uint8_t i;
+	uint16_t j;
 
 	MCUSR = 0;
 	wdt_disable();
@@ -83,15 +81,37 @@ int main(void) {
 	serialWriteString(" initialized!\n");
 
 	if (!macLinkIsUp()) {
-		serialWriteString("Waiting while link is down... ");
+		serialWriteString("Link is down...\n");
+	} else {
+		serialWriteString("Link is up!\n");
 	}
-	while (!macLinkIsUp());
-	serialWriteString("Link is up!\n");
+
+	serialWrite('\n');
 
 	while(1) {
 		// Network Handler Stats
 		start = getSystemTime();
-		networkHandler();
+
+		i = networkHandler();
+		if (i != 255) {
+			if (i != 0) {
+				serialWriteString("Handler returned: ");
+				serialWriteString(timeToString(i));
+				serialWrite('\n');
+			}
+			
+			j = networkLastProtocol();
+			if (j != ARP) {
+				serialWriteString("Last Protocol: ");
+				if (j == IPV4) {
+					serialWriteString("IPv4");
+				} else {
+					serialWriteString(hexToString(j));
+				}
+				serialWriteString("\n\n");
+			}
+		}
+
 		count++;
 		end = getSystemTime();
 		average += diffTime(start, end);
@@ -105,18 +125,30 @@ int main(void) {
 		if (serialHasChar()) {
 			c = serialGet();
 			switch(c) {
+				case 'n':
+					i = ntpIssueRequest();
+					serialWriteString("NTP Request: ");
+					serialWriteString(timeToString(i));
+					serialWriteString("\n\n");
+					break;
+				case 'd':
+					i = dhcpIssueRequest();
+					serialWriteString("DHCP Request: ");
+					serialWriteString(timeToString(i));
+					serialWriteString("\n\n");
+					break;
 				case 's':
 					printStats(average, max, min, count);
 					break;
 				case 'h':
-					serialWriteString("Commands: q, v, s\n");
+					serialWriteString("Commands: q, v, s, d, n\n");
 					break;
 				case 'v':
 					serialWriteString(VERSION);
 					serialWrite('\n');
 					break;
 				case 'q':
-					serialWriteString("Good Bye...\n");
+					serialWriteString("Good Bye...\n\n");
 					wdt_enable(WDTO_15MS);
 					while(1);
 				default:

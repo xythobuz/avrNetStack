@@ -21,6 +21,7 @@
 #ifndef _controller_h
 #define _controller_h
 
+#include <time.h>
 #include <net/mac.h>
 
 // -----------------------------------
@@ -48,18 +49,22 @@
 
 // This times 14bytes is max. allocated RAM for ARP Cache
 #define ARPMaxTableSize 8 // Should be less than 127
+#define BUFFSIZE 80
 
 // -----------------------------------
 // |          External API           |
 // -----------------------------------
 
-#define DEBUG // Prints debug info on UART
+extern char buff[BUFFSIZE];
 
-#ifdef DEBUG
+char *timeToString(time_t s);
+char *hexToString(uint64_t s);
 void debugPrint(char *s);
-#endif
 void networkInit(MacAddress a);
-void networkHandler(void);
+uint8_t networkHandler(void); // 0xFF if nothing to do
+// 42 if unhandled protocol --> networkLastProtocol()
+
+uint16_t networkLastProtocol(void);
 
 #define IPV4 0x0800
 #define ARP 0x0806
