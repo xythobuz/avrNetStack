@@ -53,6 +53,11 @@
 // |          External API           |
 // -----------------------------------
 
+#define DEBUG // Prints debug info on UART
+
+#ifdef DEBUG
+void debugPrint(char *s);
+#endif
 void networkInit(MacAddress a);
 void networkHandler(void);
 

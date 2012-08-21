@@ -37,11 +37,19 @@ IPv4Address defIp = {0, 0, 0, 0};
 IPv4Address defSubnet = {0, 0, 0, 0};
 IPv4Address defGateway = {0, 0, 0, 0};
 
+inline void debugPrint(char *s) {
+#ifdef DEBUG
+	serialWriteString(s);
+#endif
+}
+
 void networkInit(MacAddress a) {
 	initSystemTimer();
 	macInitialize(a);
+	debugPrint("Hardware Driver initialized...\n");
 	arpInit();
 	ipv4Init(defIp, defSubnet, defGateway);
+	debugPrint("IPv4 initialized...\n");
 #ifndef DISABLE_ICMP
 	icmpInit();
 	icmpRegisterMessageCallback(&serialWriteString);
@@ -50,7 +58,9 @@ void networkInit(MacAddress a) {
 	udpInit();
   #ifndef DISABLE_DHCP
 	udpRegisterHandler(&dhcpHandler, 68);
+	debugPrint("Sending DHCP Request...");
 	dhcpIssueRequest();
+	debugPrint(" Done\n");
   #endif
   #ifndef DISABLE_DNS
 	udpRegisterHandler(&dnsHandler, 53);
@@ -58,7 +68,9 @@ void networkInit(MacAddress a) {
   #endif
   #ifndef DISABLE_NTP
 	udpRegisterHandler(&ntpHandler, 123);
+	debugPrint("Sending NTP Request...");
 	ntpIssueRequest();
+	debugPrint(" Done\n");
   #endif
 #endif
 }

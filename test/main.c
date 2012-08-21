@@ -22,8 +22,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <avr/interrupt.h>
+#include <avr/wdt.h>
 
 #include <net/controller.h>
+#include <net/mac.h>
 #include <net/icmp.h>
 #include <time.h>
 #include <serial.h>
@@ -62,6 +64,9 @@ int main(void) {
 	char c;
 	time_t start, end, average = 0, max = 0, min = UINT64_MAX, count = 0;
 
+	MCUSR = 0;
+	wdt_disable();
+
 	serialInit(BAUD(39400, F_CPU), 8, NONE, 1);
 
 	DDRA = 0xC0;
@@ -76,6 +81,12 @@ int main(void) {
 
 	serialWriteString(VERSION);
 	serialWriteString(" initialized!\n");
+
+	if (!macLinkIsUp()) {
+		serialWriteString("Waiting while link is down... ");
+	}
+	while (!macLinkIsUp());
+	serialWriteString("Link is up!\n");
 
 	while(1) {
 		// Network Handler Stats
@@ -98,12 +109,16 @@ int main(void) {
 					printStats(average, max, min, count);
 					break;
 				case 'h':
-					serialWriteString("Commands: v, s\n");
+					serialWriteString("Commands: q, v, s\n");
 					break;
 				case 'v':
 					serialWriteString(VERSION);
 					serialWrite('\n');
 					break;
+				case 'q':
+					serialWriteString("Good Bye...\n");
+					wdt_enable(WDTO_15MS);
+					while(1);
 				default:
 					serialWrite(c);
 					break;

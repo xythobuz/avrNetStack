@@ -182,6 +182,8 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 	spiInit();
 
+	systemResetCommand();
+
 	for (i = 0; i < 6; i++) {
 		ownMacAddress[i] = address[i];
 	}
