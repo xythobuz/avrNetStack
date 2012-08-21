@@ -66,6 +66,7 @@ extern char buff[BUFFSIZE];
 
 char *timeToString(time_t s);
 char *hexToString(uint64_t s);
+char *hex2ToString(uint64_t s);
 void networkInit(MacAddress a);
 uint8_t networkHandler(void); // 0xFF if nothing to do
 // 42 if unhandled protocol --> networkLastProtocol()

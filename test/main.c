@@ -29,6 +29,7 @@
 #include <net/icmp.h>
 #include <net/dhcp.h>
 #include <net/ntp.h>
+#include <net/arp.h>
 #include <time.h>
 #include <serial.h>
 
@@ -36,6 +37,27 @@ char *getString(uint8_t id);
 
 // Thats, the MAC of my WLAN Module, with some bytes swapped...
 MacAddress mac = {0x00, 0x1E, 0x99, 0x02, 0xC0, 0x42};
+
+void printArpTable(void) {
+	uint8_t i, j;
+	serialWriteString(getString(12));
+	for (i = 0; i < arpTableSize; i++) {
+		for (j = 0; j < 6; j++) {
+			serialWriteString(hex2ToString(arpTable[i].mac[j]));
+			if (j < 5) {
+				serialWrite('-');
+			}
+		}
+		serialWriteString(getString(13));
+		for (j = 0; j < 4; j++) {
+			serialWriteString(timeToString(arpTable[i].ip[j]));
+			if (j < 3) {
+				serialWrite('.');
+			}
+		}
+		serialWrite('\n');
+	}
+}
 
 void icmpCallBack(char *s) {
 	serialWriteString(getString(5));
@@ -72,8 +94,6 @@ int main(void) {
 		serialWriteString(getString(3));
 	}
 
-	serialWrite('\n');
-
 	while(1) {
 		i = networkHandler();
 		if (i != 255) {
@@ -91,24 +111,27 @@ int main(void) {
 				} else {
 					serialWriteString(hexToString(j));
 				}
-				serialWriteString("\n\n");
+				serialWrite('\n');
 			}
 		}
 
 		if (serialHasChar()) {
 			c = serialGet();
 			switch(c) {
+				case 'a':
+					printArpTable();
+					break;
 				case 'n':
 					i = ntpIssueRequest();
 					serialWriteString(getString(8));
 					serialWriteString(timeToString(i));
-					serialWriteString("\n\n");
+					serialWrite('\n');
 					break;
 				case 'd':
 					i = dhcpIssueRequest();
 					serialWriteString(getString(9));
 					serialWriteString(timeToString(i));
-					serialWriteString("\n\n");
+					serialWrite('\n');
 					break;
 				case 'h':
 					serialWriteString(getString(10));

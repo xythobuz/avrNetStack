@@ -32,15 +32,17 @@ const char string6[] PROGMEM = "Last Protocol: ";
 const char string7[] PROGMEM = "IPv4";
 const char string8[] PROGMEM = "NTP Request: ";
 const char string9[] PROGMEM = "DHCP Request: ";
-const char string10[] PROGMEM = "Commands: q, v, d, n\n";
+const char string10[] PROGMEM = "Commands: qvdna\n";
 const char string11[] PROGMEM = "Good Bye...\n\n";
+const char string12[] PROGMEM = "ARP Table:\n";
+const char string13[] PROGMEM = " --> ";
 
 // Last index + 1
-#define STRINGNUM 12
+#define STRINGNUM 14
 
 PGM_P stringTable[STRINGNUM] PROGMEM = { string0, string1, string2, string3, string4,
 									string5, string6, string7, string8, string9,
-									string10, string11 };
+									string10, string11, string12, string13 };
 
 char stringNotFoundError[] PROGMEM = "String not found!\n";
 

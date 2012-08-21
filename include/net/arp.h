@@ -44,6 +44,9 @@ typedef struct {
 	IPv4Address    targetIp;
 } ArpPacket;
 
+extern ARPTableEntry *arpTable;
+extern uint8_t arpTableSize;
+
 void arpInit(void);
 uint8_t arpProcessPacket(MacPacket *p); // Processes all received ARP Packets
 // Returns 0 on success, 1 if there was not enough memory,

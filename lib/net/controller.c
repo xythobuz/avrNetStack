@@ -35,9 +35,9 @@
 #include <net/ntp.h>
 #include <net/controller.h>
 
-IPv4Address defIp = {0, 0, 0, 0};
-IPv4Address defSubnet = {0, 0, 0, 0};
-IPv4Address defGateway = {0, 0, 0, 0};
+IPv4Address defIp = {192, 168, 0, 42};
+IPv4Address defSubnet = {255, 255, 255, 0};
+IPv4Address defGateway = {192, 168, 0, 1};
 
 char buff[BUFFSIZE];
 
@@ -49,6 +49,11 @@ char *hexToString(uint64_t s) {
 	buff[0] = '0';
 	buff[1] = 'x';
 	ultoa(s, (buff + 2), 16);
+	return buff;
+}
+
+char *hex2ToString(uint64_t s) {
+	ultoa(s, buff, 16);
 	return buff;
 }
 

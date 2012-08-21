@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 0 // 0 to receive no debug serial output
+#define DEBUG 1 // 0 to receive no debug serial output
 
 #include <net/mac.h>
 #include <net/ipv4.h>
@@ -265,14 +265,21 @@ uint8_t arpProcessPacket(MacPacket *p) {
 				ap->senderIp[i] = ownIpAddress[i];
 			}
 			p = arpPacketToMacPacket(ap);
+			free(ap);
+			debugPrint(" Sending Response...");
 			if (p != NULL) {
 				if (macSendPacket(p)) { // If it doesn't work, we can't do anything...
 					// ...except trying again.
+					debugPrint(" Again...");
 					macSendPacket(p);
 				}
+				debugPrint(" Done!");
 				free(p->data);
 				free(p);
+			} else {
+				return 1;
 			}
+			return 0;
 		} else {
 #if DEBUG == 1
 			debugPrint(" for ");

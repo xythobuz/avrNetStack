@@ -301,7 +301,10 @@ uint8_t ipv4ProcessPacketInternal(IPv4Packet *ip, uint16_t cs) {
 			if (ip->version != 4) {
 				debugPrint("wrong version!\n");
 			} else {
-				debugPrint("wrong checksum!\n");
+				debugPrint("wrong checksum (");
+				debugPrint(hexToString(cs));
+				debugPrint(" != 0x0000");
+				debugPrint(")!\n");
 			}
 			freeIPv4Packet(ip);
 			return 2;
