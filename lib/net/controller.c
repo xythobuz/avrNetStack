@@ -33,6 +33,8 @@
 #include <net/ntp.h>
 #include <net/controller.h>
 
+// #define DEBUG
+
 IPv4Address defIp = {0, 0, 0, 0};
 IPv4Address defSubnet = {0, 0, 0, 0};
 IPv4Address defGateway = {0, 0, 0, 0};
@@ -100,15 +102,12 @@ uint8_t networkHandler(void) {
 				return arpProcessPacket(p);
 			} else if (p->typeLength == WOL) {
 				// Wake on Lan Packet
-
 			} else if (p->typeLength == RARP) {
 				// Reverse Address Resolution Protocol Packet
-
 			} else if (p->typeLength <= 0x0600) {
 				// Ethernet type I packet. typeLength = Real data length
 			} else if (p->typeLength == IPV6) {
 				// IPv6 Packet
-
 			}
 
 			// Packet unhandled, free it
