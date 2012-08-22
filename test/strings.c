@@ -18,7 +18,11 @@
  * You should have received a copy of the GNU General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <avr/io.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <avr/pgmspace.h>
+
 #include <serial.h>
 #include <net/controller.h>
 
@@ -34,15 +38,19 @@ const char string8[] PROGMEM = "NTP Request: ";
 const char string9[] PROGMEM = "DHCP Request: ";
 const char string10[] PROGMEM = "Commands: qvdna\n";
 const char string11[] PROGMEM = "Good Bye...\n\n";
-const char string12[] PROGMEM = "ARP Table:\n";
+const char string12[] PROGMEM = "\nARP Table:\n";
 const char string13[] PROGMEM = " --> ";
+const char string14[] PROGMEM = "Invalid";
+const char string15[] PROGMEM = "Not enough Memory";
+const char string16[] PROGMEM = "Success";
 
 // Last index + 1
-#define STRINGNUM 14
+#define STRINGNUM 17
 
 PGM_P stringTable[STRINGNUM] PROGMEM = { string0, string1, string2, string3, string4,
 									string5, string6, string7, string8, string9,
-									string10, string11, string12, string13 };
+									string10, string11, string12, string13, string14,
+									string15, string16 };
 
 char stringNotFoundError[] PROGMEM = "String not found!\n";
 

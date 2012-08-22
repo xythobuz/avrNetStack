@@ -70,7 +70,7 @@ typedef struct {
 
 void dnsRegisterMessageCallback(void (*debugOutput)(char *));
 
-uint8_t dnsHandler(UdpPacket *up);
+uint8_t dnsHandler(Packet up);
 
 // Returns 0 on success, 1 on no mem, 2 on invalid
 uint8_t dnsGetIp(uint8_t *domain, IPv4Address ip);

@@ -24,6 +24,7 @@
 
 #include <net/mac.h>
 #include <spi.h>
+#include <net/controller.h>
 
 #define CSPORT PORTA
 #define CSPIN PA1
@@ -268,11 +269,10 @@ uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
 	}
 }
 
-uint8_t macSendPacket(MacPacket *p) { // 0 on success, 1 on error
+uint8_t macSendPacket(Packet p) { // 0 on success, 1 on error
 	// Place Frame data in buffer, with a preceding control byte
 	// This control byte can be 0x00, as we set everything needed in MACON3
 	uint8_t i = 0x00;
-	uint16_t w;
 
 	selectBank(0);
 	writeControlRegister(0x04, 0x00); // set ETXSTL
@@ -282,22 +282,12 @@ uint8_t macSendPacket(MacPacket *p) { // 0 on success, 1 on error
 	writeControlRegister(0x02, 0x00); // EWRPTL
 	writeControlRegister(0x03, 0x00); // EWRPTH --> 0x0000
 	writeBufferMemory(&i, 1); // Write 0x00 as control byte
-	writeBufferMemory(p->destination, 6); // Write destination MAC
-	writeBufferMemory(p->source, 6); // Write source MAC
-	// big-endian for bytes!
-	i = (uint8_t)((p->typeLength & 0xFF00) >> 8);
-	writeBufferMemory(&i, 1); // MSB of type/length field
-	i = (uint8_t)(p->typeLength & 0xFF);
-	writeBufferMemory(&i, 1); // LSB of type/length field
-	writeBufferMemory(p->data, p->dLength); // Write data payload
+	writeBufferMemory(p.d, p.dLength); // Write data payload
 
-	w = p->dLength;
-	w += 0x0D; // (size of header - 1)
-	writeControlRegister(0x06, (uint8_t)(w & 0x00FF)); // ETXNDL
-	writeControlRegister(0x07, (uint8_t)((w & 0xFF00) >> 8)); // ETXNDH --> dLength + 0x0D
+	writeControlRegister(0x06, (uint8_t)(p.dLength & 0x00FF)); // ETXNDL
+	writeControlRegister(0x07, (uint8_t)((p.dLength & 0xFF00) >> 8)); // ETXNDH --> dLength
 
-	free(p->data);
-	free(p);
+	free(p.d);
 
 	while(readControlRegister(0x1F) & (1 << 7)); // Wait for finish or abort, ECON1.TXRTS
 	if (readControlRegister(0x1D) & (1 << 1)) { // If ECON1.TXRTS is set
@@ -315,17 +305,19 @@ uint8_t macPacketsReceived(void) { // Returns number of packets ready
 	return r;
 }
 
-MacPacket* macGetPacket(void) { // Returns NULL on error
+Packet macGetPacket(void) { // Returns NULL on error
 	// Read and store next packet pointer,
 	// check receive status vector for errors, if they exist, throw packet away
 	// else read packet, build MacPacket, return it
 	uint8_t d;
 	uint8_t header[6];
 	uint16_t fullLength;
-	MacPacket *p;
+	Packet p;
+	p.d = NULL;
+	p.dLength = 0;
 
 	if (macPacketsReceived() < 1) {
-		return NULL;
+		return p;
 	}
 
 	writeControlRegister(0x00, (uint8_t)(nextPacketPointer & 0xFF)); // Set ERDPTL
@@ -342,29 +334,17 @@ MacPacket* macGetPacket(void) { // Returns NULL on error
 	
 	if (header[2] & (1 << 7)) {
 		// Received OK
-		p = (MacPacket *)malloc(sizeof(MacPacket));
-		if (p == NULL) {
+		p.dLength = fullLength;
+		p.d = (uint8_t *)malloc(p.dLength * sizeof(uint8_t));
+		if (p.d == NULL) {
 			// discardPacket();
-			return NULL;
+			return p;
 		}
-		p->dLength = fullLength - MACPreambleSize;
-		p->data = (uint8_t *)malloc(p->dLength * sizeof(uint8_t));
-		if (p->data == NULL) {
-			free(p);
-			// discardPacket();
-			return NULL;
-		}
-		readBufferMemory(p->destination, 6); // Read destination MAC
-		readBufferMemory(p->source, 6); // Read source MAC
-		readBufferMemory(&d, 1);
-		p->typeLength = ((uint16_t)d << 8); // Read type/length MSB
-		readBufferMemory(&d, 1);
-		p->typeLength |= d; // Read type/length LSB
-		readBufferMemory(p->data, p->dLength); // Read payload
+		readBufferMemory(p.d, p.dLength); // Read payload
 		discardPacket();
 		return p;
 	} else {
 		discardPacket();
-		return NULL;
+		return p;
 	}
 }

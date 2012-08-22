@@ -29,10 +29,8 @@
 void freeDnsRecord(DnsRecord *dr);
 void freeDnsTableEntry(DnsTableEntry *d);
 void freeDnsQuestion(DnsQuestion *d);
-void freeUdpPacket(UdpPacket *up);
-void freeIPv4Packet(IPv4Packet *ip);
-void freeIcmpPacket(IcmpPacket *ic);
-uint8_t isEqual(uint8_t *d1, uint8_t *d2, uint8_t l);
+
+uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint8_t l);
 uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l);
 
 #endif

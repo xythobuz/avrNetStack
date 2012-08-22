@@ -39,59 +39,8 @@ void (*debugOutputHandler)(char *) = NULL;
 IPv4Address source;
 
 #ifndef DISABLE_ICMP_CHECKSUM
-uint16_t checksumIcmp(IcmpPacket *ic) {
-	uint32_t a = 0;
-	uint16_t i;
-	a += ((uint16_t)ic->type << 8) | ic->code;
-	// a += ic->checksum;
-	a += (ic->restOfHeader & 0xFF000000) >> 16;
-	a += (ic->restOfHeader & 0x00FF0000) >> 16;
-	a += (ic->restOfHeader & 0x0000FFFF);
-	for (i = 0; i < ic->dLength; i += 2) {
-		a += ((ic->data[i] << 8) | ic->data[i + 1]);
-	}
-	// a now 16bit sum
-	a = (a & 0x0000FFFF) + ((a & 0xFFFF0000) > 16); // 1's complement 16bit sum
-	return (uint16_t)~a; // 1's complement of 1's complement 16bit sum
-}
-#endif
 
-IcmpPacket *ipv4PacketToIcmpPacket(IPv4Packet *ip) {
-	uint16_t i;
-	IcmpPacket *ic = (IcmpPacket *)malloc(sizeof(IcmpPacket));
-	if (ic == NULL) {
-		freeIPv4Packet(ip);
-		return NULL;
-	}
-	for (i = 0; i < 4; i++) {
-		source[i] = ip->sourceIp[i];
-	}
-	ic->type = ip->data[0];
-	ic->code = ip->data[1];
-	ic->checksum = ip->data[3];
-	ic->checksum |= (ip->data[2] << 8);
-	ic->restOfHeader = ip->data[7];
-	ic->restOfHeader |= ((uint32_t)ip->data[6] << 8);
-	ic->restOfHeader |= ((uint32_t)ip->data[5] << 16);
-	ic->restOfHeader |= ((uint32_t)ip->data[4] << 24);
-	if (ip->dLength > 8) {
-		// There is more data following...
-		ic->data = (uint8_t *)malloc(ip->dLength - 8);
-		if (ic->data == NULL) {
-			free(ic);
-			freeIPv4Packet(ip);
-			return NULL;
-		}
-		for (i = 0; i < (ip->dLength - 8); i++) {
-			ic->data[i] = ip->data[8 + i];
-		}
-		ic->dLength = ip->dLength - 8;
-	} else {
-		ic->dLength = 0;
-	}
-	freeIPv4Packet(ip);
-	return ic;
-}
+#endif
 
 // ----------------------
 // |    External API    |
@@ -101,112 +50,10 @@ void icmpInit(void) {}
 
 // 0 success, 1 not enough mem, 2 invalid
 // ip freed afterwards
-uint8_t icmpProcessPacket(IPv4Packet *ip) {
-#ifndef DISABLE_ICMP_CHECKSUM
-	uint16_t cs;
-#endif
-	IcmpPacket *ic = ipv4PacketToIcmpPacket(ip);
-	freeIPv4Packet(ip);
-	if (ic == NULL) {
-		return 1; // Not enough RAM
-	}
-#ifndef DISABLE_ICMP_CHECKSUM
-	cs = checksumIcmp(ic);
-	if (cs != ic->checksum) {
-		freeIcmpPacket(ic);
-		return 2; // Invalid checksum
-	}
-#endif
-
-#ifndef DISABLE_ICMP_STRINGS
-	if (debugOutputHandler != NULL) {
-		debugOutputHandler(icmpMessage(ic->type, ic->code));
-	}
-#endif
-
-	// Handle ICMP Packet
-#ifndef DISABLE_ICMP_ECHO
-	if (ic->type == 8) {
-		// Echo Request
-		ic->type = 0; // Now Echo Reply
-#ifndef DISABLE_ICMP_CHECKSUM
-		cs = checksumIcmp(ic);
-		ic->checksum = cs;
-#endif // DISABLE_ICMP_CHECKSUM
-		return icmpSendPacket(ic, source);
-	}
-#endif // DISABLE_ICMP_ECHO
-	
-	freeIcmpPacket(ic);
+uint8_t icmpProcessPacket(Packet p) {
 	return 0;
 }
 
-uint8_t icmpSendPacket(IcmpPacket *ic, IPv4Address target) {
-	uint16_t i;
-#ifndef DISABLE_ICMP_CHECKSUM
-	uint16_t cs;
-#endif
-	IPv4Packet *ip = (IPv4Packet *)malloc(sizeof(IPv4Packet));
-	if (ip == NULL) {
-		return 4;
-	}
-	if (ic->data == NULL) 
-		ic->dLength = 0;
-	ip->dLength = ic->dLength + 8;
-	ip->data = (uint8_t *)malloc(ip->dLength * sizeof(uint8_t));
-	if (ip->data == NULL) {
-		free(ip);
-		return 4;
-	}
-	
-	// Fill out IP Header
-	ip->version = 4;
-	ip->internetHeaderLength = 5; // No options
-	ip->typeOfService = 0x00; // Nothing fancy...
-	ip->totalLength = 20 + ip->dLength;
-	ip->flags = 0;
-	ip->fragmentOffset = 0;
-	ip->timeToLive = 0x80;
-	ip->protocol = ICMP;
-	for (i = 0; i < 4; i++) {
-		ip->sourceIp[i] = ownIpAddress[i];
-		ip->destinationIp[i] = target[i];
-	}
-	ip->options = NULL;
-
-	// Insert ICMP Packet into IP Payload
-	ip->data[0] = ic->type;
-	ip->data[1] = ic->code;
-#ifndef DISABLE_ICMP_CHECKSUM
-	ic->checksum = 0x00;
-	cs = checksumIcmp(ic);
-	ip->data[2] = (cs & 0xFF00) >> 8;
-	ip->data[3] = (cs & 0X00FF);
-#else
-	ip->data[2] = (ic->checksum & 0xFF00) >> 8;
-	ip->data[3] = (ic->checksum & 0X00FF);
-#endif
-	ip->data[4] = (ic->restOfHeader & 0xFF000000) >> 24;
-	ip->data[5] = (ic->restOfHeader & 0x00FF0000) >> 16;
-	ip->data[6] = (ic->restOfHeader & 0x0000FF00) >> 8;
-	ip->data[7] = (ic->restOfHeader & 0x000000FF);
-	if (ic->data != NULL) {
-		for (i = 0; i < ic->dLength; i++) {
-			ip->data[8 + i] = ic->data[i];
-		}
-	}
-
-	freeIcmpPacket(ic);
-	i = ipv4SendPacket(ip);
-	if (!((i == 0) || (i == 3))) {
-		i = ipv4SendPacket(ip);
-		if (!((i == 0) || (i == 3))) {
-			freeIPv4Packet(ip);
-			return i;
-		}
-	}
-	return i;
-}
 
 // ----------------------
 // |    Messages API    |

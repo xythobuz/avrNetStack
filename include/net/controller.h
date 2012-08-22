@@ -23,7 +23,6 @@
 
 #include <time.h>
 #include <serial.h>
-#include <net/mac.h>
 
 // -----------------------------------
 // |        Feature Selection        |
@@ -55,6 +54,16 @@
 // -----------------------------------
 // |          External API           |
 // -----------------------------------
+
+typedef struct {
+	uint8_t *d;
+	uint16_t dLength;
+} Packet;
+
+#include <net/mac.h>
+
+#define is16BitEqual(x, y, z) ((x[y] == ((z & 0xFF00) >> 8)) && (x[y+1] == (z & 0x00FF)))
+#define get16Bit(x, y) ((x[y] << 8) | x[y+1])
 
 #if DEBUG == 1
 #define debugPrint(x) serialWriteString(x)

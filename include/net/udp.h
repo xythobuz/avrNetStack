@@ -24,7 +24,9 @@
 #include <net/ipv4.h>
 #include <net/controller.h>
 
-typedef struct {
+#define UDPHeaderSize 0x0C
+
+/* typedef struct {
 	IPv4Address sourceIp;
 	uint16_t source;
 	uint16_t destination;
@@ -32,21 +34,21 @@ typedef struct {
 	uint16_t checksum;
 	uint8_t *data;
 	uint16_t dLength;
-} UdpPacket;
+} UdpPacket; */
 
 void udpInit(void);
 
 // 0 on success, 1 if not enough mem, 2 invalid
-uint8_t udpHandlePacket(IPv4Packet *ip);
+uint8_t udpHandlePacket(Packet p);
 
 // 0 on success, 1 if destination unknown, try again later.
 // 2 or 4 if there was not enough RAM. 3 on PHY Error
 // On Return 0, 1, 2 and 3, up was already freed
-uint8_t udpSendPacket(UdpPacket *up, IPv4Address target); // Leave checksum 0x0000
+// uint8_t udpSendPacket(UdpPacket *up, IPv4Address target); // Leave checksum 0x0000
 
 // Overwrites existing handler for this port
 // 0 on succes, 1 on not enough RAM
 // Handler has to free the UdpPacket!
-uint8_t udpRegisterHandler(uint8_t (*handler)(UdpPacket *), uint16_t port);
+uint8_t udpRegisterHandler(uint8_t (*handler)(Packet), uint16_t port);
 
 #endif

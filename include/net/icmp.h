@@ -23,25 +23,25 @@
 
 #include <net/ipv4.h>
 
-typedef struct {
+/* typedef struct {
 	uint8_t type;
 	uint8_t code;
 	uint16_t checksum;
 	uint32_t restOfHeader;
 	uint8_t *data; // Optional
 	uint16_t dLength;
-} IcmpPacket;
+} IcmpPacket; */
 
 void icmpInit(void);
 
 // 0 success, 1 not enough mem, 2 invalid
 // ip freed afterwards
-uint8_t icmpProcessPacket(IPv4Packet *ip);
+uint8_t icmpProcessPacket(Packet p);
 
 // 0 on success, 1 if destination unknown, try again later.
 // 2 or 4 if there was not enough RAM. 3 on PHY Error
 // On Return 0, 1, 2 and 3, ic was already freed
-uint8_t icmpSendPacket(IcmpPacket *ic, IPv4Address target);
+// uint8_t icmpSendPacket(IcmpPacket *ic, IPv4Address target);
 
 #ifndef DISABLE_ICMP_ERROR_STRINGS
 void icmpRegisterMessageCallback(void (*debugOutput)(char *));

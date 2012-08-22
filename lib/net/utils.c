@@ -57,37 +57,7 @@ void freeDnsQuestion(DnsQuestion *d) {
 	}
 }
 
-void freeUdpPacket(UdpPacket *up) {
-	if (up != NULL) {
-		if (up->data != NULL) {
-			free(up->data);
-		}
-		free(up);
-	}
-}
-
-void freeIPv4Packet(IPv4Packet *ip) {
-	if (ip != NULL) {
-		if (ip->options != NULL) {
-			free(ip->options);
-		}
-		if (ip->data != NULL) {
-			free(ip->data);
-		}
-		free(ip);
-	}
-}
-
-void freeIcmpPacket(IcmpPacket *ic) {
-	if (ic != NULL) {
-		if (ic->data != NULL) {
-			free(ic->data);
-		}
-		free(ic);
-	}
-}
-
-uint8_t isEqual(uint8_t *d1, uint8_t *d2, uint8_t l) {
+uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint8_t l) {
 	uint8_t i;
 	for (i = 0; i < l; i++) {
 		if (d1[i] != pgm_read_byte(&(d2[i]))) {

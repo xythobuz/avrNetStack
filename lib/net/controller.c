@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DEBUG 0 // 0 to receive no debug serial output
+#define DEBUG 1 // 0 to receive no debug serial output
 
 #include <time.h>
 #include <serial.h>
@@ -86,34 +86,41 @@ void networkInit(MacAddress a) {
 uint16_t tl = 0;
 
 uint8_t networkHandler(void) {
-	MacPacket *p;
+	Packet p;
 	
 	// if (macLinkIsUp() && (macPacketsReceived() > 0)) {
 	if (macPacketsReceived() > 0) {
 		p = macGetPacket();
-		if (p != NULL) {
-			tl = p->typeLength;
-			if (p->typeLength == IPV4) {
-				// IPv4 Packet
-				return ipv4ProcessPacket(p);
-			} else if (p->typeLength == ARP) {
-				// Address Resolution Protocol Packet
-				return arpProcessPacket(p);
-			} else if (p->typeLength == WOL) {
-				// Wake on Lan Packet
-			} else if (p->typeLength == RARP) {
-				// Reverse Address Resolution Protocol Packet
-			} else if (p->typeLength <= 0x0600) {
-				// Ethernet type I packet. typeLength = Real data length
-			} else if (p->typeLength == IPV6) {
-				// IPv6 Packet
-			}
 
-			// Packet unhandled, free it
-			free(p->data);
-			free(p);
-			return 42;
+		if ((p.d == NULL) || (p.dLength == 0)) {
+			debugPrint("Not enough memory to receive packet!\n");
+			return 1;
 		}
+
+		debugPrint("\nGot packet. ");
+		debugPrint(timeToString(p.dLength));
+		debugPrint(" bytes long.\n");
+
+		tl = get16Bit(p.d, 12);
+		if (tl == IPV4) {
+			// IPv4 Packet
+			return ipv4ProcessPacket(p);
+		} else if (tl == ARP) {
+			// Address Resolution Protocol Packet
+			return arpProcessPacket(p);
+		} else if (tl == WOL) {
+			// Wake on Lan Packet
+		} else if (tl == RARP) {
+			// Reverse Address Resolution Protocol Packet
+		} else if (tl <= 0x0600) {
+			// Ethernet type I packet. typeLength = Real data length
+		} else if (tl == IPV6) {
+			// IPv6 Packet
+		}
+
+		// Packet unhandled, free it
+		free(p.d);
+		return 42;
 	}
 	return 0xFF;
 }

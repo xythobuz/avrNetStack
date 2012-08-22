@@ -26,7 +26,7 @@
 
 typedef uint8_t IPv4Address[4];
 
-typedef struct {
+/* typedef struct {
 	uint8_t version;
 	uint8_t internetHeaderLength; // This times 4 is the complete header length
 	uint8_t typeOfService;
@@ -48,7 +48,12 @@ typedef struct {
 	uint8_t *options; // Not NULL if internetHeaderLength > 5
 	uint8_t *data;
 	uint16_t dLength; // Real length of data buffer
-} IPv4Packet;
+} IPv4Packet; */
+
+#define IPv4PacketProtocolOffset 10
+#define IPv4PacketSourceOffset 13
+#define IPv4PacketDestinationOffset 17
+#define IPv4PacketHeaderLength 20
 
 #define ICMP 0x01
 #define IGMP 0x02
@@ -61,16 +66,12 @@ extern IPv4Address defaultGateway;
 
 void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway);
 
-uint8_t ipv4ProcessPacket(MacPacket *p);
+uint8_t ipv4ProcessPacket(Packet p);
 // Returns 0 on success, 1 if not enough mem, 2 if packet invalid.
-// p is freed afterwards!
 
-// Returns 0 if packet was sent. 1 if destination was unknown.
-// Try again later, after ARP response could have arrived...
-// Returns 2 if there was not enough memory.
-// Checksum is calculated for you. Leave checksum field 0x00, as well as identification
-// If data is too large, packet is fragmented automatically
-// Returns 3 on PHY Error. If Return is 0 or 3, the IPv4Packet is freed!
-uint8_t ipv4SendPacket(IPv4Packet *p);
+// Gives default values for all fields in the IPv4 Header
+// Also computes checksum, if enabled.
+// Just set Protocol, SourceIp and DestinationIp and append your data
+void ipv4FixPacket(Packet p);
 
 #endif

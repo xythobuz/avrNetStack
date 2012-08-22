@@ -24,7 +24,6 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
-#include <net/controller.h>
 #include <net/mac.h>
 #include <net/icmp.h>
 #include <net/dhcp.h>
@@ -32,6 +31,8 @@
 #include <net/arp.h>
 #include <time.h>
 #include <serial.h>
+
+#include <net/controller.h>
 
 char *getString(uint8_t id);
 
@@ -102,7 +103,15 @@ int main(void) {
 		if (i != 255) {
 			if (i != 0) {
 				serialWriteString(getString(4));
-				serialWriteString(timeToString(i));
+				if (i == 0) {
+					serialWriteString(getString(16));
+				} else if (i == 1) {
+					serialWriteString(getString(15));
+				} else if (i == 2) {
+					serialWriteString(getString(14));
+				} else {
+					serialWriteString(timeToString(i));
+				}
 				serialWrite('\n');
 			}
 			

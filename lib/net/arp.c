@@ -40,13 +40,13 @@ uint8_t arpTableSize = 0;
  * const uint8_t  protocolAddressLength = 4; // IP Length */
 #define HEADERLENGTH 6
 uint8_t ArpPacketHeader[HEADERLENGTH] PROGMEM = {0x00, 0x01, 0x08, 0x00, 0x06, 0x04};
-uint8_t zero[6] PROGMEM = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+uint8_t zero[6] PROGMEM = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 12 bytes in flash, who cares?
 
 // ------------------------
 // |     Internal API     |
 // ------------------------
 
-#define isZero(x, y) isEqual(x, zero, y)
+#define isZero(x, y) isEqualFlash(x, zero, y)
 
 uint8_t isTableEntryFree(uint8_t i) {
 	if (i < arpTableSize) {
@@ -111,33 +111,6 @@ int8_t getFirstFreeEntry(void) {
 	return oldestEntry();
 }
 
-// return 0 on success, 1 on error
-uint8_t macPacketToArpPacket(MacPacket *mp, ArpPacket *ap) {
-	uint8_t i;
-	if ((mp != NULL) && (ap != NULL)) {
-		// Check validity
-		if (isEqual(mp->data, ArpPacketHeader, HEADERLENGTH)
-			&& (mp->dLength >= (HEADERLENGTH + 22))) {
-			// IPv4 Ethernet ARP Packet wich is big enough!
-			ap->operation = (mp->data[HEADERLENGTH]) << 8;
-			ap->operation |= (mp->data[HEADERLENGTH + 1]);
-			for (i = 0; i < 6; i++) {
-				ap->senderMac[i] = mp->data[HEADERLENGTH + 2 + i];
-				ap->targetMac[i] = mp->data[HEADERLENGTH + 12 + i];
-				if (i < 4) {
-					ap->senderIp[i] = mp->data[HEADERLENGTH + 8 + i];
-					ap->targetIp[i] = mp->data[HEADERLENGTH + 18 + i];
-				}
-			}
-			return 0;
-		} else {
-			return 1;
-		}
-	} else {
-		return 1;
-	}
-}
-
 int8_t findIpFromMac(MacAddress mac) {
 	uint8_t i;
 	for (i = 0; i < arpTableSize; i++) {
@@ -175,39 +148,6 @@ void copyEntry(MacAddress mac, IPv4Address ip, time_t time, uint8_t index) {
 	}
 }
 
-MacPacket *arpPacketToMacPacket(ArpPacket *ap) {
-	uint8_t i;
-	MacPacket *mp = (MacPacket *)malloc(sizeof(MacPacket));
-	if (mp == NULL) {
-		return NULL;
-	}
-	for (i = 0; i < 6; i++) {
-		mp->destination[i] = ap->targetMac[i];
-		mp->source[i] = ap->senderMac[i];
-	}
-	mp->typeLength = ARP;
-	mp->dLength = ARPPacketSize + HEADERLENGTH;
-	mp->data = (uint8_t *)malloc(mp->dLength * sizeof(uint8_t));
-	if (mp->data == NULL) {
-		free(mp);
-		return NULL;
-	}
-	for (i = 0; i < HEADERLENGTH; i++) {
-		mp->data[i] = pgm_read_byte(&(ArpPacketHeader[i]));
-	}
-	mp->data[HEADERLENGTH] = (uint8_t)(ap->operation & 0xFF00) >> 8;
-	mp->data[HEADERLENGTH + 1] = (uint8_t)(ap->operation & 0x00FF);
-	for (i = 0; i < 6; i++) {
-		mp->data[HEADERLENGTH + 2 + i] = ap->senderMac[i];
-		mp->data[HEADERLENGTH + 12 + i] = ap->targetMac[i];
-		if (i < 4) {
-			mp->data[HEADERLENGTH + 8 + i] = ap->senderIp[i];
-			mp->data[HEADERLENGTH + 18 + i] = ap->targetIp[i];
-		}
-	}
-	return mp;
-}
-
 // ------------------------
 // |     External API     |
 // ------------------------
@@ -227,70 +167,58 @@ void arpInit(void) {
 	}
 }
 
-uint8_t arpProcessPacket(MacPacket *p) {
+uint8_t arpProcessPacket(Packet p) {
 	uint8_t i;
-	ArpPacket *ap = (ArpPacket *)malloc(sizeof(ArpPacket));
-	if (ap == NULL) {
-		// Discard packet, return
-		free(p->data);
-		free(p);
-		return 1;
-	}
-	if (macPacketToArpPacket(p, ap) != 0) {
-		// Packet not valid!
+
+	if (!(isEqualFlash(p.d + MACPreambleSize, ArpPacketHeader, HEADERLENGTH) && (p.dLength >= (HEADERLENGTH + 22 + MACPreambleSize)))) {
+		// Packet invalid
 		debugPrint("ARP Packet not valid!\n");
-		free(p->data);
-		free(p);
-		free(ap);
+		free(p.d);
 		return 2;
 	}
-	free(p->data);
-	free(p); // We don't need the MacPacket anymore
 
-	if (ap->operation == 1) {
+	if (p.d[MACPreambleSize + HEADERLENGTH + 1] == 1) {
 		// ARP Request. Check if we have stored the sender MAC.
 		debugPrint("ARP Request");
-		if (findIpFromMac(ap->senderMac) == -1) {
+		if (findIpFromMac(p.d + MACPreambleSize + HEADERLENGTH + 2) == -1) {
 			// Sender MAC is not stored. Store combination!
-			copyEntry(ap->senderMac, ap->senderIp, getSystemTime(), getFirstFreeEntry());
+			copyEntry(p.d + MACPreambleSize + HEADERLENGTH + 2, p.d + MACPreambleSize + HEADERLENGTH + 8, getSystemTime(), getFirstFreeEntry());
 		}
 		// Check if the request is for us. If so, issue an answer!
-		if (isEqualMem(ownIpAddress, ap->targetIp, 4)) {
+		if (isEqualMem(ownIpAddress, p.d + MACPreambleSize + HEADERLENGTH + 18, 4)) {
 			debugPrint(" for us!");
-			ap->operation = 2; // Reply
+			p.d[MACPreambleSize + HEADERLENGTH + 1] = 2; // Reply
 			for (i = 0; i < 6; i++) {
-				ap->targetMac[i] = ap->senderMac[i]; // Goes back to sender
-				ap->targetIp[i] = ap->senderIp[i];
-				ap->senderMac[i] = ownMacAddress[i]; // Comes from us
-				ap->senderIp[i] = ownIpAddress[i];
-			}
-			p = arpPacketToMacPacket(ap);
-			free(ap);
-			debugPrint(" Sending Response...");
-			if (p != NULL) {
-				if (macSendPacket(p)) { // If it doesn't work, we can't do anything...
-					// ...except trying again.
-					debugPrint(" Again...");
-					if (macSendPacket(p)) {
-						free(p->data);
-						free(p);
-						debugPrint(" Error!\n");
-						return 1;
-					}
+				p.d[MACPreambleSize + HEADERLENGTH + 12 + i] = p.d[MACPreambleSize + HEADERLENGTH + 2 + i]; // Back to sender
+				p.d[MACPreambleSize + HEADERLENGTH + 2 + i] = ownMacAddress[i]; // Comes from us
+				p.d[i] = 255;
+				p.d[i + 6] = ownMacAddress[i];
+				p.d[12] = (ARP & 0xFF00) >> 8;
+				p.d[13] = (ARP & 0x00FF);
+				if (i < 4) {
+					p.d[MACPreambleSize + HEADERLENGTH + 18 + i] = p.d[MACPreambleSize + HEADERLENGTH + 8 + i];
+
+					p.d[MACPreambleSize + HEADERLENGTH + 8 + i] = ownIpAddress[i];
 				}
-				free(p->data);
-				free(p);
-				debugPrint(" Done!\n");
-				return 0;
-			} else {
-				return 1;
 			}
+			debugPrint(" Sending Response...");
+			if (macSendPacket(p)) { // If it doesn't work, we can't do anything...
+				// ...except trying again.
+				debugPrint(" Again...");
+				if (macSendPacket(p)) {
+					free(p.d);
+					debugPrint(" Error!\n");
+					return 1;
+				}
+			}
+			free(p.d);
+			debugPrint(" Done!\n");
 			return 0;
 		} else {
 #if DEBUG == 1
 			debugPrint(" for ");
 			for (i = 0; i < 4; i++) {
-				debugPrint(timeToString(ap->targetIp[i]));
+				debugPrint(timeToString(p.d[MACPreambleSize + HEADERLENGTH + 18 + i]));
 				if (i < 3) {
 					debugPrint(".");
 				}
@@ -299,20 +227,27 @@ uint8_t arpProcessPacket(MacPacket *p) {
 		}
 		// Request is not for us. Ignore!
 		debugPrint("\n");
-		free(ap);
-	} else if (ap->operation == 2) {
+		free(p.d);
+		return 0;
+	} else if (p.d[MACPreambleSize + HEADERLENGTH + 1] == 2) {
 		debugPrint("ARP Reply!\n");
 		// ARP Reply. Store the information, if not already present
 		// Each packet contains two MAC-IP Combinations. Sender & Target
-		if (findIpFromMac(ap->senderMac) == -1) {
+		if (findIpFromMac(p.d + MACPreambleSize + HEADERLENGTH + 2) == -1) {
 			// Sender MAC is not stored. Store combination!
-			copyEntry(ap->senderMac, ap->senderIp, getSystemTime(), getFirstFreeEntry());
+			copyEntry(p.d + MACPreambleSize + HEADERLENGTH + 2, p.d + MACPreambleSize + HEADERLENGTH + 8, getSystemTime(), getFirstFreeEntry());
 		}
-		if (findIpFromMac(ap->targetMac) == -1) {
+		if (findIpFromMac(p.d + MACPreambleSize + HEADERLENGTH + 12) == -1) {
 			// Target MAC is not stored. Store combination!
-			copyEntry(ap->targetMac, ap->targetIp, getSystemTime(), getFirstFreeEntry());
+			copyEntry(p.d + MACPreambleSize + HEADERLENGTH + 12, p.d + MACPreambleSize + HEADERLENGTH + 18, getSystemTime(), getFirstFreeEntry());
 		}
-		free(ap);
+		free(p.d);
+		return 0;
+	} else {
+		// Neither request nor reply...
+		debugPrint("Invalid ARP Packet!\n");
+		free(p.d);
+		return 2;
 	}
 	return 0;
 }
@@ -325,8 +260,7 @@ uint8_t macReturnBuffer[6];
 uint8_t *arpGetMacFromIp(IPv4Address ip) {
 	uint8_t i;
 	int8_t index = findMacFromIp(ip);
-	ArpPacket *ap;
-	MacPacket *p;
+	Packet p;
 
 	if (index != -1) {
 		for (i = 0; i < 6; i++) {
@@ -336,28 +270,41 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 		return macReturnBuffer;
 	} else {
 		// No entry found. Issue ARP Request
-		ap = (ArpPacket *)malloc(sizeof(ArpPacket));
-		if (ap == NULL) {
-			return NULL;
-		}
-		ap->operation = 1; // Request
-		for (i = 0; i < 6; i++) {
-			ap->senderMac[i] = ownMacAddress[i];
-			ap->targetMac[i] = 0xFF; // Broadcast
-			if (i < 4) {
-				ap->senderIp[i] = ownIpAddress[i];
-				ap->targetIp[i] = ip[i];
+#if DEBUG == 1
+		debugPrint("Sending ARP Request for ");
+		for (i = 0; i < 4; i++) {
+			debugPrint(timeToString(ip[i]));
+			if (i < 3) {
+				debugPrint(".");
 			}
 		}
-		p = arpPacketToMacPacket(ap);
-		free(ap);
-		if (p == NULL) {
+		debugPrint("...");
+#endif
+		p.d = (uint8_t *)malloc(MACPreambleSize + HEADERLENGTH + ARPPacketSize);
+		if (p.d == NULL) {
 			return NULL;
 		}
+		for (i = 0; i < 6; i++) {
+			p.d[i] = 0xFF; // Target MAC
+			p.d[6 + i] = ownMacAddress[i];
+			p.d[MACPreambleSize + i] = pgm_read_byte(&(ArpPacketHeader[i])); // ARP Header
+			p.d[MACPreambleSize + HEADERLENGTH + 2 + i] = ownMacAddress[i];
+			p.d[MACPreambleSize + HEADERLENGTH + 12 + i] = 0xFF;
+			if (i < 4) {
+				p.d[MACPreambleSize + HEADERLENGTH + 8 + i] = ownIpAddress[i];
+				p.d[MACPreambleSize + HEADERLENGTH + 18 + i] = ip[i]; // Target IP
+			}
+		}
+		p.d[12] = (ARP & 0xFF00) >> 8;
+		p.d[13] = (ARP & 0x00FF); // ARP Packet
+		p.d[MACPreambleSize + HEADERLENGTH] = 0;
+		p.d[MACPreambleSize + HEADERLENGTH + 1] = 1; // Request
+
 		if (macSendPacket(p)) { // Can't do anything if error...
 			// ...except try again
 			macSendPacket(p);
 		}
+		debugPrint(" Done!\n");
 		return NULL;
 	}
 }

@@ -25,7 +25,7 @@
 #include <net/controller.h>
 
 // 0 on success, 1 no mem, 2 invalid
-uint8_t dhcpHandler(UdpPacket *up);
+uint8_t dhcpHandler(Packet up);
 uint8_t dhcpIssueRequest(void);
 
 #endif

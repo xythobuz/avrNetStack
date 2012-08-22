@@ -28,27 +28,29 @@
 
 typedef uint8_t MacAddress[6];
 
+#include <net/controller.h>
+
 #define MACPreambleSize 0x0E
 
-extern MacAddress ownMacAddress;
-
-typedef struct {
+/* typedef struct {
 	MacAddress destination;
 	MacAddress source;
 	uint16_t   typeLength; // type/length field in packet
 
 	uint8_t    *data;
 	uint16_t   dLength; // real length of data[]
-} MacPacket;
+} MacPacket; */
 
-uint8_t    macInitialize(MacAddress address); // 0 if success, 1 on error
-void       macReset(void);
-uint8_t    macLinkIsUp(void); // 0 if down, 1 if up
+extern MacAddress ownMacAddress;
 
-uint8_t    macSendPacket(MacPacket *p); // 0 on success, 1 on PHY error
+uint8_t macInitialize(MacAddress address); // 0 if success, 1 on error
+void    macReset(void);
+uint8_t macLinkIsUp(void); // 0 if down, 1 if up
+
+uint8_t macSendPacket(Packet p); // 0 on success, 1 on PHY error
 // p is freed afterwards
 
-uint8_t    macPacketsReceived(void); // number of packets ready
-MacPacket* macGetPacket(void); // Returns NULL on error
+uint8_t macPacketsReceived(void); // number of packets ready
+Packet macGetPacket(void);
 
 #endif

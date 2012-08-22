@@ -36,19 +36,19 @@ typedef struct {
 
 #define ARPPacketSize 22 // Without header
 
-typedef struct {
+/* typedef struct {
 	uint16_t       operation; // 1 for request, 2 for reply
 	MacAddress     senderMac;
 	IPv4Address    senderIp;
 	MacAddress     targetMac;
 	IPv4Address    targetIp;
-} ArpPacket;
+} ArpPacket; */
 
 extern ARPTableEntry *arpTable;
 extern uint8_t arpTableSize;
 
 void arpInit(void);
-uint8_t arpProcessPacket(MacPacket *p); // Processes all received ARP Packets
+uint8_t arpProcessPacket(Packet p); // Processes all received ARP Packets
 // Returns 0 on success, 1 if there was not enough memory,
 // 2 if the packet was no valid ipv4 ethernet arp packet..
 // p is freed afterwards!

@@ -41,79 +41,12 @@ uint8_t ntpServerDomain[] = "0.de.pool.ntp.org";
 
 IPv4Address ntpServer = {78, 46, 85, 230};
 
-uint8_t ntpHandler(UdpPacket *up) {
-	// 64bit NTP Timestamp in data[16] to data[23]
-	time_t stamp = 0;
-	stamp |= (time_t)up->data[16] << 56;
-	stamp |= (time_t)up->data[17] << 48;
-	stamp |= (time_t)up->data[18] << 40;
-	stamp |= (time_t)up->data[19] << 32;
-	stamp |= (time_t)up->data[20] << 24;
-	stamp |= (time_t)up->data[21] << 16;
-	stamp |= (time_t)up->data[22] << 8;
-	stamp |= (time_t)up->data[23];
-	setNtpTimestamp(stamp);
-	freeUdpPacket(up);
+uint8_t ntpHandler(Packet p) {
 	return 0;
 }
 
-// 0 on success, 1 if destination unknown, try again later.
-// 2 or 4 if there was not enough RAM. 3 on PHY Error
-// On Return 0, 1, 2 and 3, up was already freed
-
-// 0 on success, 1 on no mem, 2 on error
 uint8_t ntpIssueRequest(void) {
-	UdpPacket *up;
-	uint8_t *np = (uint8_t *)malloc(NTPMessageSize * sizeof(uint8_t));
-	uint8_t i;
-	if (np == NULL) {
-		return 1;
-	}
-
-#ifndef DISABLE_DNS
-	dnsGetIp(ntpServerDomain, ntpServer); // If it doesn't work, we rely on the defaults
-#endif
-
-	np[0] = NTPFirstByte;
-	for (i = 1; i < NTPMessageSize; i++) {
-		np[i] = 0x00; // Yes, SNTP is simple...
-	}
-
-	up = (UdpPacket *)malloc(sizeof(UdpPacket));
-	if (up == NULL) {
-		free(np);
-		return 1;
-	}
-	up->data = np;
-	up->dLength = NTPMessageSize;
-	up->length = 8 + NTPMessageSize;
-	up->checksum = 0x00;
-	up->destination = 123;
-	up->source = 123;
-
-	i = udpSendPacket(up, ntpServer);
-	if (!((i == 0) || (i == 1) || (i == 2) || (i == 3))) {
-		i = udpSendPacket(up, ntpServer);
-		if (!((i == 0) || (i == 1) || (i == 2) || (i == 3))) {
-			freeUdpPacket(up);
-			return 2;
-		}
-		if (i == 0) {
-			return 0;
-		} else if ((i == 2) || (i == 4)) {
-			return 1;
-		} else {
-			return 2;
-		}
-	}
-	if (i == 0) {
-		return 0;
-	} else if ((i == 2) || (i == 4)) {
-		return 1;
-	} else {
-		return 2;
-	}
-	return 2;
+	return 0;
 }
 
 #endif // DISABLE_NTP
