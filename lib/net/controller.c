@@ -93,7 +93,11 @@ uint8_t networkHandler(void) {
 		p = macGetPacket();
 
 		if ((p.d == NULL) || (p.dLength == 0)) {
-			debugPrint("Not enough memory to receive packet!\n");
+#if DEBUG == 1
+			debugPrint("Not enough memory to receive packet with ");
+			debugPrint(timeToString(p.dLength));
+			debugPrint("bytes!\n");
+#endif
 			return 1;
 		}
 

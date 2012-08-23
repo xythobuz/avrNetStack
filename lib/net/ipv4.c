@@ -93,7 +93,7 @@ void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway) {
 // Returns 0 on success, 1 if not enough mem, 2 if packet invalid.
 uint8_t ipv4ProcessPacket(Packet p) {
 	uint16_t cs = 0x0000, w;
-	uint8_t i;
+	uint8_t i, pr;
 #ifndef DISABLE_IPV4_CHECKSUM
 	cs = checksum(p.d + MACPreambleSize, IPv4PacketHeaderLength);
 #endif
@@ -142,7 +142,24 @@ uint8_t ipv4ProcessPacket(Packet p) {
 
 	if (i) {
 		// Packet to act on...
-
+		pr = p.d[MACPreambleSize + IPv4PacketProtocolOffset];
+		if (pr == ICMP) {
+			debugPrint("Is ICMP Packet!\n");
+		} else if (pr == IGMP) {
+			debugPrint("Is IGMP Packet!\n");
+		} else if (pr == TCP) {
+			debugPrint("Is TCP Packet!\n");
+		} else if (pr == UDP) {
+			debugPrint("Is UDP Packet!\n");
+		} else {
+#if DBEUG == 1
+			debugPrint("No handler for: ");
+			debugPrint(hexToString(pr));
+			debugPrint("!\n");
+			free(p.d);
+			return 0;
+#endif
+		}
 	}
 	free(p.d);
 	return 0;
