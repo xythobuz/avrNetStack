@@ -50,9 +50,10 @@ typedef uint8_t IPv4Address[4];
 	uint16_t dLength; // Real length of data buffer
 } IPv4Packet; */
 
-#define IPv4PacketProtocolOffset 10
-#define IPv4PacketSourceOffset 13
-#define IPv4PacketDestinationOffset 17
+#define IPv4PacketFlagsOffset 6
+#define IPv4PacketProtocolOffset 9
+#define IPv4PacketSourceOffset 12
+#define IPv4PacketDestinationOffset 16
 #define IPv4PacketHeaderLength 20
 
 #define ICMP 0x01

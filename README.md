@@ -14,7 +14,7 @@ Controls the operation of the whole network stack. It contains only two function
 
 ### MAC Module
 
-These are the real Hardware drivers. Different MAC implementations will exist in the future, right now only the ENC28J60 is supported. This allows sending MacPackets, as well as receiving them. Received Packets are deconstructed and given to the appropriate next layer.
+These are the real Hardware drivers. Different MAC implementations will exist in the future, right now only the ENC28J60 is supported. This allows sending Ethernet Packets, as well as receiving them. Received Packets are given to the appropriate next layer by the controller.
 
 ### ARP Module
 
