@@ -28,7 +28,7 @@
 // |        Feature Selection        |
 // -----------------------------------
 
-// #define DISABLE_IPV4_FRAGMENT         // Prevent IPv4 Fragmentation
+#define DISABLE_IPV4_FRAGMENT         // IPv4 Fragmentation currently not supported!
 // #define DISABLE_IPV4_CHECKSUM         // Prevent IPv4 Checksum calculation
 // #define DISABLE_ICMP                  // Disable complete ICMP Protocol
 // #define DISABLE_ICMP_STRINGS          // Don't store ICMP Names in Flash

@@ -96,7 +96,7 @@ uint8_t networkHandler(void) {
 #if DEBUG == 1
 			debugPrint("Not enough memory to receive packet with ");
 			debugPrint(timeToString(p.dLength));
-			debugPrint("bytes!\n");
+			debugPrint(" bytes!\n");
 #endif
 			return 1;
 		}

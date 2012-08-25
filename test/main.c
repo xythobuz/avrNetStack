@@ -90,10 +90,11 @@ int main(void) {
 	serialWriteString(getString(1));
 
 	if (!macLinkIsUp()) {
-		serialWriteString(getString(2));
-	} else {
-		serialWriteString(getString(3));
+		serialWriteString(getString(2)); // Link is down
+		serialWriteString(getString(17)); // Waiting
+		while(!macLinkIsUp());
 	}
+	serialWriteString(getString(3)); // Link is up
 
 	wdt_enable(WDTO_2S);
 
@@ -130,6 +131,13 @@ int main(void) {
 		if (serialHasChar()) {
 			c = serialGet();
 			switch(c) {
+				case 'l':
+					if (macLinkIsUp()) {
+						serialWriteString(getString(3));
+					} else {
+						serialWriteString(getString(2));
+					}
+					break;
 				case 'a':
 					printArpTable();
 					break;

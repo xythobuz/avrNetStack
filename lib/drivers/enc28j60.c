@@ -22,6 +22,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define DEBUG 1
+// #define PRINTPHSTAT
+
 #include <net/mac.h>
 #include <spi.h>
 #include <net/controller.h>
@@ -140,13 +143,12 @@ uint16_t readPhyRegister(uint8_t a) {
 	selectBank(2);
 	writeControlRegister(0x14, (a & 0x1F)); // Set MIREGADR
 	bitFieldSet(0x12, 0x01); // Set MICMD.MIIRD, read operation begins
+
 	selectBank(3);
+	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY to go 0
 
-	// while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY to go 0
-	asm volatile ("nop");
-
-	bitFieldClear(0x12, 0x01); // Clear MICMD.MIIRD
 	selectBank(2);
+	bitFieldClear(0x12, 0x01); // Clear MICMD.MIIRD
 	reg |= readControlRegister(0x18);
 	reg |= (readControlRegister(0x19) << 8);
 	selectBank(0); // Reset bank selection!
@@ -158,10 +160,11 @@ void writePhyRegister(uint8_t a, uint16_t d) {
 	writeControlRegister(0x14, (a & 0x1F)); // Set MIREGADR
 	writeControlRegister(0x16, (uint8_t)(d & 0xFF)); // Set MIWRL
 	writeControlRegister(0x17, (uint8_t)((d & 0xFF00) >> 8)); // Set MIWRH
-	selectBank(3);
 
-	// while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY
-	asm volatile ("nop");
+	selectBank(3);
+	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY
+
+	selectBank(0);
 }
 
 void discardPacket(void) {
@@ -253,6 +256,25 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	// Enable packet reception
 	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
 
+#if DEBUG == 1
+	selectBank(3);
+	debugPrint("ENC28J60 - Version ");
+	i = readControlRegister(0x12);
+	if (i == 0x02) {
+		debugPrint("B1");
+	} else if (i == 0x04) {
+		debugPrint("B4");
+	} else if (i == 0x05) {
+		debugPrint("B5");
+	} else if (i == 0x06) {
+		debugPrint("B7");
+	} else {
+		debugPrint("Unknown");
+	}
+	debugPrint("!\n");
+	selectBank(0);
+#endif
+
 	return 0;
 }
 
@@ -261,8 +283,15 @@ void macReset(void) {
 }
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
-	uint16_t p = readPhyRegister(0x01); // Read PHSTAT1
-	if (p & (1 << 2)) { // if LLSTAT is set
+	uint16_t p = readPhyRegister(0x11); // Read PHSTAT2
+#if DEBUG == 1 && defined(PRINTPHSTAT)
+	debugPrint("PHSTAT1: ");
+	debugPrint(hexToString(readPhyRegister(0x01)));
+	debugPrint("\nPHSTAT2: ");
+	debugPrint(hexToString(p));
+	debugPrint("\n");
+#endif
+	if (p & 0x0400) { // if LSTAT is set
 		return 1;
 	} else {
 		return 0;

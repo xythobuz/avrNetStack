@@ -142,6 +142,23 @@ uint8_t ipv4ProcessPacket(Packet p) {
 
 	if (i) {
 		// Packet to act on...
+#if DEBUG == 1
+		debugPrint("From: ");
+		for (i = 0; i < 4; i++) {
+			debugPrint(timeToString(p.d[MACPreambleSize + IPv4PacketSourceOffset + i]));
+			if (i < 3) {
+				debugPrint(".");
+			}
+		}
+		debugPrint("\nTo: ");
+		for (i = 0; i < 4; i++) {
+			debugPrint(timeToString(p.d[MACPreambleSize + IPv4PacketDestinationOffset + i]));
+			if (i < 3) {
+				debugPrint(".");
+			}
+		}
+		debugPrint("\n");
+#endif
 		pr = p.d[MACPreambleSize + IPv4PacketProtocolOffset];
 		if (pr == ICMP) {
 			debugPrint("Is ICMP Packet!\n");
@@ -152,7 +169,7 @@ uint8_t ipv4ProcessPacket(Packet p) {
 		} else if (pr == UDP) {
 			debugPrint("Is UDP Packet!\n");
 		} else {
-#if DBEUG == 1
+#if DEBUG == 1
 			debugPrint("No handler for: ");
 			debugPrint(hexToString(pr));
 			debugPrint("!\n");

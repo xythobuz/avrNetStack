@@ -28,7 +28,7 @@
 
 const char string0[] PROGMEM = "avrNetStack-Debug";
 const char string1[] PROGMEM = " initialized!\n";
-const char string2[] PROGMEM = "Link is down...\n";
+const char string2[] PROGMEM = "Link is down!\n";
 const char string3[] PROGMEM = "Link is up!\n";
 const char string4[] PROGMEM = "Handler returned: ";
 const char string5[] PROGMEM = "ICMP Packet: ";
@@ -36,21 +36,22 @@ const char string6[] PROGMEM = "Last Protocol: ";
 const char string7[] PROGMEM = "IPv4";
 const char string8[] PROGMEM = "NTP Request: ";
 const char string9[] PROGMEM = "DHCP Request: ";
-const char string10[] PROGMEM = "Commands: qvdna\n";
+const char string10[] PROGMEM = "Commands: qvdnal\n";
 const char string11[] PROGMEM = "Good Bye...\n\n";
 const char string12[] PROGMEM = "\nARP Table:\n";
 const char string13[] PROGMEM = " --> ";
 const char string14[] PROGMEM = "Invalid";
 const char string15[] PROGMEM = "Not enough Memory";
 const char string16[] PROGMEM = "Success";
+const char string17[] PROGMEM = "Waiting...\n";
 
 // Last index + 1
-#define STRINGNUM 17
+#define STRINGNUM 18
 
 PGM_P stringTable[STRINGNUM] PROGMEM = { string0, string1, string2, string3, string4,
 									string5, string6, string7, string8, string9,
 									string10, string11, string12, string13, string14,
-									string15, string16 };
+									string15, string16, string17 };
 
 char stringNotFoundError[] PROGMEM = "String not found!\n";
 
