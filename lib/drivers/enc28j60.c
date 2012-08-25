@@ -253,6 +253,9 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 	// If desired, you could enable interrupts here
 
+	// Set LED Mode. PHLCON = 0x3472 --> LEDA Link, LEDB Transmit and Receive
+	writePhyRegister(0x14, 0x3472);
+
 	// Enable packet reception
 	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
 
@@ -302,6 +305,10 @@ uint8_t macSendPacket(Packet p) { // 0 on success, 1 on error
 	// Place Frame data in buffer, with a preceding control byte
 	// This control byte can be 0x00, as we set everything needed in MACON3
 	uint8_t i = 0x00;
+#if DEBUG == 1
+	uint16_t a;
+	uint8_t *po;
+#endif
 
 	selectBank(0);
 	writeControlRegister(0x04, 0x00); // set ETXSTL
@@ -316,10 +323,30 @@ uint8_t macSendPacket(Packet p) { // 0 on success, 1 on error
 	writeControlRegister(0x06, (uint8_t)(p.dLength & 0x00FF)); // ETXNDL
 	writeControlRegister(0x07, (uint8_t)((p.dLength & 0xFF00) >> 8)); // ETXNDH --> dLength
 
+	bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
+
 	free(p.d);
 
-	while(readControlRegister(0x1F) & (1 << 7)); // Wait for finish or abort, ECON1.TXRTS
-	if (readControlRegister(0x1D) & (1 << 1)) { // If ECON1.TXRTS is set
+	while(readControlRegister(0x1F) & (1 << 7)); // Wait for finish or abort, ECON1.TXRST
+#if DEBUG == 1
+	// Print status vector
+	po = (uint8_t *)malloc(7 * sizeof(uint8_t));
+	if (po != NULL) {
+		a = 1 + p.dLength;
+		writeControlRegister(0x00, (uint8_t)(a & 0xFF)); // Set ERDPTL
+		writeControlRegister(0x01, (uint8_t)((a & 0xFF00) >> 8)); // Set ERDPTH
+		readBufferMemory(po, 7); // Read status vector
+		debugPrint("Status Vector:\n");
+		for (i = 0; i < 7; i++) {
+			debugPrint(timeToString(i));
+			debugPrint(": ");
+			debugPrint(hexToString(po[i]));
+			debugPrint("\n");
+		}
+		free(po);
+	}
+#endif
+	if (readControlRegister(0x1D) & (1 << 1)) { // If ESTAT.TXABRT is set
 		return 1; // error
 	} else {
 		return 0;

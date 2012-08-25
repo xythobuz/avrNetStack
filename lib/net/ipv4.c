@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 0 // 0 to receive no debug serial output
 
 #include <time.h>
 #include <net/mac.h>
@@ -67,9 +67,14 @@ uint16_t checksum(uint8_t *rawData, uint16_t l) {
 	uint16_t w;
 
 	for (i = 0; i < l; i += 2) {
-		w = rawData[i + 1];
-		w |= (rawData[i] << 8);
+		if (i == (l - 1)) {
+			w = (rawData[i]);
+		} else {
+			w = (rawData[i] << 8);
+			w |= rawData[i + 1];
+		}
 		a += w;
+		
 	}
 	a = (a & 0xFFFF) + ((a >> 16) & 0xF); // 1's complement 16bit sum
 	a = ~a; // 1's complement of 1's complement 16bit sum
@@ -168,6 +173,7 @@ uint8_t ipv4ProcessPacket(Packet p) {
 			debugPrint("Is TCP Packet!\n");
 		} else if (pr == UDP) {
 			debugPrint("Is UDP Packet!\n");
+			return udpHandlePacket(p);
 		} else {
 #if DEBUG == 1
 			debugPrint("No handler for: ");

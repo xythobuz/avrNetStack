@@ -22,9 +22,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define DEBUG 1
+
 #include <net/icmp.h>
 #include <net/utils.h>
 #include <net/udp.h>
+#include <net/controller.h>
 
 #ifndef DISABLE_UDP
 
@@ -38,9 +41,12 @@ typedef struct {
 UdpHandler *handlers = NULL;
 uint16_t registeredHandlers = 0;
 IPv4Address target;
+
 // --------------------------
 // |      Internal API      |
 // --------------------------
+
+uint16_t checksum(uint8_t *rawData, uint16_t l); // From ipv4.c
 
 int16_t findHandler(uint16_t port) {
 	uint16_t i;
@@ -55,7 +61,42 @@ int16_t findHandler(uint16_t port) {
 }
 
 #ifndef DISABLE_UDP_CHECKSUM
+uint16_t udpChecksum(Packet p) {
+	uint8_t i;
+	uint16_t cs;
+	// We create the pseudo header in our already present buffer,
+	// calculate the checksum,
+	// then move the ip addresses back to their old places, so it can be used again...
+	
+	// Move IPs (8 bytes) from IPv4PacketSourceOffset (12) to 8
+	for (i = 0; i < 8; i++) {
+		p.d[MACPreambleSize + 8 + i] = p.d[MACPreambleSize + 12 + i];
+	}
 
+	// Insert data for Pseudo Header
+	p.d[MACPreambleSize + 16] = 0x00; // Zeros
+	p.d[MACPreambleSize + 17] = 0x11; // UDP Protocol
+	p.d[MACPreambleSize + 18] = p.d[UDPOffset + UDPLengthOffset];
+	p.d[MACPreambleSize + 19] = p.d[UDPOffset + UDPLengthOffset + 1]; // UDP Length
+
+	// Clear UDP Checksum field
+	p.d[UDPOffset + UDPChecksumOffset] = 0;
+	p.d[UDPOffset + UDPChecksumOffset + 1] = 0;
+
+	// Calculate Checksum
+	cs = checksum(p.d + MACPreambleSize + 8, 12 + get16Bit(p.d, UDPOffset + UDPLengthOffset));
+
+	// Move IPs back
+	for (i = 0; i < 8; i++) {
+		p.d[MACPreambleSize + 12 + i] = p.d[MACPreambleSize + 8 + i];
+	}
+	// Restore IPv4 Protocol and Checksum
+	p.d[MACPreambleSize + IPv4PacketProtocolOffset] = 0x11; // UDP
+	p.d[MACPreambleSize + IPv4PacketProtocolOffset + 1] = 0;
+	p.d[MACPreambleSize + IPv4PacketProtocolOffset + 2] = 0; // Checksum field
+
+	return cs;
+}
 #endif
 
 // --------------------------
@@ -65,11 +106,38 @@ int16_t findHandler(uint16_t port) {
 void udpInit(void) {}
 
 // 0 on success, 1 not enough mem, 2 invalid
-// 3 on success, 5 or 7 on not enough mem, 6 on PHY error
-// 4 on unknown destination, try again later
-// ip is always freed!
 uint8_t udpHandlePacket(Packet p) {
-		return 0;
+	uint8_t i;
+	uint16_t ocs = 0x0000, cs = 0x0000;
+#ifndef DISABLE_UDP_CHECKSUM
+	ocs = get16Bit(p.d, UDPOffset + UDPChecksumOffset);
+	cs = udpChecksum(p);
+#endif
+	if (cs != ocs) {
+#if DEBUG == 1
+		debugPrint("UDP Checksum invalid: ");
+		debugPrint(hexToString(ocs));
+		debugPrint(" != ");
+		debugPrint(hexToString(cs));
+		debugPrint("\n");
+#endif
+		free(p.d);
+		return 2;
+	}
+
+	// Look for a handler
+	for (i = 0; i < registeredHandlers; i++) {
+		if (handlers[i].port == get16Bit(p.d, UDPOffset + UDPDestinationOffset)) {
+			// found handler
+			return handlers[i].func(p);
+		}
+	}
+
+	debugPrint("No handler for ");
+	debugPrint(timeToString(get16Bit(p.d, UDPOffset + UDPDestinationOffset)));
+	debugPrint(" registered!\n");
+	free(p.d);
+	return 0;
 }
 
 

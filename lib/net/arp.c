@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 0 // 0 to receive no debug serial output
 
 #include <net/mac.h>
 #include <net/ipv4.h>
@@ -302,9 +302,15 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 
 		if (macSendPacket(p)) { // Can't do anything if error...
 			// ...except try again
-			macSendPacket(p);
+			debugPrint(" Couldn't send. Trying again...");
+			if (macSendPacket(p)) {
+				debugPrint(" Giving up!\n");
+			} else {
+				debugPrint(" Done!\n");
+			}
+		} else {
+			debugPrint(" Done!\n");
 		}
-		debugPrint(" Done!\n");
 		return NULL;
 	}
 }

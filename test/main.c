@@ -66,10 +66,13 @@ void icmpCallBack(char *s) {
 	serialWrite('\n');
 }
 
+IPv4Address testIp = { 192, 168, 0, 103 };
+
 int main(void) {
 	char c;
 	uint8_t i;
 	uint16_t j;
+	uint8_t *p;
 
 	MCUSR = 0;
 	wdt_disable();
@@ -131,6 +134,22 @@ int main(void) {
 		if (serialHasChar()) {
 			c = serialGet();
 			switch(c) {
+				case 't':
+					p = arpGetMacFromIp(testIp);
+					if (p == NULL) {
+						serialWriteString(getString(18));
+					} else {
+						serialWriteString(getString(19));
+						for (i = 0; i < 6; i++) {
+							serialWriteString(hex2ToString(p[i]));
+							if (i < 5) {
+								serialWrite(':');
+							} else {
+								serialWrite('\n');
+							}
+						}
+					}
+					break;
 				case 'l':
 					if (macLinkIsUp()) {
 						serialWriteString(getString(3));
