@@ -253,8 +253,8 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 	// If desired, you could enable interrupts here
 
-	// Set LED Mode. PHLCON = 0x3472 --> LEDA Link, LEDB Transmit and Receive
-	writePhyRegister(0x14, 0x3472);
+	// Set LED Mode. LEDA Receive and Link, LEDB Transmit --> PHLCON = 0x3C12
+	writePhyRegister(0x14, 0x3C12);
 
 	// Enable packet reception
 	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
