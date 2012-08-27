@@ -113,6 +113,11 @@ uint8_t udpHandlePacket(Packet p) {
 	ocs = get16Bit(p.d, UDPOffset + UDPChecksumOffset);
 	cs = udpChecksum(p);
 #endif
+#if DEBUG == 1
+	debugPrint("UDP Packet with ");
+	debugPrint(timeToString(get16Bit(p.d, UDPOffset + UDPLengthOffset)));
+	debugPrint(" bytes!\n");
+#endif
 	if (cs != ocs) {
 #if DEBUG == 1
 		debugPrint("UDP Checksum invalid: ");
