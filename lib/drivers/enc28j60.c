@@ -301,7 +301,7 @@ uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
 	}
 }
 
-uint8_t macSendPacket(Packet p) { // 0 on success, 1 on error
+uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	// Place Frame data in buffer, with a preceding control byte
 	// This control byte can be 0x00, as we set everything needed in MACON3
 	uint8_t i = 0x00;
@@ -318,21 +318,21 @@ uint8_t macSendPacket(Packet p) { // 0 on success, 1 on error
 	writeControlRegister(0x02, 0x00); // EWRPTL
 	writeControlRegister(0x03, 0x00); // EWRPTH --> 0x0000
 	writeBufferMemory(&i, 1); // Write 0x00 as control byte
-	writeBufferMemory(p.d, p.dLength); // Write data payload
+	writeBufferMemory(p->d, p->dLength); // Write data payload
 
-	writeControlRegister(0x06, (uint8_t)(p.dLength & 0x00FF)); // ETXNDL
-	writeControlRegister(0x07, (uint8_t)((p.dLength & 0xFF00) >> 8)); // ETXNDH --> dLength
+	writeControlRegister(0x06, (uint8_t)(p->dLength & 0x00FF)); // ETXNDL
+	writeControlRegister(0x07, (uint8_t)((p->dLength & 0xFF00) >> 8)); // ETXNDH --> dLength
 
 	bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
 
-	free(p.d);
+	free(p->d);
 
 	while(readControlRegister(0x1F) & (1 << 7)); // Wait for finish or abort, ECON1.TXRST
 #if DEBUG == 1
 	// Print status vector
 	po = (uint8_t *)malloc(7 * sizeof(uint8_t));
 	if (po != NULL) {
-		a = 1 + p.dLength;
+		a = 1 + p->dLength;
 		writeControlRegister(0x00, (uint8_t)(a & 0xFF)); // Set ERDPTL
 		writeControlRegister(0x01, (uint8_t)((a & 0xFF00) >> 8)); // Set ERDPTH
 		readBufferMemory(po, 7); // Read status vector
@@ -361,16 +361,20 @@ uint8_t macPacketsReceived(void) { // Returns number of packets ready
 	return r;
 }
 
-Packet macGetPacket(void) { // Returns NULL on error
+Packet *macGetPacket(void) { // Returns NULL on error
 	// Read and store next packet pointer,
 	// check receive status vector for errors, if they exist, throw packet away
 	// else read packet, build MacPacket, return it
 	uint8_t d;
 	uint8_t header[6];
 	uint16_t fullLength;
-	Packet p;
-	p.d = NULL;
-	p.dLength = 0;
+	Packet *p = (Packet *)malloc(sizeof(Packet));
+	if (p == NULL) {
+		return NULL;
+	}
+
+	p->d = NULL;
+	p->dLength = 0;
 
 	if (macPacketsReceived() < 1) {
 		return p;
@@ -390,13 +394,13 @@ Packet macGetPacket(void) { // Returns NULL on error
 	
 	if (header[2] & (1 << 7)) {
 		// Received OK
-		p.dLength = fullLength;
-		p.d = (uint8_t *)malloc(p.dLength * sizeof(uint8_t));
-		if (p.d == NULL) {
+		p->dLength = fullLength;
+		p->d = (uint8_t *)malloc(p->dLength * sizeof(uint8_t));
+		if (p->d == NULL) {
 			// discardPacket();
 			return p;
 		}
-		readBufferMemory(p.d, p.dLength); // Read payload
+		readBufferMemory(p->d, p->dLength); // Read payload
 		discardPacket();
 		return p;
 	} else {

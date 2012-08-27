@@ -71,14 +71,14 @@ void networkInit(MacAddress a) {
 #ifndef DISABLE_UDP
 	udpInit();
   #ifndef DISABLE_DHCP
-	udpRegisterHandler(&dhcpHandler, 68);
+	// udpRegisterHandler(&dhcpHandler, 68);
   #endif
   #ifndef DISABLE_DNS
-	udpRegisterHandler(&dnsHandler, 53);
-	dnsRegisterMessageCallback(&serialWriteString);
+	// udpRegisterHandler(&dnsHandler, 53);
+	// dnsRegisterMessageCallback(&serialWriteString);
   #endif
   #ifndef DISABLE_NTP
-	udpRegisterHandler(&ntpHandler, 123);
+	// udpRegisterHandler(&ntpHandler, 123);
   #endif
 #endif
 }
@@ -86,26 +86,26 @@ void networkInit(MacAddress a) {
 uint16_t tl = 0;
 
 uint8_t networkHandler(void) {
-	Packet p;
+	Packet *p;
 	
 	// if (macLinkIsUp() && (macPacketsReceived() > 0)) {
 	if (macPacketsReceived() > 0) {
 		p = macGetPacket();
 
-		if ((p.d == NULL) || (p.dLength == 0)) {
+		if ((p == NULL) || (p->d == NULL) || (p->dLength == 0)) {
 #if DEBUG == 1
 			debugPrint("Not enough memory to receive packet with ");
-			debugPrint(timeToString(p.dLength));
+			debugPrint(timeToString(p->dLength));
 			debugPrint(" bytes!\n");
 #endif
 			return 1;
 		}
 
 		debugPrint("\nGot packet. ");
-		debugPrint(timeToString(p.dLength));
+		debugPrint(timeToString(p->dLength));
 		debugPrint(" bytes long.\n");
 
-		tl = get16Bit(p.d, 12);
+		tl = get16Bit(p->d, 12);
 		if (tl == IPV4) {
 			// IPv4 Packet
 			return ipv4ProcessPacket(p);
@@ -123,7 +123,7 @@ uint8_t networkHandler(void) {
 		}
 
 		// Packet unhandled, free it
-		free(p.d);
+		free(p->d);
 		return 42;
 	}
 	return 0xFF;

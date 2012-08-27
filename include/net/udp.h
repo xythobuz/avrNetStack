@@ -44,7 +44,7 @@
 void udpInit(void);
 
 // 0 on success, 1 if not enough mem, 2 invalid
-uint8_t udpHandlePacket(Packet p);
+uint8_t udpHandlePacket(Packet *p);
 
 // 0 on success, 1 if destination unknown, try again later.
 // 2 or 4 if there was not enough RAM. 3 on PHY Error
@@ -54,6 +54,6 @@ uint8_t udpHandlePacket(Packet p);
 // Overwrites existing handler for this port
 // 0 on succes, 1 on not enough RAM
 // Handler has to free the UdpPacket!
-uint8_t udpRegisterHandler(uint8_t (*handler)(Packet), uint16_t port);
+uint8_t udpRegisterHandler(uint8_t (*handler)(Packet *), uint16_t port);
 
 #endif

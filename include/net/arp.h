@@ -48,7 +48,7 @@ extern ARPTableEntry *arpTable;
 extern uint8_t arpTableSize;
 
 void arpInit(void);
-uint8_t arpProcessPacket(Packet p); // Processes all received ARP Packets
+uint8_t arpProcessPacket(Packet *p); // Processes all received ARP Packets
 // Returns 0 on success, 1 if there was not enough memory,
 // 2 if the packet was no valid ipv4 ethernet arp packet..
 // p is freed afterwards!

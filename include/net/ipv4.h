@@ -67,12 +67,12 @@ extern IPv4Address defaultGateway;
 
 void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway);
 
-uint8_t ipv4ProcessPacket(Packet p);
+uint8_t ipv4ProcessPacket(Packet *p);
 // Returns 0 on success, 1 if not enough mem, 2 if packet invalid.
 
 // Gives default values for all fields in the IPv4 Header
 // Also computes checksum, if enabled.
 // Just set Protocol, SourceIp and DestinationIp and append your data
-void ipv4FixPacket(Packet p);
+void ipv4FixPacket(Packet *p);
 
 #endif

@@ -96,52 +96,56 @@ void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway) {
 }
 
 // Returns 0 on success, 1 if not enough mem, 2 if packet invalid.
-uint8_t ipv4ProcessPacket(Packet p) {
+uint8_t ipv4ProcessPacket(Packet *p) {
 	uint16_t cs = 0x0000, w;
 	uint8_t i, pr;
 #ifndef DISABLE_IPV4_CHECKSUM
-	cs = checksum(p.d + MACPreambleSize, IPv4PacketHeaderLength);
+	cs = checksum(p->d + MACPreambleSize, IPv4PacketHeaderLength);
 #endif
-	if ((cs != 0x0000) || ((p.d[MACPreambleSize] & 0xF0) != 0x40)) {
+	if ((cs != 0x0000) || ((p->d[MACPreambleSize] & 0xF0) != 0x40)) {
 		// Checksum or version invalid
 #if DEBUG == 1
 		debugPrint("Checksum: ");
 		debugPrint(hexToString(cs));
 		debugPrint("  First byte: "),
-		debugPrint(hexToString(p.d[MACPreambleSize]));
+		debugPrint(hexToString(p->d[MACPreambleSize]));
 		debugPrint("!\n");
 #endif
-		free(p.d);
+		free(p->d);
+		free(p);
 		return 2;
 	} else {
 		debugPrint("Valid IPv4 Packet!\n");
 	}
 
-	w = get16Bit(p.d, MACPreambleSize + IPv4PacketFlagsOffset);
+	w = get16Bit(p->d, MACPreambleSize + IPv4PacketFlagsOffset);
 	if (w & 0x1FFF) {
 		debugPrint("Fragment Offset is ");
 		debugPrint(hexToString(w & 0x1FFF));
 		debugPrint("!\n");
-		free(p.d);
+		free(p->d);
+		free(p);
 		return 2;
 	}
 	if (w & 0x2000) {
 		// Part of a fragmented IPv4 Packet... No support for that
 		debugPrint("More Fragments follow!\n");
-		free(p.d);
+		free(p->d);
+		free(p);
 		return 2;
 	}
 
 	i = 0;
-	if (isBroadcastIp(p.d + MACPreambleSize + IPv4PacketDestinationOffset)) {
+	if (isBroadcastIp(p->d + MACPreambleSize + IPv4PacketDestinationOffset)) {
 		i++;
 		debugPrint("IPv4 Broadcast Packet!\n");
-	} else if (isEqualMem(ownIpAddress, p.d + MACPreambleSize + IPv4PacketDestinationOffset, 4)) {
+	} else if (isEqualMem(ownIpAddress, p->d + MACPreambleSize + IPv4PacketDestinationOffset, 4)) {
 		i++;
 		debugPrint("IPv4 Packet for us!\n");
 	} else {
 		debugPrint("IPv4 Packet not for us!\n");
-		free(p.d);
+		free(p->d);
+		free(p);
 		return 0;
 	}
 
@@ -150,21 +154,21 @@ uint8_t ipv4ProcessPacket(Packet p) {
 #if DEBUG == 1
 		debugPrint("From: ");
 		for (i = 0; i < 4; i++) {
-			debugPrint(timeToString(p.d[MACPreambleSize + IPv4PacketSourceOffset + i]));
+			debugPrint(timeToString(p->d[MACPreambleSize + IPv4PacketSourceOffset + i]));
 			if (i < 3) {
 				debugPrint(".");
 			}
 		}
 		debugPrint("\nTo: ");
 		for (i = 0; i < 4; i++) {
-			debugPrint(timeToString(p.d[MACPreambleSize + IPv4PacketDestinationOffset + i]));
+			debugPrint(timeToString(p->d[MACPreambleSize + IPv4PacketDestinationOffset + i]));
 			if (i < 3) {
 				debugPrint(".");
 			}
 		}
 		debugPrint("\n");
 #endif
-		pr = p.d[MACPreambleSize + IPv4PacketProtocolOffset];
+		pr = p->d[MACPreambleSize + IPv4PacketProtocolOffset];
 		if (pr == ICMP) {
 			debugPrint("Is ICMP Packet!\n");
 		} else if (pr == IGMP) {
@@ -179,32 +183,34 @@ uint8_t ipv4ProcessPacket(Packet p) {
 			debugPrint("No handler for: ");
 			debugPrint(hexToString(pr));
 			debugPrint("!\n");
-			free(p.d);
+			free(p->d);
+			free(p);
 			return 0;
 #endif
 		}
 	}
-	free(p.d);
+	free(p->d);
+	free(p);
 	return 0;
 }
 
-void ipv4FixPacket(Packet p) {
-	uint16_t tLength = p.dLength - MACPreambleSize;
-	p.d[MACPreambleSize + 0] = (4) << 4; // Version
-	p.d[MACPreambleSize + 0] |= 5; // InternetHeaderLength
-	p.d[MACPreambleSize + 1] = 0; // Type Of Service
-	p.d[MACPreambleSize + 2] = (tLength & 0xFF00) >> 8;
-	p.d[MACPreambleSize + 3] = (tLength & 0x00FF);
-	p.d[MACPreambleSize + 4] = (risingIdentification & 0xFF00) >> 8;
-	p.d[MACPreambleSize + 5] = (risingIdentification++ & 0x00FF);
-	p.d[MACPreambleSize + 6] = 0;
-	p.d[MACPreambleSize + 7] = 0; // Flags and Fragment Offset
-	p.d[MACPreambleSize + 8] = 0xFF; // Time To Live
-	p.d[MACPreambleSize + 10] = 0;
-	p.d[MACPreambleSize + 11] = 0; // Checksum field
+void ipv4FixPacket(Packet *p) {
+	uint16_t tLength = p->dLength - MACPreambleSize;
+	p->d[MACPreambleSize + 0] = (4) << 4; // Version
+	p->d[MACPreambleSize + 0] |= 5; // InternetHeaderLength
+	p->d[MACPreambleSize + 1] = 0; // Type Of Service
+	p->d[MACPreambleSize + 2] = (tLength & 0xFF00) >> 8;
+	p->d[MACPreambleSize + 3] = (tLength & 0x00FF);
+	p->d[MACPreambleSize + 4] = (risingIdentification & 0xFF00) >> 8;
+	p->d[MACPreambleSize + 5] = (risingIdentification++ & 0x00FF);
+	p->d[MACPreambleSize + 6] = 0;
+	p->d[MACPreambleSize + 7] = 0; // Flags and Fragment Offset
+	p->d[MACPreambleSize + 8] = 0xFF; // Time To Live
+	p->d[MACPreambleSize + 10] = 0;
+	p->d[MACPreambleSize + 11] = 0; // Checksum field
 #ifndef DISABLE_IPV4_CHECKSUM
-	tLength = checksum(p.d + MACPreambleSize, IPv4PacketHeaderLength);
-	p.d[MACPreambleSize + 10] = (tLength & 0xFF00) >> 8;
-	p.d[MACPreambleSize + 11] = (tLength & 0x00FF);
+	tLength = checksum(p->d + MACPreambleSize, IPv4PacketHeaderLength);
+	p->d[MACPreambleSize + 10] = (tLength & 0xFF00) >> 8;
+	p->d[MACPreambleSize + 11] = (tLength & 0x00FF);
 #endif
 }

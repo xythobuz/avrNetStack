@@ -47,10 +47,10 @@ uint8_t macInitialize(MacAddress address); // 0 if success, 1 on error
 void    macReset(void);
 uint8_t macLinkIsUp(void); // 0 if down, 1 if up
 
-uint8_t macSendPacket(Packet p); // 0 on success, 1 on PHY error
+uint8_t macSendPacket(Packet *p); // 0 on success, 1 on PHY error
 // p is freed afterwards
 
 uint8_t macPacketsReceived(void); // number of packets ready
-Packet macGetPacket(void);
+Packet *macGetPacket(void);
 
 #endif
