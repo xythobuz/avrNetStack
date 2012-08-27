@@ -10164,7 +10164,7 @@ USART&lt;p&gt;
 <part name="JP4" library="0_RN" deviceset="AVR_JTAG" device=""/>
 <part name="P+5" library="supply1" deviceset="VCC" device=""/>
 <part name="GND18" library="supply1" deviceset="GND" device=""/>
-<part name="L1" library="resistor" deviceset="L-EU" device="0204/7"/>
+<part name="L1" library="resistor" deviceset="L-EU" device="0204/7" value="10u"/>
 <part name="VDD10" library="supply1" deviceset="VDD" device=""/>
 </parts>
 <sheets>
