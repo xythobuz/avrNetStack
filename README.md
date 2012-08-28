@@ -6,7 +6,14 @@ Compile with "make lib" to create a static library.
 Compile with "make test" to create a test hex file to use with the hardware found in Hardware/avrNetStack.sch. You need Eagle 6, available for free from cadsoft.
 In the future, a PCB will be designed that can act as WLAN / LAN Module for your AVR Project, in addition to this software.
 
-## Modules
+## Software Overview
+
+### Hardware Libraries
+
+avrNetStack includes UART, SPI and Timer libs.
+The UART lib uses FIFO Buffers for receiving and tranmissing interrupt driven. Change the Buffer size in 'include/serial.h', if you want.
+The Time lib supports 16MHz and 20MHz on a small selection of hardware devices. If you get compile errors after changing the target plattform in the makefile, you have to extend these libraries to support your target.
+If you want to use this library with your own software, don't include another UART library. Use the functions from serial.h!
 
 ### Debug Output
 
@@ -18,7 +25,7 @@ Controls the operation of the whole network stack. It contains only two function
 
 ### MAC Module
 
-These are the real Hardware drivers. Different MAC implementations will exist in the future, right now only the ENC28J60 is supported. This allows sending Ethernet Packets, as well as receiving them. Received Packets are given to the appropriate next layer by the controller.
+These are the Network Hardware drivers. Different MAC implementations will exist in the future, right now only the ENC28J60 is supported. This allows sending Ethernet Packets, as well as receiving them. Received Packets are given to the appropriate next layer by the controller.
 
 ### ARP Module
 

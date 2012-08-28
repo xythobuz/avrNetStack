@@ -71,7 +71,7 @@ IPv4Address testIp = { 192, 168, 0, 103 };
 int main(void) {
 	char c;
 	uint8_t i;
-	uint16_t j;
+	// uint16_t j;
 	uint8_t *p;
 
 	MCUSR = 0;
@@ -105,6 +105,7 @@ int main(void) {
 		wdt_reset();
 		i = networkHandler();
 		if (i != 255) {
+			// Network Handler had something to do...
 			if (i != 0) {
 				serialWriteString(getString(4));
 				if (i == 0) {
@@ -115,17 +116,6 @@ int main(void) {
 					serialWriteString(getString(14));
 				} else {
 					serialWriteString(timeToString(i));
-				}
-				serialWrite('\n');
-			}
-			
-			j = networkLastProtocol();
-			if (j != ARP) {
-				serialWriteString(getString(6));
-				if (j == IPV4) {
-					serialWriteString(getString(7));
-				} else {
-					serialWriteString(hexToString(j));
 				}
 				serialWrite('\n');
 			}
