@@ -22,6 +22,8 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <avr/pgmspace.h>
+#include <avr/wdt.h>
 
 #define DEBUG 1
 
@@ -66,8 +68,6 @@ uint8_t icmpProcessPacket(Packet *p) {
 // |    Messages API    |
 // ----------------------
 #if DEBUG >= 1
-#include <avr/pgmspace.h>
-
 const char m0_0[] PROGMEM  = "Echo Reply";
 const char m3_0[] PROGMEM  = "Destination network unreachable";
 const char m3_1[] PROGMEM  = "Destination host unreachable";
@@ -119,7 +119,7 @@ const char m40_0[] PROGMEM = "Photuris, Security failures";
 const char m41_0[] PROGMEM = "ICMP for experimental mobility protocols";
 const char mx_x[] PROGMEM  = "Unknown ICMP Message";
 
-#define ret(x) return strcpy_P(buff, (PGM_P)pgm_read_word(&x))
+#define ret(x) return strcpy_P(buff, x)
 
 char *icmpMessage(uint8_t type, uint8_t code) {
 	if (type == 0) {

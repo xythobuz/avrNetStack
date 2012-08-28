@@ -68,6 +68,7 @@ int main(void) {
 	// uint16_t j;
 	uint8_t *p;
 
+	i = MCUSR & 0x1F;
 	MCUSR = 0;
 	wdt_disable();
 
@@ -84,6 +85,21 @@ int main(void) {
 
 	serialWriteString(getString(0));
 	serialWriteString(getString(1));
+	serialWriteString(getString(5));
+	if (i == 0x01) {
+		serialWriteString(getString(20));
+	} else if (i == 0x02) {
+		serialWriteString(getString(21));
+	} else if (i == 0x04) {
+		serialWriteString(getString(22));
+	} else if (i == 0x08) {
+		serialWriteString(getString(23));
+	} else if (i == 0x10) {
+		serialWriteString(getString(24));
+	} else {
+		serialWriteString(hexToString(i));
+	}
+	serialWrite('\n');
 
 	if (!macLinkIsUp()) {
 		serialWriteString(getString(2)); // Link is down
