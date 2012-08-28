@@ -114,6 +114,10 @@ int main(void) {
 					serialWriteString(getString(15));
 				} else if (i == 2) {
 					serialWriteString(getString(14));
+				} else if (i == 42) {
+					serialWriteString(getString(6));
+					serialWriteString(getString(7));
+					serialWriteString(hexToString(networkLastProtocol()));
 				} else {
 					serialWriteString(timeToString(i));
 				}

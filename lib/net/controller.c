@@ -88,22 +88,19 @@ uint16_t tl = 0;
 uint8_t networkHandler(void) {
 	Packet *p;
 	
-	// if (macLinkIsUp() && (macPacketsReceived() > 0)) {
-	if (macPacketsReceived() > 0) {
+	if (macLinkIsUp() && (macPacketsReceived() > 0)) {
 		p = macGetPacket();
 
-		if ((p == NULL) || (p->d == NULL) || (p->dLength == 0)) {
-#if DEBUG == 1
+		if (p == NULL) {
+			debugPrint("Not enough memory to allocate Packet struct!\n");
+			return 1;
+		}
+		if ((p->d == NULL) || (p->dLength == 0)) {
 			debugPrint("Not enough memory to receive packet with ");
 			debugPrint(timeToString(p->dLength));
 			debugPrint(" bytes!\n");
-#endif
 			return 1;
 		}
-
-		// debugPrint("\nGot packet. ");
-		// debugPrint(timeToString(p->dLength));
-		// debugPrint(" bytes long.\n");
 
 		tl = get16Bit(p->d, 12);
 		if (tl == IPV4) {
