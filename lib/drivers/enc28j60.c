@@ -22,8 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DEBUG 1
-// #define PRINTPHSTAT
+#define DEBUG 1 // 0 to 3
 
 #include <net/mac.h>
 #include <spi.h>
@@ -259,7 +258,7 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	// Enable packet reception
 	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
 
-#if DEBUG == 1
+#if DEBUG >= 1
 	selectBank(3);
 	debugPrint("ENC28J60 - Version ");
 	i = readControlRegister(0x12);
@@ -287,7 +286,7 @@ void macReset(void) {
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
 	uint16_t p = readPhyRegister(0x11); // Read PHSTAT2
-#if DEBUG == 1 && defined(PRINTPHSTAT)
+#if DEBUG >= 3
 	debugPrint("PHSTAT1: ");
 	debugPrint(hexToString(readPhyRegister(0x01)));
 	debugPrint("\nPHSTAT2: ");
@@ -305,7 +304,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	// Place Frame data in buffer, with a preceding control byte
 	// This control byte can be 0x00, as we set everything needed in MACON3
 	uint8_t i = 0x00;
-#if DEBUG == 1
+#if DEBUG >= 2
 	uint16_t a;
 	uint8_t *po;
 #endif
@@ -326,9 +325,10 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
 
 	free(p->d);
+	free(p);
 
-	while(readControlRegister(0x1F) & (1 << 7)); // Wait for finish or abort, ECON1.TXRST
-#if DEBUG == 1
+	while(readControlRegister(0x1F) & 0x08); // Wait for finish or abort, ECON1.TXRTS
+#if DEBUG >= 2
 	// Print status vector
 	po = (uint8_t *)malloc(7 * sizeof(uint8_t));
 	if (po != NULL) {

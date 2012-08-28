@@ -234,6 +234,7 @@ uint8_t arpProcessPacket(Packet *p) {
 		free(p);
 		return 0;
 	} else if (p->d[MACPreambleSize + HEADERLENGTH + 1] == 2) {
+		debugPrint("Got ARP Reply\n");
 		// ARP Reply. Store the information, if not already present
 		// Each packet contains two MAC-IP Combinations. Sender & Target
 		if (findIpFromMac(p->d + MACPreambleSize + HEADERLENGTH + 2) == -1) {
@@ -265,7 +266,12 @@ uint8_t macReturnBuffer[6];
 uint8_t *arpGetMacFromIp(IPv4Address ip) {
 	uint8_t i;
 	int8_t index = findMacFromIp(ip);
-	Packet p;
+	Packet *p = (Packet *)malloc(sizeof(Packet));
+
+	if (p == NULL) {
+		debugPrint("Not enough memory for Packet struct!\n");
+		return NULL;
+	}
 
 	if (index != -1) {
 		for (i = 0; i < 6; i++) {
@@ -285,30 +291,31 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 		}
 		debugPrint("...");
 #endif
-		p.d = (uint8_t *)malloc(MACPreambleSize + HEADERLENGTH + ARPPacketSize);
-		if (p.d == NULL) {
+		p->d = (uint8_t *)malloc(MACPreambleSize + HEADERLENGTH + ARPPacketSize);
+		if (p->d == NULL) {
+			free(p);
 			return NULL;
 		}
 		for (i = 0; i < 6; i++) {
-			p.d[i] = 0xFF; // Target MAC
-			p.d[6 + i] = ownMacAddress[i];
-			p.d[MACPreambleSize + i] = pgm_read_byte(&(ArpPacketHeader[i])); // ARP Header
-			p.d[MACPreambleSize + HEADERLENGTH + 2 + i] = ownMacAddress[i];
-			p.d[MACPreambleSize + HEADERLENGTH + 12 + i] = 0xFF;
+			p->d[i] = 0xFF; // Target MAC
+			p->d[6 + i] = ownMacAddress[i];
+			p->d[MACPreambleSize + i] = pgm_read_byte(&(ArpPacketHeader[i])); // ARP Header
+			p->d[MACPreambleSize + HEADERLENGTH + 2 + i] = ownMacAddress[i];
+			p->d[MACPreambleSize + HEADERLENGTH + 12 + i] = 0xFF;
 			if (i < 4) {
-				p.d[MACPreambleSize + HEADERLENGTH + 8 + i] = ownIpAddress[i];
-				p.d[MACPreambleSize + HEADERLENGTH + 18 + i] = ip[i]; // Target IP
+				p->d[MACPreambleSize + HEADERLENGTH + 8 + i] = ownIpAddress[i];
+				p->d[MACPreambleSize + HEADERLENGTH + 18 + i] = ip[i]; // Target IP
 			}
 		}
-		p.d[12] = (ARP & 0xFF00) >> 8;
-		p.d[13] = (ARP & 0x00FF); // ARP Packet
-		p.d[MACPreambleSize + HEADERLENGTH] = 0;
-		p.d[MACPreambleSize + HEADERLENGTH + 1] = 1; // Request
-
-		if (macSendPacket(&p)) { // Can't do anything if error...
+		p->d[12] = (ARP & 0xFF00) >> 8;
+		p->d[13] = (ARP & 0x00FF); // ARP Packet
+		p->d[MACPreambleSize + HEADERLENGTH] = 0;
+		p->d[MACPreambleSize + HEADERLENGTH + 1] = 1; // Request
+		p->dLength = MACPreambleSize + HEADERLENGTH + ARPPacketSize;
+		if (macSendPacket(p)) { // Can't do anything if error...
 			// ...except try again
 			debugPrint(" Couldn't send. Trying again...");
-			if (macSendPacket(&p)) {
+			if (macSendPacket(p)) {
 				debugPrint(" Giving up!\n");
 			} else {
 				debugPrint(" Done!\n");
