@@ -31,7 +31,6 @@
 #define DISABLE_IPV4_FRAGMENT         // IPv4 Fragmentation currently not supported!
 // #define DISABLE_IPV4_CHECKSUM         // Prevent IPv4 Checksum calculation
 // #define DISABLE_ICMP                  // Disable complete ICMP Protocol
-// #define DISABLE_ICMP_STRINGS          // Don't store ICMP Names in Flash
 // #define DISABLE_ICMP_CHECKSUM         // Prevent ICMP Checksum calculation
 // #define DISABLE_ICMP_ECHO             // Prevent answering to Echo Requests (Ping)
 // #define DISABLE_ICMP_UDP_MSG          // Don't send ICMP Error for unhandled port.

@@ -21,6 +21,7 @@
 #ifndef _icmp_h
 #define _icmp_h
 
+#include <net/mac.h>
 #include <net/ipv4.h>
 
 /* typedef struct {
@@ -32,20 +33,12 @@
 	uint16_t dLength;
 } IcmpPacket; */
 
+#define ICMPOffset (MACPreambleSize + IPv4PacketHeaderLength)
+
 void icmpInit(void);
 
 // 0 success, 1 not enough mem, 2 invalid
-// ip freed afterwards
-uint8_t icmpProcessPacket(Packet p);
-
-// 0 on success, 1 if destination unknown, try again later.
-// 2 or 4 if there was not enough RAM. 3 on PHY Error
-// On Return 0, 1, 2 and 3, ic was already freed
-// uint8_t icmpSendPacket(IcmpPacket *ic, IPv4Address target);
-
-#ifndef DISABLE_ICMP_ERROR_STRINGS
-void icmpRegisterMessageCallback(void (*debugOutput)(char *));
-char *icmpMessage(uint8_t type, uint8_t code);
-#endif
+// p freed afterwards
+uint8_t icmpProcessPacket(Packet *p);
 
 #endif

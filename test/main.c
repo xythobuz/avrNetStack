@@ -60,12 +60,6 @@ void printArpTable(void) {
 	}
 }
 
-void icmpCallBack(char *s) {
-	serialWriteString(getString(5));
-	serialWriteString(s);
-	serialWrite('\n');
-}
-
 IPv4Address testIp = { 192, 168, 0, 103 };
 
 int main(void) {
@@ -85,7 +79,6 @@ int main(void) {
 	sei(); // Enable Interrupts so we get UART data before entering networkInit
 
 	networkInit(mac);
-	icmpRegisterMessageCallback(icmpCallBack);
 
 	PORTA &= ~(0xC0); // LEDs off
 
@@ -104,6 +97,7 @@ int main(void) {
 	while(1) {
 		wdt_reset();
 		i = networkHandler();
+		wdt_reset();
 		if (i != 255) {
 			// Network Handler had something to do...
 			if (i != 0) {

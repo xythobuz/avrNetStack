@@ -66,7 +66,6 @@ void networkInit(MacAddress a) {
 	debugPrint("IPv4 initialized...\n");
 #ifndef DISABLE_ICMP
 	icmpInit();
-	icmpRegisterMessageCallback(&serialWriteString);
 #endif
 #ifndef DISABLE_UDP
 	udpInit();
@@ -75,7 +74,6 @@ void networkInit(MacAddress a) {
   #endif
   #ifndef DISABLE_DNS
 	// udpRegisterHandler(&dnsHandler, 53);
-	// dnsRegisterMessageCallback(&serialWriteString);
   #endif
   #ifndef DISABLE_NTP
 	// udpRegisterHandler(&ntpHandler, 123);

@@ -21,8 +21,9 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <avr/wdt.h>
 
-#define DEBUG 0 // 0 to receive no debug serial output
+#define DEBUG 1 // 0 to receive no debug serial output
 
 #include <time.h>
 #include <net/mac.h>
@@ -98,13 +99,16 @@ void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway) {
 // Returns 0 on success, 1 if not enough mem, 2 if packet invalid.
 uint8_t ipv4ProcessPacket(Packet *p) {
 	uint16_t cs = 0x0000, w;
-	uint8_t i, pr;
+	uint8_t pr;
+#if DEBUG >= 2
+	uint8_t i;
+#endif
 #ifndef DISABLE_IPV4_CHECKSUM
 	cs = checksum(p->d + MACPreambleSize, IPv4PacketHeaderLength);
 #endif
 	if ((cs != 0x0000) || ((p->d[MACPreambleSize] & 0xF0) != 0x40)) {
 		// Checksum or version invalid
-#if DEBUG == 1
+#if DEBUG >= 1
 		debugPrint("Checksum: ");
 		debugPrint(hexToString(cs));
 		debugPrint("  First byte: "),
@@ -135,12 +139,9 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 		return 2;
 	}
 
-	i = 0;
 	if (isBroadcastIp(p->d + MACPreambleSize + IPv4PacketDestinationOffset)) {
-		i++;
 		debugPrint("IPv4 Broadcast Packet!\n");
 	} else if (isEqualMem(ownIpAddress, p->d + MACPreambleSize + IPv4PacketDestinationOffset, 4)) {
-		i++;
 		debugPrint("IPv4 Packet for us!\n");
 	} else {
 		debugPrint("IPv4 Packet not for us!\n");
@@ -149,46 +150,49 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 		return 0;
 	}
 
-	if (i) {
-		// Packet to act on...
-#if DEBUG == 1
-		debugPrint("From: ");
-		for (i = 0; i < 4; i++) {
-			debugPrint(timeToString(p->d[MACPreambleSize + IPv4PacketSourceOffset + i]));
-			if (i < 3) {
-				debugPrint(".");
-			}
-		}
-		debugPrint("\nTo: ");
-		for (i = 0; i < 4; i++) {
-			debugPrint(timeToString(p->d[MACPreambleSize + IPv4PacketDestinationOffset + i]));
-			if (i < 3) {
-				debugPrint(".");
-			}
-		}
-		debugPrint("\n");
-#endif
-		pr = p->d[MACPreambleSize + IPv4PacketProtocolOffset];
-		if (pr == ICMP) {
-			debugPrint("Is ICMP Packet!\n");
-		} else if (pr == IGMP) {
-			debugPrint("Is IGMP Packet!\n");
-		} else if (pr == TCP) {
-			debugPrint("Is TCP Packet!\n");
-		} else if (pr == UDP) {
-			debugPrint("Is UDP Packet!\n");
-			return udpHandlePacket(p);
-		} else {
-#if DEBUG == 1
-			debugPrint("No handler for: ");
-			debugPrint(hexToString(pr));
-			debugPrint("!\n");
-			free(p->d);
-			free(p);
-			return 0;
-#endif
+	wdt_reset();
+
+	// Packet to act on...
+#if DEBUG >= 2
+	debugPrint("From: ");
+	for (i = 0; i < 4; i++) {
+		debugPrint(timeToString(p->d[MACPreambleSize + IPv4PacketSourceOffset + i]));
+		if (i < 3) {
+			debugPrint(".");
 		}
 	}
+	debugPrint("\nTo: ");
+	for (i = 0; i < 4; i++) {
+		debugPrint(timeToString(p->d[MACPreambleSize + IPv4PacketDestinationOffset + i]));
+		if (i < 3) {
+			debugPrint(".");
+		}
+	}
+	debugPrint("\n");
+#endif
+
+	pr = p->d[MACPreambleSize + IPv4PacketProtocolOffset];
+	if (pr == ICMP) {
+		debugPrint("Is ICMP Packet!\n");
+		return icmpProcessPacket(p);
+	} else if (pr == IGMP) {
+		debugPrint("Is IGMP Packet!\n");
+	} else if (pr == TCP) {
+		debugPrint("Is TCP Packet!\n");
+	} else if (pr == UDP) {
+		debugPrint("Is UDP Packet!\n");
+		return udpHandlePacket(p);
+	} else {
+#if DEBUG >= 1
+		debugPrint("No handler for: ");
+		debugPrint(hexToString(pr));
+		debugPrint("!\n");
+		free(p->d);
+		free(p);
+		return 0;
+#endif
+	}
+
 	free(p->d);
 	free(p);
 	return 0;

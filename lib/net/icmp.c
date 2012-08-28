@@ -23,20 +23,22 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define DEBUG 1
+
 #include <net/utils.h>
 #include <net/icmp.h>
+#include <serial.h>
+#include <net/controller.h>
 
 #ifndef DISABLE_ICMP
 
-#ifndef DISABLE_ICMP_STRINGS
-void (*debugOutputHandler)(char *) = NULL;
+#if DEBUG >= 1
+char *icmpMessage(uint8_t type, uint8_t code);
 #endif
 
 // ----------------------
 // |    Internal API    |
 // ----------------------
-
-IPv4Address source;
 
 #ifndef DISABLE_ICMP_CHECKSUM
 
@@ -49,8 +51,13 @@ IPv4Address source;
 void icmpInit(void) {}
 
 // 0 success, 1 not enough mem, 2 invalid
-// ip freed afterwards
-uint8_t icmpProcessPacket(Packet p) {
+// p freed afterwards
+uint8_t icmpProcessPacket(Packet *p) {
+
+	debugPrint(icmpMessage(p->d[ICMPOffset], p->d[ICMPOffset + 1]));
+
+	free(p->d);
+	free(p);
 	return 0;
 }
 
@@ -58,67 +65,61 @@ uint8_t icmpProcessPacket(Packet p) {
 // ----------------------
 // |    Messages API    |
 // ----------------------
-#ifndef DISABLE_ICMP_STRINGS
+#if DEBUG >= 1
 #include <avr/pgmspace.h>
 
-void icmpRegisterMessageCallback(void (*debugOutput)(char *)) {
-	debugOutputHandler = debugOutput;
-}
+const char m0_0[] PROGMEM  = "Echo Reply";
+const char m3_0[] PROGMEM  = "Destination network unreachable";
+const char m3_1[] PROGMEM  = "Destination host unreachable";
+const char m3_2[] PROGMEM  = "Destination protocol unreachable";
+const char m3_3[] PROGMEM  = "Destination port unreachable";
+const char m3_4[] PROGMEM  = "Fragmentation required and DF flag set";
+const char m3_5[] PROGMEM  = "Source route failed";
+const char m3_6[] PROGMEM  = "Destination network unknown";
+const char m3_7[] PROGMEM  = "Destination host unknown";
+const char m3_8[] PROGMEM  = "Source host isolated";
+const char m3_9[] PROGMEM  = "Network administratively prohibited";
+const char m3_10[] PROGMEM = "Host administratively prohibited";
+const char m3_11[] PROGMEM = "Network unreachable for TOS";
+const char m3_12[] PROGMEM = "Host unreachable for TOS";
+const char m3_13[] PROGMEM = "Communication administratively prohibited";
+const char m3_14[] PROGMEM = "Host Precedence Violation";
+const char m3_15[] PROGMEM = "Precedence cutoff in effect";
+const char m4_0[] PROGMEM  = "Source quench (congestion control)";
+const char m5_0[] PROGMEM  = "Redirect Datagram for the Network";
+const char m5_1[] PROGMEM  = "Redirect Datagram for the Host";
+const char m5_2[] PROGMEM  = "Redirect Datagram for the TOS & Network";
+const char m5_3[] PROGMEM  = "Redirect Datagram for the TOS & Host";
+const char m6_0[] PROGMEM  = "Alternate Host Address";
+const char m8_0[] PROGMEM  = "Echo Request";
+const char m9_0[] PROGMEM  = "Router Advertisement";
+const char m10_0[] PROGMEM = "Router discovery/selection/solicitation";
+const char m11_0[] PROGMEM = "TTL expired in transit";
+const char m11_1[] PROGMEM = "Fragment reassembly time exceeded";
+const char m12_0[] PROGMEM = "Bad IP header: Pointer indicates the error";
+const char m12_1[] PROGMEM = "Bad IP header: Missing a required option";
+const char m12_2[] PROGMEM = "Bad IP header: Bad length";
+const char m13_0[] PROGMEM = "Timestamp";
+const char m14_0[] PROGMEM = "Timestamp reply";
+const char m15_0[] PROGMEM = "Information request";
+const char m16_0[] PROGMEM = "Information reply";
+const char m17_0[] PROGMEM = "Address Mask Request";
+const char m18_0[] PROGMEM = "Address Mask Reply";
+const char m30_0[] PROGMEM = "Traceroute Information Request";
+const char m31_0[] PROGMEM = "Datagram Conversion Error";
+const char m32_0[] PROGMEM = "mobile Host Redirect";
+const char m33_0[] PROGMEM = "Where-Are-You";
+const char m34_0[] PROGMEM = "Here-I-Am";
+const char m35_0[] PROGMEM = "Mobile Registration Request";
+const char m36_0[] PROGMEM = "Mobile Registration Reply";
+const char m37_0[] PROGMEM = "Domain Name Request";
+const char m38_0[] PROGMEM = "Domain Name Reply";
+const char m39_0[] PROGMEM = "SKIP Algorithm Discovery Protocol";
+const char m40_0[] PROGMEM = "Photuris, Security failures";
+const char m41_0[] PROGMEM = "ICMP for experimental mobility protocols";
+const char mx_x[] PROGMEM  = "Unknown ICMP Message";
 
-char m0_0[] PROGMEM  = "Echo Reply";
-char m3_0[] PROGMEM  = "Destination network unreachable";
-char m3_1[] PROGMEM  = "Destination host unreachable";
-char m3_2[] PROGMEM  = "Destination protocol unreachable";
-char m3_3[] PROGMEM  = "Destination port unreachable";
-char m3_4[] PROGMEM  = "Fragmentation required and DF flag set";
-char m3_5[] PROGMEM  = "Source route failed";
-char m3_6[] PROGMEM  = "Destination network unknown";
-char m3_7[] PROGMEM  = "Destination host unknown";
-char m3_8[] PROGMEM  = "Source host isolated";
-char m3_9[] PROGMEM  = "Network administratively prohibited";
-char m3_10[] PROGMEM = "Host administratively prohibited";
-char m3_11[] PROGMEM = "Network unreachable for TOS";
-char m3_12[] PROGMEM = "Host unreachable for TOS";
-char m3_13[] PROGMEM = "Communication administratively prohibited";
-char m3_14[] PROGMEM = "Host Precedence Violation";
-char m3_15[] PROGMEM = "Precedence cutoff in effect";
-char m4_0[] PROGMEM  = "Source quench (congestion control)";
-char m5_0[] PROGMEM  = "Redirect Datagram for the Network";
-char m5_1[] PROGMEM  = "Redirect Datagram for the Host";
-char m5_2[] PROGMEM  = "Redirect Datagram for the TOS & Network";
-char m5_3[] PROGMEM  = "Redirect Datagram for the TOS & Host";
-char m6_0[] PROGMEM  = "Alternate Host Address";
-char m8_0[] PROGMEM  = "Echo Request";
-char m9_0[] PROGMEM  = "Router Advertisement";
-char m10_0[] PROGMEM = "Router discovery/selection/solicitation";
-char m11_0[] PROGMEM = "TTL expired in transit";
-char m11_1[] PROGMEM = "Fragment reassembly time exceeded";
-char m12_0[] PROGMEM = "Bad IP header: Pointer indicates the error";
-char m12_1[] PROGMEM = "Bad IP header: Missing a required option";
-char m12_2[] PROGMEM = "Bad IP header: Bad length";
-char m13_0[] PROGMEM = "Timestamp";
-char m14_0[] PROGMEM = "Timestamp reply";
-char m15_0[] PROGMEM = "Information request";
-char m16_0[] PROGMEM = "Information reply";
-char m17_0[] PROGMEM = "Address Mask Request";
-char m18_0[] PROGMEM = "Address Mask Reply";
-char m30_0[] PROGMEM = "Traceroute Information Request";
-char m31_0[] PROGMEM = "Datagram Conversion Error";
-char m32_0[] PROGMEM = "mobile Host Redirect";
-char m33_0[] PROGMEM = "Where-Are-You";
-char m34_0[] PROGMEM = "Here-I-Am";
-char m35_0[] PROGMEM = "Mobile Registration Request";
-char m36_0[] PROGMEM = "Mobile Registration Reply";
-char m37_0[] PROGMEM = "Domain Name Request";
-char m38_0[] PROGMEM = "Domain Name Reply";
-char m39_0[] PROGMEM = "SKIP Algorithm Discovery Protocol";
-char m40_0[] PROGMEM = "Photuris, Security failures";
-char m41_0[] PROGMEM = "ICMP for experimental mobility protocols";
-char mx_x[] PROGMEM  = "Unknown ICMP Message";
-
-char buffer[45];
-
-#define ret(x) return strcpy_P(buffer, (PGM_P)pgm_read_word(&x))
+#define ret(x) return strcpy_P(buff, (PGM_P)pgm_read_word(&x))
 
 char *icmpMessage(uint8_t type, uint8_t code) {
 	if (type == 0) {
