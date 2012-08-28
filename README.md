@@ -11,7 +11,7 @@ In the future, a PCB will be designed that can act as WLAN / LAN Module for your
 ### Hardware Libraries
 
 avrNetStack includes UART, SPI and Timer libs.
-The UART lib uses FIFO Buffers for receiving and tranmissing interrupt driven. Change the Buffer size in 'include/serial.h', if you want.
+The UART lib uses FIFO Buffers for receiving and transmitting interrupt driven. Change the Buffer size in 'include/serial.h', if you want.
 The Time lib supports 16MHz and 20MHz on a small selection of hardware devices. If you get compile errors after changing the target plattform in the makefile, you have to extend these libraries to support your target.
 If you want to use this library with your own software, don't include another UART library. Use the functions from serial.h!
 
@@ -33,4 +33,4 @@ Handles received ARP Packets, maintains an ARP Cache and gives functions of high
 
 ### IPv4 Module
 
-Handles received IPv4 Packets, supporting Packet Fragmentation as long as the MCU has enough RAM. Full received Datagrams are given to the appropriate next stack layer. Also, IPv4 Packets can be sent with this module.
+Handles received IPv4 Packets. Received valid Datagrams are given to the appropriate next stack layer. Also, IPv4 Packets can be prepared for transmission with this module.
