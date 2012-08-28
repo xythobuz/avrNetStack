@@ -101,9 +101,9 @@ uint8_t networkHandler(void) {
 			return 1;
 		}
 
-		debugPrint("\nGot packet. ");
-		debugPrint(timeToString(p->dLength));
-		debugPrint(" bytes long.\n");
+		// debugPrint("\nGot packet. ");
+		// debugPrint(timeToString(p->dLength));
+		// debugPrint(" bytes long.\n");
 
 		tl = get16Bit(p->d, 12);
 		if (tl == IPV4) {

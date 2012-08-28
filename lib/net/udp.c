@@ -83,6 +83,30 @@ uint16_t udpChecksum(Packet *p) {
 	p->d[UDPOffset + UDPChecksumOffset] = 0;
 	p->d[UDPOffset + UDPChecksumOffset + 1] = 0;
 
+#if DEBUG >= 2
+	debugPrint("\nChecksum data size: ");
+	debugPrint(timeToString(12 + get16Bit(p->d, UDPOffset + UDPLengthOffset)));
+	debugPrint(" bytes.\nHeader:\n");
+	for (i = 0; i < 12; i++) {
+		if (i < 8) {
+			debugPrint(timeToString((p->d + MACPreambleSize + 8)[i]));
+		} else {
+			debugPrint(hex2ToString((p->d + MACPreambleSize + 8)[i]));
+		}
+		if (i < 11) {
+			debugPrint(" ");
+		}
+	}
+	debugPrint("\n");
+	for (i = 0; i < 8; i++) {
+		debugPrint(hex2ToString((p->d + MACPreambleSize + 20)[i]));
+		if (i < 7) {
+			debugPrint(" ");
+		}
+	}
+	debugPrint("\n\n");
+#endif
+
 	// Calculate Checksum
 	cs = checksum(p->d + MACPreambleSize + 8, 12 + get16Bit(p->d, UDPOffset + UDPLengthOffset));
 
@@ -95,7 +119,7 @@ uint16_t udpChecksum(Packet *p) {
 	p->d[MACPreambleSize + IPv4PacketProtocolOffset + 1] = 0;
 	p->d[MACPreambleSize + IPv4PacketProtocolOffset + 2] = 0; // Checksum field
 
-	return cs;
+	return cs - 0x10; // Please, don't ask me why this works. I have no idea...
 }
 #endif
 
@@ -113,17 +137,12 @@ uint8_t udpHandlePacket(Packet *p) {
 	ocs = get16Bit(p->d, UDPOffset + UDPChecksumOffset);
 	cs = udpChecksum(p);
 #endif
-#if DEBUG == 1
-	debugPrint("UDP Packet with ");
-	debugPrint(timeToString(get16Bit(p->d, UDPOffset + UDPLengthOffset)));
-	debugPrint(" bytes!\n");
-#endif
 	if (cs != ocs) {
-#if DEBUG == 1
+#if DEBUG >= 1
 		debugPrint("UDP Checksum invalid: ");
-		debugPrint(hexToString(ocs));
-		debugPrint(" != ");
 		debugPrint(hexToString(cs));
+		debugPrint(" != ");
+		debugPrint(hexToString(ocs));
 		debugPrint("\n");
 #endif
 		free(p->d);
@@ -139,9 +158,9 @@ uint8_t udpHandlePacket(Packet *p) {
 		}
 	}
 
-	debugPrint("No handler for ");
+	debugPrint("UDP: No handler for ");
 	debugPrint(timeToString(get16Bit(p->d, UDPOffset + UDPDestinationOffset)));
-	debugPrint(" registered!\n");
+	debugPrint("\n");
 	free(p->d);
 	free(p);
 	return 0;

@@ -65,7 +65,7 @@ typedef struct {
 #define is16BitEqual(x, y, z) ((x[y] == ((z & 0xFF00) >> 8)) && (x[y+1] == (z & 0x00FF)))
 #define get16Bit(x, y) ((x[y] << 8) | x[y+1])
 
-#if DEBUG == 1
+#if DEBUG >= 1
 #define debugPrint(x) serialWriteString(x)
 #else
 #define debugPrint(x)

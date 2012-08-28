@@ -68,9 +68,9 @@ uint16_t checksum(uint8_t *rawData, uint16_t l) {
 
 	for (i = 0; i < l; i += 2) {
 		if (i == (l - 1)) {
-			w = (rawData[i]);
+			w = ((uint16_t)rawData[i] << 8);
 		} else {
-			w = (rawData[i] << 8);
+			w = ((uint16_t)rawData[i] << 8);
 			w |= rawData[i + 1];
 		}
 		a += w;

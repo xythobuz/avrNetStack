@@ -23,7 +23,8 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 2 // 0 to receive no debug serial output
+// 2 to also get a message for every received ARP Request.
 
 #include <net/mac.h>
 #include <net/ipv4.h>
@@ -180,14 +181,13 @@ uint8_t arpProcessPacket(Packet *p) {
 
 	if (p->d[MACPreambleSize + HEADERLENGTH + 1] == 1) {
 		// ARP Request. Check if we have stored the sender MAC.
-		debugPrint("ARP Request");
 		if (findIpFromMac(p->d + MACPreambleSize + HEADERLENGTH + 2) == -1) {
 			// Sender MAC is not stored. Store combination!
 			copyEntry(p->d + MACPreambleSize + HEADERLENGTH + 2, p->d + MACPreambleSize + HEADERLENGTH + 8, getSystemTime(), getFirstFreeEntry());
 		}
 		// Check if the request is for us. If so, issue an answer!
 		if (isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLENGTH + 18, 4)) {
-			debugPrint(" for us!");
+			debugPrint("ARP Request for us!");
 			p->d[MACPreambleSize + HEADERLENGTH + 1] = 2; // Reply
 			for (i = 0; i < 6; i++) {
 				p->d[MACPreambleSize + HEADERLENGTH + 12 + i] = p->d[MACPreambleSize + HEADERLENGTH + 2 + i]; // Back to sender
@@ -218,23 +218,22 @@ uint8_t arpProcessPacket(Packet *p) {
 			debugPrint(" Done!\n");
 			return 0;
 		} else {
-#if DEBUG == 1
-			debugPrint(" for ");
+#if DEBUG >= 2
+			debugPrint("ARP Request for ");
 			for (i = 0; i < 4; i++) {
 				debugPrint(timeToString(p->d[MACPreambleSize + HEADERLENGTH + 18 + i]));
 				if (i < 3) {
 					debugPrint(".");
 				}
 			}
+			debugPrint("\n");
 #endif
 		}
 		// Request is not for us. Ignore!
-		debugPrint("\n");
 		free(p->d);
 		free(p);
 		return 0;
 	} else if (p->d[MACPreambleSize + HEADERLENGTH + 1] == 2) {
-		debugPrint("ARP Reply!\n");
 		// ARP Reply. Store the information, if not already present
 		// Each packet contains two MAC-IP Combinations. Sender & Target
 		if (findIpFromMac(p->d + MACPreambleSize + HEADERLENGTH + 2) == -1) {
@@ -250,7 +249,7 @@ uint8_t arpProcessPacket(Packet *p) {
 		return 0;
 	} else {
 		// Neither request nor reply...
-		debugPrint("Invalid ARP Packet!\n");
+		debugPrint("Invalid ARP Packet Type!\n");
 		free(p->d);
 		free(p);
 		return 2;
@@ -276,7 +275,7 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 		return macReturnBuffer;
 	} else {
 		// No entry found. Issue ARP Request
-#if DEBUG == 1
+#if DEBUG >= 1
 		debugPrint("Sending ARP Request for ");
 		for (i = 0; i < 4; i++) {
 			debugPrint(timeToString(ip[i]));
