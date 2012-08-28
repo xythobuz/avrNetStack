@@ -119,7 +119,10 @@ uint16_t udpChecksum(Packet *p) {
 	p->d[MACPreambleSize + IPv4PacketProtocolOffset + 1] = 0;
 	p->d[MACPreambleSize + IPv4PacketProtocolOffset + 2] = 0; // Checksum field
 
-	return cs - 0x10; // Please, don't ask me why this works. I have no idea...
+	// Haha. I tested this with Dropbox' LAN-Sync UDP Broadcasts.
+	// Interestingly, this seems to be a Dropbox Bug...
+	// return cs - 0x10; // Please, don't ask me why this works. I have no idea...
+	return cs;
 }
 #endif
 

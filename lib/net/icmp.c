@@ -25,7 +25,7 @@
 #include <avr/pgmspace.h>
 #include <avr/wdt.h>
 
-#define DEBUG 1
+#define DEBUG 2
 
 #include <net/utils.h>
 #include <net/icmp.h>
@@ -34,7 +34,7 @@
 
 #ifndef DISABLE_ICMP
 
-#if DEBUG >= 1
+#if DEBUG >= 2
 char *icmpMessage(uint8_t type, uint8_t code);
 #endif
 
@@ -43,7 +43,19 @@ char *icmpMessage(uint8_t type, uint8_t code);
 // ----------------------
 
 #ifndef DISABLE_ICMP_CHECKSUM
+uint16_t checksum(uint8_t *d, uint16_t l); // ipv4.c
 
+uint16_t icmpChecksum(Packet *p) {
+	p->d[ICMPOffset + 2] = 0;
+	p->d[ICMPOffset + 3] = 0;
+	return checksum(p->d + ICMPOffset, p->dLength - ICMPOffset);
+}
+#endif
+
+#ifndef DISABLE_ICMP_ECHO
+uint8_t icmpAnswerEcho(Packet *p) {
+	return 0;
+}
 #endif
 
 // ----------------------
@@ -55,8 +67,44 @@ void icmpInit(void) {}
 // 0 success, 1 not enough mem, 2 invalid
 // p freed afterwards
 uint8_t icmpProcessPacket(Packet *p) {
+	uint8_t type, code;
+#ifndef DISABLE_ICMP_CHECKSUM
+	uint16_t ocs, cs;
+#endif
 
-	debugPrint(icmpMessage(p->d[ICMPOffset], p->d[ICMPOffset + 1]));
+	type = p->d[ICMPOffset];
+	code = p->d[ICMPOffset + 1];
+
+#if DEBUG >= 2
+	debugPrint(icmpMessage(type, code));
+	debugPrint("\n");
+#endif
+
+#ifndef DISABLE_ICMP_CHECKSUM
+	ocs = get16Bit(p->d, ICMPOffset + 2);
+	cs = icmpChecksum(p);
+	if (ocs != cs) {
+#if DEBUG >= 1
+		debugPrint("ICMP Checksum invalid: ");
+		debugPrint(hexToString(cs));
+		debugPrint(" != ");
+		debugPrint(hexToString(ocs));
+		debugPrint("\n");
+#endif
+		free(p->d),
+		free(p);
+		return 2; // Invalid
+	} else {
+		debugPrint("Valid ICMP Packet!\n");
+	}
+#endif
+
+	if ((type == 8) && (code == 0)) {
+		// Echo request. Send reply
+#ifndef DISABLE_ICMP_ECHO
+		return icmpAnswerEcho(p);
+#endif
+	}
 
 	free(p->d);
 	free(p);
@@ -67,7 +115,7 @@ uint8_t icmpProcessPacket(Packet *p) {
 // ----------------------
 // |    Messages API    |
 // ----------------------
-#if DEBUG >= 1
+#if DEBUG >= 2
 const char m0_0[] PROGMEM  = "Echo Reply";
 const char m3_0[] PROGMEM  = "Destination network unreachable";
 const char m3_1[] PROGMEM  = "Destination host unreachable";
