@@ -72,7 +72,7 @@ uint8_t ipv4ProcessPacket(Packet *p);
 
 // Gives default values for all fields in the IPv4 Header
 // Also computes checksum, if enabled.
-// Just set Protocol, SourceIp and DestinationIp and append your data
-void ipv4FixPacket(Packet *p);
+// Creates Ethernet and IPv4 Header, gets Target MAC, and off we go.
+uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol);
 
 #endif

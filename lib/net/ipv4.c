@@ -222,8 +222,9 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 	return 0;
 }
 
-void ipv4FixPacket(Packet *p) {
+uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 	uint16_t tLength = p->dLength - MACPreambleSize;
+	uint8_t *mac = NULL;
 	p->d[MACPreambleSize + 0] = (4) << 4; // Version
 	p->d[MACPreambleSize + 0] |= 5; // InternetHeaderLength
 	p->d[MACPreambleSize + 1] = 0; // Type Of Service
@@ -241,4 +242,22 @@ void ipv4FixPacket(Packet *p) {
 	p->d[MACPreambleSize + 10] = (tLength & 0xFF00) >> 8;
 	p->d[MACPreambleSize + 11] = (tLength & 0x00FF);
 #endif
+	p->d[MACPreambleSize + IPv4PacketProtocolOffset] = protocol;
+	for (tLength = 0; tLength < 4; tLength++) {
+		p->d[MACPreambleSize + IPv4PacketSourceOffset + tLength] = ownIpAddress[tLength];
+		p->d[MACPreambleSize + IPv4PacketDestinationOffset + tLength] = target[tLength];
+	}
+	while ((mac = arpGetMacFromIp(target)) == NULL); // Get Target MAC
+	for (tLength = 0; tLength < 6; tLength++) {
+		p->d[tLength] = mac[tLength]; // Destination
+		p->d[6 + tLength] = ownMacAddress[tLength]; // Source
+	}
+	p->d[12] = (IPV4 & 0xFF00) >> 8;
+	p->d[13] = (IPV4 & 0x00FF);
+	if (macSendPacket(p)) {
+		if (macSendPacket(p)) {
+			return 2;
+		}
+	}
+	return 0;
 }

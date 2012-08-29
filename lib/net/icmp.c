@@ -25,7 +25,7 @@
 #include <avr/pgmspace.h>
 #include <avr/wdt.h>
 
-#define DEBUG 2
+#define DEBUG 3
 
 #include <net/utils.h>
 #include <net/icmp.h>
@@ -46,15 +46,46 @@ char *icmpMessage(uint8_t type, uint8_t code);
 uint16_t checksum(uint8_t *d, uint16_t l); // ipv4.c
 
 uint16_t icmpChecksum(Packet *p) {
-	p->d[ICMPOffset + 2] = 0;
-	p->d[ICMPOffset + 3] = 0;
+#if DEBUG >= 3
+	uint8_t i;
+	debugPrint("Length: ");
+	debugPrint(timeToString(p->dLength));
+	debugPrint(" - ");
+	debugPrint(timeToString(ICMPOffset));
+	debugPrint(" = ");
+	debugPrint(timeToString(p->dLength - ICMPOffset));
+	debugPrint("\nICMP Packet Data:\n");
+	for (i = 0; i < ICMPPacketSize; i++) {
+		debugPrint(hexToString(p->d[ICMPOffset + i]));
+		if (i < (ICMPPacketSize - 1)) {
+			debugPrint(" ");
+		}
+	}
+	debugPrint("\n");
+#endif
 	return checksum(p->d + ICMPOffset, p->dLength - ICMPOffset);
 }
 #endif
 
 #ifndef DISABLE_ICMP_ECHO
 uint8_t icmpAnswerEcho(Packet *p) {
-	return 0;
+	// Just change code to zero, recompute checksums, send.
+	uint8_t i;
+	IPv4Address target;
+	uint16_t cs = 0x0000;
+	for (i = 0; i < 4; i++) {
+		// Get Target IP
+		target[i] = p->d[MACPreambleSize + IPv4PacketSourceOffset + i];
+	}
+	p->d[ICMPOffset + 1] = 0x00; // Echo Reply
+	p->d[ICMPOffset + 2] = 0;
+	p->d[ICMPOffset + 3] = 0; // Clear Checksum Field
+#ifndef DISABLE_ICMP_CHECKSUM
+	cs = icmpChecksum(p);
+#endif
+	p->d[ICMPOffset + 2] = (cs & 0xFF00) >> 8;
+	p->d[ICMPOffset + 3] = (cs & 0x00FF);
+	return ipv4SendPacket(p, target, ICMP);
 }
 #endif
 
@@ -69,7 +100,7 @@ void icmpInit(void) {}
 uint8_t icmpProcessPacket(Packet *p) {
 	uint8_t type, code;
 #ifndef DISABLE_ICMP_CHECKSUM
-	uint16_t ocs, cs;
+	uint16_t cs;
 #endif
 
 	type = p->d[ICMPOffset];
@@ -81,15 +112,12 @@ uint8_t icmpProcessPacket(Packet *p) {
 #endif
 
 #ifndef DISABLE_ICMP_CHECKSUM
-	ocs = get16Bit(p->d, ICMPOffset + 2);
 	cs = icmpChecksum(p);
-	if (ocs != cs) {
+	if (cs != 0x0000) {
 #if DEBUG >= 1
 		debugPrint("ICMP Checksum invalid: ");
 		debugPrint(hexToString(cs));
-		debugPrint(" != ");
-		debugPrint(hexToString(ocs));
-		debugPrint("\n");
+		debugPrint(" != 0x0000\n");
 #endif
 		free(p->d),
 		free(p);
@@ -98,6 +126,9 @@ uint8_t icmpProcessPacket(Packet *p) {
 		debugPrint("Valid ICMP Packet!\n");
 	}
 #endif
+
+	debugPrint("Reached Point!!\n\n");
+	while(1) { wdt_reset(); }
 
 	if ((type == 8) && (code == 0)) {
 		// Echo request. Send reply

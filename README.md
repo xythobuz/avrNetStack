@@ -30,6 +30,7 @@ These are the Network Hardware drivers. Different MAC implementations will exist
 ### ARP Module
 
 Handles received ARP Packets, maintains an ARP Cache and gives functions of higher layers a method to obtain a MAC Address from an IP Address. If the Cache has no hit, a ARP Packet is issued, so that the higher layer can try again later.
+This is currently the only module that is doing it's job pretty well.
 
 ### IPv4 Module
 

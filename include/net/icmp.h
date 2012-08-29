@@ -34,6 +34,7 @@
 } IcmpPacket; */
 
 #define ICMPOffset (MACPreambleSize + IPv4PacketHeaderLength)
+#define ICMPPacketSize 8
 
 void icmpInit(void);
 

@@ -136,14 +136,18 @@ int8_t findMacFromIp(IPv4Address ip) {
 	return -1;
 }
 
-void copyEntry(MacAddress mac, IPv4Address ip, time_t time, uint8_t index) {
+void copyEntry(uint8_t *mac, IPv4Address ip, time_t time, uint8_t index) {
 	uint8_t i;
 	if ((arpTable != NULL) && (arpTableSize > index)) {
 		for (i = 0; i < 6; i++) {
 			if (i < 4) {
 				arpTable[index].ip[i] = ip[i];
 			}
-			arpTable[index].mac[i] = mac[i];
+			if (mac != NULL) {
+				arpTable[index].mac[i] = mac[i];
+			} else {
+				arpTable[index].mac[i] = 0x00;
+			}
 		}
 		arpTable[index].time = time;
 	}
@@ -264,7 +268,7 @@ uint8_t macReturnBuffer[6];
 // with mac address and update the time of the entry.
 // If there is no entry, issue arp packet and return NULL. Try again later.
 uint8_t *arpGetMacFromIp(IPv4Address ip) {
-	uint8_t i;
+	uint8_t i, a;
 	int8_t index = findMacFromIp(ip);
 	Packet *p = (Packet *)malloc(sizeof(Packet));
 
@@ -274,8 +278,16 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 	}
 
 	if (index != -1) {
+		a = 0;
 		for (i = 0; i < 6; i++) {
 			macReturnBuffer[i] = arpTable[index].mac[i];
+			if (macReturnBuffer[i] != 0x00) {
+				a++;
+			}
+		}
+		if (a == 0) {
+			// Not yet found. Return NULL!
+			return NULL;
 		}
 		arpTable[index].time = getSystemTime();
 		return macReturnBuffer;
@@ -317,12 +329,16 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 			debugPrint(" Couldn't send. Trying again...");
 			if (macSendPacket(p)) {
 				debugPrint(" Giving up!\n");
+				free(p->d);
+				free(p);
+				return NULL;
 			} else {
 				debugPrint(" Done!\n");
 			}
 		} else {
 			debugPrint(" Done!\n");
 		}
+		copyEntry(NULL, ip, getSystemTime(), getFirstFreeEntry());
 		return NULL;
 	}
 }
