@@ -75,4 +75,6 @@ uint8_t ipv4ProcessPacket(Packet *p);
 // Creates Ethernet and IPv4 Header, gets Target MAC, and off we go.
 uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol);
 
+uint8_t ipv4LastProtocol(void);
+
 #endif

@@ -136,6 +136,17 @@ int main(void) {
 				serialWriteString(getString(25));
 			} else if (j == IPV4) {
 				serialWriteString(getString(26));
+				serialWrite(' ');
+				c = ipv4LastProtocol();
+				if (c == ICMP) {
+					serialWriteString(getString(27));
+				} else if (c == TCP) {
+					serialWriteString(getString(28));
+				} else if (c == UDP) {
+					serialWriteString(getString(29));
+				} else {
+					serialWriteString(hexToString(c));
+				}
 			} else {
 				serialWriteString(hexToString(j));
 			}

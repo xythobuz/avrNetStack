@@ -120,6 +120,12 @@ void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway) {
 #endif
 }
 
+uint8_t ipLastProtocol = 0x00;
+
+uint8_t ipv4LastProtocol(void) {
+	return ipLastProtocol;
+}
+
 // Returns 0 on success, 1 if not enough mem, 2 if packet invalid.
 uint8_t ipv4ProcessPacket(Packet *p) {
 	uint16_t cs = 0x0000, w;
@@ -196,6 +202,7 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 #endif
 
 	pr = p->d[MACPreambleSize + IPv4PacketProtocolOffset];
+	ipLastProtocol = pr;
 	if (pr == ICMP) {
 		debugPrint("Is ICMP Packet!\n");
 		return icmpProcessPacket(p);

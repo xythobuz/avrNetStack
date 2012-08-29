@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <avr/wdt.h>
 
-#define DEBUG 2 // 0 to 3
+#define DEBUG 0 // 0 to 3
 
 #include <net/mac.h>
 #include <spi.h>
