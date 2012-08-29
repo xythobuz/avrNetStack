@@ -38,6 +38,10 @@ char *getString(uint8_t id);
 
 // Thats, the MAC of my WLAN Module, with some bytes swapped...
 MacAddress mac = {0x00, 0x1E, 0x99, 0x02, 0xC0, 0x42};
+IPv4Address defIp = {192, 168, 0, 42};
+IPv4Address defSubnet = {255, 255, 255, 0};
+IPv4Address defGateway = {192, 168, 0, 1};
+IPv4Address testIp = { 192, 168, 0, 103 };
 
 void printArpTable(void) {
 	uint8_t i, j;
@@ -60,8 +64,6 @@ void printArpTable(void) {
 	}
 }
 
-IPv4Address testIp = { 192, 168, 0, 103 };
-
 int main(void) {
 	char c;
 	uint8_t i;
@@ -79,7 +81,7 @@ int main(void) {
 
 	sei(); // Enable Interrupts so we get UART data before entering networkInit
 
-	networkInit(mac);
+	networkInit(mac, defIp, defSubnet, defGateway);
 
 	PORTA &= ~(0xC0); // LEDs off
 

@@ -21,8 +21,9 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <avr/wdt.h>
 
-#define DEBUG 1 // 0 to 3
+#define DEBUG 2 // 0 to 3
 
 #include <net/mac.h>
 #include <spi.h>
@@ -327,7 +328,10 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	free(p->d);
 	free(p);
 
+	wdt_reset();
 	while(readControlRegister(0x1F) & 0x08); // Wait for finish or abort, ECON1.TXRTS
+	wdt_reset();
+
 #if DEBUG >= 2
 	// Print status vector
 	po = (uint8_t *)malloc(7 * sizeof(uint8_t));

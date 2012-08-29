@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <avr/wdt.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 2 // 0 to receive no debug serial output
 
 #include <time.h>
 #include <net/mac.h>
@@ -94,6 +94,30 @@ void ipv4Init(IPv4Address ip, IPv4Address subnet, IPv4Address gateway) {
 		subnetmask[i] = subnet[i];
 		defaultGateway[i] = gateway[i];
 	}
+#if DEBUG >= 1
+	debugPrint("IP: ");
+	for (i = 0; i < 4; i++) {
+		debugPrint(timeToString(ip[i]));
+		if (i < 3) {
+			debugPrint(".");
+		}
+	}
+	debugPrint("\nSubnet: ");
+	for (i = 0; i < 4; i++) {
+		debugPrint(timeToString(subnet[i]));
+		if (i < 3) {
+			debugPrint(".");
+		}
+	}
+	debugPrint("\nGateway: ");
+	for (i = 0; i < 4; i++) {
+		debugPrint(timeToString(gateway[i]));
+		if (i < 3) {
+			debugPrint(".");
+		}
+	}
+	debugPrint("\n");
+#endif
 }
 
 // Returns 0 on success, 1 if not enough mem, 2 if packet invalid.

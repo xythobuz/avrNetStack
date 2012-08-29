@@ -60,6 +60,7 @@ typedef struct {
 } Packet;
 
 #include <net/mac.h>
+#include <net/ipv4.h>
 
 #define is16BitEqual(x, y, z) ((x[y] == ((z & 0xFF00) >> 8)) && (x[y+1] == (z & 0x00FF)))
 #define get16Bit(x, y) ((x[y] << 8) | x[y+1])
@@ -75,7 +76,7 @@ extern char buff[BUFFSIZE];
 char *timeToString(time_t s);
 char *hexToString(uint64_t s);
 char *hex2ToString(uint64_t s);
-void networkInit(MacAddress a);
+void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway);
 uint8_t networkHandler(void); // 0xFF if nothing to do
 // 42 if unhandled protocol --> networkLastProtocol()
 

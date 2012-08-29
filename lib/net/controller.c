@@ -35,10 +35,6 @@
 #include <net/ntp.h>
 #include <net/controller.h>
 
-IPv4Address defIp = {192, 168, 0, 42};
-IPv4Address defSubnet = {255, 255, 255, 0};
-IPv4Address defGateway = {192, 168, 0, 1};
-
 char buff[BUFFSIZE];
 
 char *timeToString(time_t s) {
@@ -57,18 +53,20 @@ char *hex2ToString(uint64_t s) {
 	return buff;
 }
 
-void networkInit(MacAddress a) {
+void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 	initSystemTimer();
-	macInitialize(a);
+	macInitialize(mac);
 	debugPrint("Hardware Driver initialized...\n");
 	arpInit();
-	ipv4Init(defIp, defSubnet, defGateway);
+	ipv4Init(ip, subnet, gateway);
 	debugPrint("IPv4 initialized...\n");
 #ifndef DISABLE_ICMP
 	icmpInit();
+	debugPrint("ICMP initialized...\n");
 #endif
 #ifndef DISABLE_UDP
 	udpInit();
+	debugPrint("UDP initialized...\n");
   #ifndef DISABLE_DHCP
 	// udpRegisterHandler(&dhcpHandler, 68);
   #endif
