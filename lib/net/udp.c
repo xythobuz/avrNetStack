@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <net/icmp.h>
 #include <net/utils.h>

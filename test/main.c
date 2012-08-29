@@ -67,7 +67,7 @@ void printArpTable(void) {
 int main(void) {
 	char c;
 	uint8_t i;
-	// uint16_t j;
+	uint16_t j;
 	uint8_t *p;
 
 	i = MCUSR & 0x1F;
@@ -118,23 +118,28 @@ int main(void) {
 		wdt_reset();
 		if (i != 255) {
 			// Network Handler had something to do...
-			if (i != 0) {
-				serialWriteString(getString(4));
-				if (i == 0) {
-					serialWriteString(getString(16));
-				} else if (i == 1) {
-					serialWriteString(getString(15));
-				} else if (i == 2) {
-					serialWriteString(getString(14));
-				} else if (i == 42) {
-					serialWriteString(getString(6));
-					serialWriteString(getString(7));
-					serialWriteString(hexToString(networkLastProtocol()));
-				} else {
-					serialWriteString(timeToString(i));
-				}
-				serialWrite('\n');
+			serialWriteString(getString(4));
+			if (i == 0) {
+				serialWriteString(getString(16));
+			} else if (i == 1) {
+				serialWriteString(getString(15));
+			} else if (i == 2) {
+				serialWriteString(getString(14));
+			} else if (i == 42) {
+				serialWriteString(getString(6));
+			} else {
+				serialWriteString(timeToString(i));
 			}
+			serialWriteString(getString(7));
+			j = networkLastProtocol();
+			if (j == ARP) {
+				serialWriteString(getString(25));
+			} else if (j == IPV4) {
+				serialWriteString(getString(26));
+			} else {
+				serialWriteString(hexToString(j));
+			}
+			serialWrite('\n');
 		}
 
 		if (serialHasChar()) {

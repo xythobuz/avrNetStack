@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 0 // 0 to receive no debug serial output
 
 #include <time.h>
 #include <serial.h>

@@ -25,7 +25,7 @@
 #include <avr/pgmspace.h>
 #include <avr/wdt.h>
 
-#define DEBUG 3
+#define DEBUG 0
 
 #include <net/utils.h>
 #include <net/icmp.h>

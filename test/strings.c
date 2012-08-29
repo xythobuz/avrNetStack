@@ -33,7 +33,7 @@ const char string3[] PROGMEM = "Link is up!\n";
 const char string4[] PROGMEM = "Handler returned: ";
 const char string5[] PROGMEM = "MCUCSR: ";
 const char string6[] PROGMEM = "No Handler";
-const char string7[] PROGMEM = " for Protocol: ";
+const char string7[] PROGMEM = " for ";
 const char string8[] PROGMEM = "NTP Request: ";
 const char string9[] PROGMEM = "DHCP Request: ";
 const char string10[] PROGMEM = "Commands: qvdnalt\n";
@@ -51,15 +51,18 @@ const char string21[] PROGMEM = "External Reset";
 const char string22[] PROGMEM = "Brown-Out Reset";
 const char string23[] PROGMEM = "Watchdog Reset";
 const char string24[] PROGMEM = "JTAG Reset";
+const char string25[] PROGMEM = "ARP";
+const char string26[] PROGMEM = "IPv4";
 
 // Last index + 1
-#define STRINGNUM 25
+#define STRINGNUM 27
 
 PGM_P stringTable[STRINGNUM] PROGMEM = { string0, string1, string2, string3, string4,
 									string5, string6, string7, string8, string9,
 									string10, string11, string12, string13, string14,
 									string15, string16, string17, string18, string19,
-									string20, string21, string22, string23, string24 };
+									string20, string21, string22, string23, string24,
+									string25, string26 };
 
 char stringNotFoundError[] PROGMEM = "String not found!\n";
 

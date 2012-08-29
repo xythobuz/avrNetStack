@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <avr/wdt.h>
 
-#define DEBUG 2 // 0 to receive no debug serial output
+#define DEBUG 0 // 0 to receive no debug serial output
 
 #include <time.h>
 #include <net/mac.h>
