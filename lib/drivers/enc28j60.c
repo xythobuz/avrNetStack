@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <avr/wdt.h>
+#include <avr/interrupt.h>
 
 #define DEBUG 0 // 0 to 3
 
@@ -177,6 +178,10 @@ void discardPacket(void) {
 // |            MAC API             |
 // ----------------------------------
 
+ISR(INT0_vect) {
+	networkInterrupt();
+}
+
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	uint16_t phy = 0;
 	uint8_t i;
@@ -251,7 +256,9 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	// Enable Auto Increment for Buffer Writes
 	bitFieldSet(0x1E, (1 << 7)); // Set ECON2.AUTOINC
 
-	// If desired, you could enable interrupts here
+	// Enable Packet Receive Interrupt on falling edge
+	// Set EIE to 0xC0
+	writeControlRegister(0x1B, 0xC0);
 
 	// Set LED Mode. LEDA Receive and Link, LEDB Transmit --> PHLCON = 0x3C12
 	writePhyRegister(0x14, 0x3C12);
@@ -278,7 +285,18 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	selectBank(0);
 #endif
 
+	MCUCR |= (1 << ISC01); // INT0 Falling Edge
+	GICR |= (1 << INT0); // Enable INT0
+
 	return 0;
+}
+
+void macSetInterrupt(uint8_t v) {
+	if (v) {
+		GICR |= (1 << INT0); // Enable INT0
+	} else {
+		GICR &= ~(1 << INT0); // Disable INT0
+	}
 }
 
 void macReset(void) {

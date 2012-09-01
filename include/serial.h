@@ -24,6 +24,8 @@
 
 #define SERIALNONBLOCK
 
+// #define DEBUGSERIALALWAYSBLOCKSENDING // Wait until bytes are transmitted
+
 // RX & TX buffer size in bytes
 #define RX_BUFFER_SIZE 64
 #define TX_BUFFER_SIZE 64

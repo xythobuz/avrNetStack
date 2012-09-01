@@ -29,6 +29,7 @@
 #include <net/dhcp.h>
 #include <net/ntp.h>
 #include <net/arp.h>
+#include <net/udp.h>
 #include <time.h>
 #include <serial.h>
 
@@ -112,9 +113,11 @@ int main(void) {
 
 	wdt_enable(WDTO_2S);
 
+	arpGetMacFromIp(testIp); // Request MAC for serial command 't'
+
 	while(1) {
 		wdt_reset();
-		i = networkHandler();
+		/* i = networkHandler();
 		wdt_reset();
 		if (i != 255) {
 			// Network Handler had something to do...
@@ -144,6 +147,8 @@ int main(void) {
 					serialWriteString(getString(28));
 				} else if (c == UDP) {
 					serialWriteString(getString(29));
+					serialWrite(':');
+					serialWriteString(timeToString(udpLastPort()));
 				} else {
 					serialWriteString(hexToString(c));
 				}
@@ -151,24 +156,23 @@ int main(void) {
 				serialWriteString(hexToString(j));
 			}
 			serialWrite('\n');
-		}
+		} */
 
 		if (serialHasChar()) {
 			c = serialGet();
 			switch(c) {
 				case 't':
-					p = arpGetMacFromIp(testIp);
-					if (p == NULL) {
+					if ((p = arpGetMacFromIp(testIp)) == NULL) {
 						serialWriteString(getString(18));
-					} else {
-						serialWriteString(getString(19));
-						for (i = 0; i < 6; i++) {
-							serialWriteString(hex2ToString(p[i]));
-							if (i < 5) {
-								serialWrite(':');
-							} else {
-								serialWrite('\n');
-							}
+						break;
+					}
+					serialWriteString(getString(19));
+					for (i = 0; i < 6; i++) {
+						serialWriteString(hex2ToString(p[i]));
+						if (i < 5) {
+							serialWrite(':');
+						} else {
+							serialWrite('\n');
 						}
 					}
 					break;

@@ -216,6 +216,9 @@ void serialWrite(uint8_t data) {
 		SERIALB |= (1 << SERIALUDRIE); // Enable Interrupt
 		SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
 	}
+#ifdef DEBUGSERIALALWAYSBLOCKSENDING
+	while(rxRead != rxWrite); // Wait until byte is transmitted!
+#endif
 }
 
 void serialWriteString(char *data) {

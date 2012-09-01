@@ -242,12 +242,26 @@ uint8_t arpProcessPacket(Packet *p) {
 		// ARP Reply. Store the information, if not already present
 		// Each packet contains two MAC-IP Combinations. Sender & Target
 		if (findIpFromMac(p->d + MACPreambleSize + HEADERLENGTH + 2) == -1) {
-			// Sender MAC is not stored. Store combination!
-			copyEntry(p->d + MACPreambleSize + HEADERLENGTH + 2, p->d + MACPreambleSize + HEADERLENGTH + 8, getSystemTime(), getFirstFreeEntry());
+			if (!isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLENGTH + 8, 4)) {
+				// Sender MAC is not stored. Store combination!
+				i = findMacFromIp(p->d + MACPreambleSize + HEADERLENGTH + 8);
+				if (i == -1) {
+					i = getFirstFreeEntry();
+				}
+				debugPrint("Sender unknown!\n");
+				copyEntry(p->d + MACPreambleSize + HEADERLENGTH + 2, p->d + MACPreambleSize + HEADERLENGTH + 8, getSystemTime(), i);
+			}
 		}
 		if (findIpFromMac(p->d + MACPreambleSize + HEADERLENGTH + 12) == -1) {
-			// Target MAC is not stored. Store combination!
-			copyEntry(p->d + MACPreambleSize + HEADERLENGTH + 12, p->d + MACPreambleSize + HEADERLENGTH + 18, getSystemTime(), getFirstFreeEntry());
+			if (!isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLENGTH + 18, 4)) {
+				// Target MAC is not stored. Store combination!
+				i = findMacFromIp(p->d + MACPreambleSize + HEADERLENGTH + 18);
+				if (i == -1) {
+					i = getFirstFreeEntry();
+				}
+				debugPrint("Target unknown!\n");
+				copyEntry(p->d + MACPreambleSize + HEADERLENGTH + 12, p->d + MACPreambleSize + HEADERLENGTH + 18, getSystemTime(), i);
+			}
 		}
 		free(p->d);
 		free(p);
@@ -286,7 +300,7 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 			}
 		}
 		if (a == 0) {
-			// Not yet found. Return NULL!
+			// Not yet found but already requested. Return NULL!
 			return NULL;
 		}
 		arpTable[index].time = getSystemTime();

@@ -77,6 +77,9 @@ char *timeToString(time_t s);
 char *hexToString(uint64_t s);
 char *hex2ToString(uint64_t s);
 void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway);
+
+void networkInterrupt(void); // Called on Packet Reception Interrupt by driver
+
 uint8_t networkHandler(void); // 0xFF if nothing to do
 // 42 if unhandled protocol --> networkLastProtocol()
 

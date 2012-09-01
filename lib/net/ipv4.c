@@ -254,7 +254,11 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 		p->d[MACPreambleSize + IPv4PacketSourceOffset + tLength] = ownIpAddress[tLength];
 		p->d[MACPreambleSize + IPv4PacketDestinationOffset + tLength] = target[tLength];
 	}
-	while ((mac = arpGetMacFromIp(target)) == NULL); // Get Target MAC
+	if ((mac = arpGetMacFromIp(target)) == NULL) { // Target MAC Unknown
+		free(p->d);
+		free(p);
+		return 3; // Ensure the target Mac is known!
+	}
 	for (tLength = 0; tLength < 6; tLength++) {
 		p->d[tLength] = mac[tLength]; // Destination
 		p->d[6 + tLength] = ownMacAddress[tLength]; // Source

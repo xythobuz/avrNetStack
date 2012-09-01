@@ -21,6 +21,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <avr/interrupt.h>
 
 #define DEBUG 0 // 0 to receive no debug serial output
 
@@ -36,6 +37,7 @@
 #include <net/controller.h>
 
 char buff[BUFFSIZE];
+uint16_t tl = 0;
 
 char *timeToString(time_t s) {
 	return ultoa(s, buff, 10);
@@ -79,7 +81,15 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 #endif
 }
 
-uint16_t tl = 0;
+void networkInterrupt(void) {
+	// Interrupts are disabled on execution of an ISR
+	// and enabled when leaving the ISR
+	macSetInterrupt(0); // Don't interrupt networking with more networking
+	sei(); // Enable interrupts
+	networkHandler();
+	cli(); // Disable interrupts
+	macSetInterrupt(1);
+}
 
 uint8_t networkHandler(void) {
 	Packet *p;

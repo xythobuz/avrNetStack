@@ -56,4 +56,6 @@ uint8_t udpHandlePacket(Packet *p);
 // Handler has to free the UdpPacket!
 uint8_t udpRegisterHandler(uint8_t (*handler)(Packet *), uint16_t port);
 
+uint16_t udpLastPort(void);
+
 #endif
