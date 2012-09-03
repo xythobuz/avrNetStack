@@ -187,6 +187,11 @@ int main(void) {
 		scheduler();
 		wdt_reset();
 		tasks();
+		if (PIND & PD2) {
+			PORTA |= (1 << PA7);
+		} else {
+			PORTA &= ~(1 << PA7);
+		}
 	}
 
 	return 0;

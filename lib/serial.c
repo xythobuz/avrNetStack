@@ -94,6 +94,8 @@
 #else
  #error "AvrSerialLibrary not compatible with your MCU!"
 #endif
+
+#ifdef SERIALNONBLOCK
 uint8_t volatile rxBuffer[RX_BUFFER_SIZE];
 uint8_t volatile txBuffer[TX_BUFFER_SIZE];
 uint16_t volatile rxRead = 0;
@@ -124,6 +126,7 @@ ISR(SERIALTRANSMITINTERRUPT) { // Data register empty
 		SERIALB &= ~(1 << SERIALUDRIE); // Disable Interrupt
 	}
 }
+#endif
 
 uint8_t serialInit(uint16_t baud, uint8_t databits, uint8_t parity, uint8_t stopbits) {
 	if (parity > ODD) {
@@ -162,18 +165,31 @@ uint8_t serialInit(uint16_t baud, uint8_t databits, uint8_t parity, uint8_t stop
 #else
 	SERIALUBRR = baud;
 #endif
-	SERIALB |= (1 << SERIALRXCIE) | (1 << SERIALRXEN) | (1 << SERIALTXEN); // Enable Interrupts and Receiver/Transmitter
+
+#ifdef SERIALNONBLOCK
+	SERIALB |= (1 << SERIALRXCIE); // Enable Interrupts
+#endif
+
+	SERIALB |= (1 << SERIALRXEN) | (1 << SERIALTXEN); // Enable Receiver/Transmitter
 
 	return 0;
 }
 
 uint8_t serialHasChar() {
+#ifdef SERIALNONBLOCK
 	return (rxRead != rxWrite); // True if char available
+#else
+	if (SERIALA & RXC) {
+		return 1;
+	} else {
+		return 0;
+	}
+#endif
 }
 
 uint8_t serialGet() {
-	uint8_t c;
 #ifdef SERIALNONBLOCK
+	uint8_t c;
 	if (rxRead != rxWrite) {
 		c = rxBuffer[rxRead];
 		rxBuffer[rxRead] = 0;
@@ -187,23 +203,21 @@ uint8_t serialGet() {
 		return 0;
 	}
 #else
-	while (rxRead == rxWrite);
-	c = rxBuffer[rxRead];
-	rxBuffer[rxRead] = 0;
-	if (rxRead < (RX_BUFFER_SIZE - 1)) {
-		rxRead++;
-	} else {
-		rxRead = 0;
-	}
-	return c;
+	while(!serialHasChar());
+	return SERIALDATA;
 #endif
 }
 
 uint8_t serialBufferSpaceRemaining() {
+#ifdef SERIALNONBLOCK
 	return (((txWrite + 1) == txRead) || ((txRead == 0) && ((txWrite + 1) == TX_BUFFER_SIZE)));
+#else
+	return 1;
+#endif
 }
 
 void serialWrite(uint8_t data) {
+#ifdef SERIALNONBLOCK
 	while (((txWrite + 1) == txRead) || ((txRead == 0) && ((txWrite + 1) == TX_BUFFER_SIZE))); // Buffer is full, wait!
     txBuffer[txWrite] = data;
 	if (txWrite < (TX_BUFFER_SIZE - 1)) {
@@ -216,8 +230,9 @@ void serialWrite(uint8_t data) {
 		SERIALB |= (1 << SERIALUDRIE); // Enable Interrupt
 		SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
 	}
-#ifdef DEBUGSERIALALWAYSBLOCKSENDING
-	while(rxRead != rxWrite); // Wait until byte is transmitted!
+#else
+	while (!(SERIALA & (1 << UDRE))); // Wait for empty buffer
+	SERIALDATA = data;
 #endif
 }
 
@@ -236,8 +251,10 @@ void serialClose() {
 #else
 	SERIALUBRR = 0;
 #endif
+#ifdef SERIALNONBLOCK
 	rxRead = 0;
 	txRead = 0;
 	rxWrite = 0;
 	txWrite = 0;
+#endif
 }

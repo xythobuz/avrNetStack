@@ -22,9 +22,9 @@
 #ifndef _serial_h
 #define _serial_h
 
-#define SERIALNONBLOCK
-
-// #define DEBUGSERIALALWAYSBLOCKSENDING // Wait until bytes are transmitted
+// If you don't define this, no buffers will be created and all
+// serial actions will wait until they are completed...
+// #define SERIALNONBLOCK
 
 // RX & TX buffer size in bytes
 #define RX_BUFFER_SIZE 64

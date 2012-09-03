@@ -85,18 +85,29 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 void networkInterrupt(void) {
 	// Interrupts are disabled on execution of an ISR
 	// and enabled when leaving the ISR
+	uint8_t i;
 	PORTA ^= (1 << PA7);
 	macSetInterrupt(0); // Don't interrupt networking with more networking
 	sei(); // Enable interrupts
-	networkHandler();
+	i = networkHandler();
+#if DEBUG >= 1
+	if (i != 0xFF) {
+		debugPrint("Stack: ");
+		debugPrint(timeToString(i));
+		debugPrint("\n");
+	} else {
+		debugPrint(".");
+	}
+#endif
 	cli(); // Disable interrupts
+	macClearInterruptFlags();
 	macSetInterrupt(1);
 }
 
 uint8_t networkHandler(void) {
 	Packet *p;
 	
-	if (macLinkIsUp() && (macPacketsReceived() > 0)) {
+	while (macLinkIsUp() && (macPacketsReceived() > 0)) {
 		p = macGetPacket();
 
 		if (p == NULL) {

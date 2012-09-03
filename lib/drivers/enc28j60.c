@@ -24,7 +24,7 @@
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
 
-#define DEBUG 0 // 0 to 3
+#define DEBUG 1 // 0 to 3
 
 #include <std.h>
 #include <net/mac.h>
@@ -258,19 +258,17 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	bitFieldSet(0x1E, (1 << 7)); // Set ECON2.AUTOINC
 
 	// Enable Packet Receive Interrupt on falling edge
-	// Set EIE to 0xC0
-	writeControlRegister(0x1B, 0xC0);
+	// Set EIE.PKTIE and EIE.INTIE
+	bitFieldSet(0x1B, ((1 << 7) | (1 << 6)));
 
 	// Set LED Mode. LEDA Receive and Link, LEDB Transmit --> PHLCON = 0x3C12
 	writePhyRegister(0x14, 0x3C12);
 
-	// Enable packet reception
-	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
-
 #if DEBUG >= 1
-	selectBank(3);
 	debugPrint("ENC28J60 - Version ");
+	selectBank(3);
 	i = readControlRegister(0x12);
+	selectBank(0);
 	if (i == 0x02) {
 		debugPrint("B1");
 	} else if (i == 0x04) {
@@ -283,15 +281,26 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 		debugPrint("Unknown");
 	}
 	debugPrint("!\n");
-	selectBank(0);
 #endif
 
+	macClearInterruptFlags();
+
 	DDRD &= ~(1 << PD2); // INT0 as input
-	PORTD |= (1 << PD2); // Enable internal Pull-Ups
 	MCUCR |= (1 << ISC01); // INT0 Falling Edge
-	GICR |= (1 << INT0); // Enable INT0
+	// MCUCR &= ~((1 << ISC00) | (1 << ISC01)); // INT0 Low Level
+
+	debugPrint("Enabling Interrupt\n");
+
+	macSetInterrupt(1);
+
+	// Enable packet reception
+	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
 
 	return 0;
+}
+
+void macClearInterruptFlags(void) {
+	bitFieldClear(0x1C, (1 << 6));
 }
 
 void macSetInterrupt(uint8_t v) {
