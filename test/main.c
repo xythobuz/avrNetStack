@@ -100,7 +100,7 @@ int main(void) {
 
 	addTimedTask(heartbeat, 500); // Toggle LED every 500ms
 	// Execute Serial Handler if a char was received
-	addTaskWithCheckIfExecute(serialHandler, serialHasChar);
+	addConditionalTask(serialHandler, serialHasChar);
 
 	while(1) {
 		wdt_reset();

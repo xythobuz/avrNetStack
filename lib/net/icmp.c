@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <net/utils.h>
 #include <net/icmp.h>

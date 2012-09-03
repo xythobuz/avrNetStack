@@ -10,10 +10,11 @@ In the future, a PCB will be designed that can act as WLAN / LAN Module for your
 
 ### Hardware Libraries
 
-avrNetStack includes UART, SPI and Timer libs.
-The UART lib uses FIFO Buffers for receiving and transmitting interrupt driven. Change the Buffer size in 'include/serial.h', if you want.
+avrNetStack includes UART, SPI and Timer libs aswell as a basic task switcher and scheduler.
+The UART lib uses FIFO Buffers for receiving and transmitting interrupt driven. Change the Buffer size in 'include/serial.h', if you want. For debugging, you can run the serial library in a blocking mode.
 The Time lib supports 16MHz and 20MHz on a small selection of hardware devices. If you get compile errors after changing the target plattform in the makefile, you have to extend these libraries to support your target.
 If you want to use this library with your own software, don't include another UART library. Use the functions from serial.h!
+You need to call scheduler() and tasks() in you main-loop and also enable interrupts to use the Networking Stack. Both are completely dynamic, so you can use them for your application logic, too.
 
 ### Debug Output
 

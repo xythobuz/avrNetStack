@@ -33,8 +33,9 @@
 
 typedef void(*TimedTask)(void);
 
-// 0 on success
-uint8_t addTimedTask(TimedTask func, time_t intervall);
-void scheduler(void);
+// Add a new timed task. Calling scheduler() in your main-loop
+// will cause a call to func() every intervall milliseconds.
+uint8_t addTimedTask(TimedTask func, time_t intervall); // 0 on success
+void scheduler(void); // Call this in your main loop!
 
 #endif

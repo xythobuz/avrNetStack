@@ -25,8 +25,9 @@
 
 typedef uint8_t (*TestFunc)(void);
 
-// 0 on success
-uint8_t addTaskWithCheckIfExecute(TimedTask func, TestFunc testFunc);
-void tasks(void);
+// Adds another conditional task that will cause func() to be called
+// when testFunc() returns a value other than zero.
+uint8_t addConditionalTask(TimedTask func, TestFunc testFunc); // 0 on success
+void tasks(void); // Call in your main loop!
 
 #endif

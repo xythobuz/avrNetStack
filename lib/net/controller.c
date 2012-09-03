@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <avr/interrupt.h>
 
-#define DEBUG 2 // 0 to receive no debug serial output
+#define DEBUG 1 // 0 to receive no debug serial output
 
 #include <std.h>
 #include <time.h>
@@ -83,7 +83,7 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 #endif
 
 	// "Not really" allowed by C Standard, but works...
-	addTaskWithCheckIfExecute((TimedTask)networkHandler, macPacketsReceived);
+	addConditionalTask((TimedTask)networkHandler, macPacketsReceived);
 }
 
 void networkInterrupt(void) {

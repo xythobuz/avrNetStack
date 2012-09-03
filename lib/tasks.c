@@ -64,7 +64,7 @@ uint8_t extendTaskCheckList(void) {
 // |    External API    |
 // ----------------------
 
-uint8_t addTaskWithCheckIfExecute(TimedTask func, TestFunc testFunc) {
+uint8_t addConditionalTask(TimedTask func, TestFunc testFunc) {
 	// func will be executed if testFunc returns a value other than zero!
 	if (extendTaskCheckList()) {
 		return 1;
