@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
+#include <util/delay.h>
 
 #include <std.h>
 #include <time.h>
@@ -39,6 +40,9 @@
 #include <net/controller.h>
 
 char *getString(uint8_t id);
+void printArpTable(void);
+void heartbeat(void);
+void serialHandler(void);
 
 // Thats, the MAC of my WLAN Module, with some bytes swapped...
 MacAddress mac = {0x00, 0x1E, 0x99, 0x02, 0xC0, 0x42};
@@ -46,6 +50,67 @@ IPv4Address defIp = {192, 168, 0, 42};
 IPv4Address defSubnet = {255, 255, 255, 0};
 IPv4Address defGateway = {192, 168, 0, 1};
 IPv4Address testIp = { 192, 168, 0, 103 };
+
+int main(void) {
+	uint8_t i;
+
+	i = MCUSR & 0x1F;
+	MCUSR = 0;
+	wdt_disable();
+
+	serialInit(BAUD(39400, F_CPU), 8, NONE, 1);
+
+	DDRA |= (1 << PA7) | (1 << PA6);
+	PORTA |= (1 << PA7) | (1 << PA6); // LEDs on
+
+	sei(); // Enable Interrupts so we get UART data before entering networkInit
+
+	networkInit(mac, defIp, defSubnet, defGateway);
+
+	serialWriteString(getString(0));
+	serialWriteString(getString(1));
+	serialWriteString(getString(5));
+	if (i == 0x01) {
+		serialWriteString(getString(20));
+	} else if (i == 0x02) {
+		serialWriteString(getString(21));
+	} else if (i == 0x04) {
+		serialWriteString(getString(22));
+	} else if (i == 0x08) {
+		serialWriteString(getString(23));
+	} else if (i == 0x10) {
+		serialWriteString(getString(24));
+	} else {
+		serialWriteString(hexToString(i));
+	}
+	serialWrite('\n');
+
+	if (!macLinkIsUp()) {
+		serialWriteString(getString(2)); // Link is down
+		serialWriteString(getString(17)); // Waiting
+		while(!macLinkIsUp());
+	}
+	serialWriteString(getString(3)); // Link is up
+
+	wdt_enable(WDTO_2S);
+
+	arpGetMacFromIp(testIp); // Request MAC for serial command 't'
+
+	PORTA &= ~((1 << PA7) | (1 << PA6)); // LEDs off
+
+	addTimedTask(heartbeat, 500); // Toggle LED every 500ms
+	// Execute Serial Handler if a char was received
+	addTaskWithCheckIfExecute(serialHandler, serialHasChar);
+
+	while(1) {
+		wdt_reset();
+		scheduler();
+		wdt_reset();
+		tasks();
+	}
+
+	return 0;
+}
 
 void printArpTable(void) {
 	uint8_t i, j;
@@ -76,7 +141,14 @@ void serialHandler(void) {
 	uint8_t i;
 	uint8_t *p;
 	char c = serialGet();
+	serialWrite(c - 32); // to uppercase
+	serialWriteString(getString(7)); // ": "
 	switch(c) {
+		case 'm':
+			serialWriteString(timeToString(heapBytesAllocated));
+			serialWriteString(getString(4)); // " bytes "
+			serialWriteString(getString(6)); // "allocated\n"
+			break;
 		case 't':
 			if ((p = arpGetMacFromIp(testIp)) == NULL) {
 				serialWriteString(getString(18));
@@ -126,73 +198,7 @@ void serialHandler(void) {
 			wdt_enable(WDTO_15MS);
 			while(1);
 		default:
-			serialWrite(c);
+			serialWrite('\n');
 			break;
 	}
-}
-
-int main(void) {
-	uint8_t i;
-
-	i = MCUSR & 0x1F;
-	MCUSR = 0;
-	wdt_disable();
-
-	serialInit(BAUD(39400, F_CPU), 8, NONE, 1);
-
-	DDRA = 0xC0;
-	PORTA |= 0xC0; // LEDs on
-
-	sei(); // Enable Interrupts so we get UART data before entering networkInit
-
-	networkInit(mac, defIp, defSubnet, defGateway);
-
-	serialWriteString(getString(0));
-	serialWriteString(getString(1));
-	serialWriteString(getString(5));
-	if (i == 0x01) {
-		serialWriteString(getString(20));
-	} else if (i == 0x02) {
-		serialWriteString(getString(21));
-	} else if (i == 0x04) {
-		serialWriteString(getString(22));
-	} else if (i == 0x08) {
-		serialWriteString(getString(23));
-	} else if (i == 0x10) {
-		serialWriteString(getString(24));
-	} else {
-		serialWriteString(hexToString(i));
-	}
-	serialWrite('\n');
-
-	if (!macLinkIsUp()) {
-		serialWriteString(getString(2)); // Link is down
-		serialWriteString(getString(17)); // Waiting
-		while(!macLinkIsUp());
-	}
-	serialWriteString(getString(3)); // Link is up
-
-	wdt_enable(WDTO_2S);
-
-	arpGetMacFromIp(testIp); // Request MAC for serial command 't'
-
-	PORTA &= ~(0xC0); // LEDs off
-
-	addTimedTask(heartbeat, 500); // Toggle LED every 500ms
-	// Execute Serial Handler if a char was received
-	addTaskWithCheckIfExecute(serialHandler, serialHasChar);
-
-	while(1) {
-		wdt_reset();
-		scheduler();
-		wdt_reset();
-		tasks();
-		if (PIND & PD2) {
-			PORTA |= (1 << PA7);
-		} else {
-			PORTA &= ~(1 << PA7);
-		}
-	}
-
-	return 0;
 }

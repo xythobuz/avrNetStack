@@ -180,8 +180,9 @@ void discardPacket(void) {
 // ----------------------------------
 
 ISR(INT0_vect) {
-	debugPrint("Interrupt!\n");
-	// networkInterrupt();
+	PORTA |= (1 << PA7);
+	networkInterrupt();
+	PORTA &= ~(1 << PA7);
 }
 
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
@@ -284,12 +285,11 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	debugPrint("!\n");
 #endif
 
-	macClearInterruptFlags();
-
 	DDRD &= ~(1 << PD2); // INT0 as input
 	MCUCR |= (1 << ISC01); // INT0 Falling Edge
 	// MCUCR &= ~((1 << ISC00) | (1 << ISC01)); // INT0 Low Level
 
+	macClearInterruptFlags();
 	macSetInterrupt(1);
 
 	// Enable packet reception
@@ -299,7 +299,7 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 }
 
 void macClearInterruptFlags(void) {
-	bitFieldClear(0x1C, (1 << 6));
+	bitFieldClear(0x1C, 0x7B); // Clear all interrupt flags
 }
 
 void macSetInterrupt(uint8_t v) {
@@ -357,9 +357,9 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	mfree(p->d, p->dLength);
 	mfree(p, sizeof(Packet));
 
-	wdt_reset();
+	// wdt_reset();
 	while(readControlRegister(0x1F) & 0x08); // Wait for finish or abort, ECON1.TXRTS
-	wdt_reset();
+	// wdt_reset();
 
 #if DEBUG >= 2
 	// Print status vector

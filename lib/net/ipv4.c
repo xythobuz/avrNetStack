@@ -21,7 +21,6 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <avr/wdt.h>
 
 #define DEBUG 0 // 0 to receive no debug serial output
 
@@ -179,8 +178,6 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 		free(p);
 		return 0;
 	}
-
-	wdt_reset();
 
 	// Packet to act on...
 #if DEBUG >= 2

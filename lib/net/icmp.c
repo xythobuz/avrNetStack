@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h>
-#include <avr/wdt.h>
 
 #define DEBUG 0
 
@@ -126,9 +125,6 @@ uint8_t icmpProcessPacket(Packet *p) {
 		debugPrint("Valid ICMP Packet!\n");
 	}
 #endif
-
-	debugPrint("Reached Point!!\n\n");
-	while(1) { wdt_reset(); }
 
 	if ((type == 8) && (code == 0)) {
 		// Echo request. Send reply

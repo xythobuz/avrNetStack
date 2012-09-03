@@ -23,11 +23,12 @@
 #include <stdlib.h>
 #include <avr/interrupt.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 2 // 0 to receive no debug serial output
 
 #include <std.h>
 #include <time.h>
 #include <serial.h>
+#include <tasks.h>
 #include <net/mac.h>
 #include <net/arp.h>
 #include <net/icmp.h>
@@ -80,13 +81,15 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 	// udpRegisterHandler(&ntpHandler, 123);
   #endif
 #endif
+
+	// "Not really" allowed by C Standard, but works...
+	addTaskWithCheckIfExecute((TimedTask)networkHandler, macPacketsReceived);
 }
 
 void networkInterrupt(void) {
 	// Interrupts are disabled on execution of an ISR
 	// and enabled when leaving the ISR
 	uint8_t i;
-	PORTA ^= (1 << PA7);
 	macSetInterrupt(0); // Don't interrupt networking with more networking
 	sei(); // Enable interrupts
 	i = networkHandler();
@@ -120,6 +123,12 @@ uint8_t networkHandler(void) {
 			debugPrint(" bytes!\n");
 			return 1;
 		}
+
+#if DEBUG >= 2
+		debugPrint("Packet with ");
+		debugPrint(timeToString(p->dLength));
+		debugPrint(" bytes Received!\n");
+#endif
 
 		tl = get16Bit(p->d, 12);
 		if (tl == IPV4) {
