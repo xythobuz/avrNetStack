@@ -180,7 +180,8 @@ void discardPacket(void) {
 // ----------------------------------
 
 ISR(INT0_vect) {
-	networkInterrupt();
+	debugPrint("Interrupt!\n");
+	// networkInterrupt();
 }
 
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
@@ -232,7 +233,7 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	writeControlRegister(0x06, 0x12);
 	// 7) If half duplex, set MAIPGH to 0x0C
 	writeControlRegister(0x07, 0x0C);
-	// 8) For half duplex, set MACLCON1 & 2 to their default values?
+	// 8) For half duplex, set MACLCON1 & 2 to their default values
 	// 9) Write local MAC Address into MAADR1:MAADR6
 	selectBank(3);
 	writeControlRegister(0x04, address[0]);
@@ -288,8 +289,6 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	DDRD &= ~(1 << PD2); // INT0 as input
 	MCUCR |= (1 << ISC01); // INT0 Falling Edge
 	// MCUCR &= ~((1 << ISC00) | (1 << ISC01)); // INT0 Low Level
-
-	debugPrint("Enabling Interrupt\n");
 
 	macSetInterrupt(1);
 
