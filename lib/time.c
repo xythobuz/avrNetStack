@@ -24,6 +24,7 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 
+#include <std.h>
 #include <time.h>
 
 // Uses Timer 2!
@@ -35,6 +36,22 @@
 volatile time_t systemTime = 0; // Overflows in 500 million years... :)
 volatile Time currentTime;
 
+// Currently works with ATmega168, 32, 2560
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)
+#define TCRA TCCR2A
+#define TCRB TCCR2B
+#define OCR OCR2A
+#define TIMS TIMSK2
+#define OCIE OCIE2A
+#elif defined(__AVR_ATmega32__)
+#define TCRA TCCR2
+#define TCRB TCCR2
+#define OCR OCR2
+#define TIMS TIMSK
+#define OCIE OCIE2
+#else
+#error MCU not compatible with timer module. DIY!
+#endif
 
 void initSystemTimer() {
 	currentTime.milliseconds = 0;
@@ -46,36 +63,19 @@ void initSystemTimer() {
 	currentTime.year = 1970;
 
 	// Timer initialization
-	// Currently works with ATmega168, 32, 2560
-#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)
-	TCCR2A |= (1 << WGM21); // CTC Mode
+	TCRA |= (1 << WGM21); // CTC Mode
+
 #if F_CPU == 16000000
-		TCCR2B |= (1 << CS22); // Prescaler: 64
-		OCR2A = 250;
+	TCRB |= (1 << CS22); // Prescaler: 64
+	OCR = 250;
 #elif F_CPU == 20000000
-		TCCR2B |= (1 << CS22) | (1 << CS21); // Prescaler 256
-		OCR2A = 78;
+	TCRB |= (1 << CS22) | (1 << CS21); // Prescaler 256
+	OCR = 78;
 #else
 #error F_CPU not compatible with timer module. DIY!
-#endif
-	TIMSK2 |= (1 << OCIE2A); // Enable compare match interrupt
-#elif defined(__AVR_ATmega32__)
-	TCCR2 |= (1 << WGM21); // CTC Mode
-#if F_CPU == 16000000
-		TCCR2 |= (1 << CS22); // Prescaler: 64
-		OCR2 = 250;
-#elif F_CPU == 20000000
-		TCCR2 |= (1 << CS22) | (1 << CS21); // Prescaler 256
-		OCR2 = 78;
-#else
-#error F_CPU not compatible with timer module. DIY!
-#endif
-	TIMSK |= (1 << OCIE2); // Enable compare match interrupt
-#else
-#error MCU not compatible with timer module. DIY!
 #endif
 
-	// Timer initialized!
+	TIMS |= (1 << OCIE); // Enable compare match interrupt
 }
 
 void setTime(Time *t) {
@@ -184,7 +184,7 @@ void incrementSeconds(Time *t, time_t sec) {
 }
 
 void setNtpTimestamp(time_t ntp) {
-	Time *t = (Time *)malloc(sizeof(Time));
+	Time *t = (Time *)mmalloc(sizeof(Time));
 	if (t == NULL) {
 		return;
 	}
@@ -195,11 +195,11 @@ void setNtpTimestamp(time_t ntp) {
 	t->minutes = 0;
 	t->seconds = 0;
 	incrementSeconds(t, ntp);
-	free(t);
+	mfree(t, sizeof(Time));
 }
 
 void setTimestamp(time_t unix) {
-	Time *t = (Time *)malloc(sizeof(Time));
+	Time *t = (Time *)mmalloc(sizeof(Time));
 	if (t == NULL) {
 		return;
 	}
@@ -210,7 +210,7 @@ void setTimestamp(time_t unix) {
 	t->minutes = 0;
 	t->seconds = 0;
 	incrementSeconds(t, unix);
-	free(t);
+	mfree(t, sizeof(Time));
 }
 
 // From: http://de.wikipedia.org/wiki/Unixzeit#Beispiel-Implementierung :)

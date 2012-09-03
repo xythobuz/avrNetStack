@@ -24,6 +24,7 @@
 
 #define DEBUG 0
 
+#include <std.h>
 #include <net/icmp.h>
 #include <net/utils.h>
 #include <net/udp.h>
@@ -154,8 +155,8 @@ uint8_t udpHandlePacket(Packet *p) {
 		debugPrint(hexToString(ocs));
 		debugPrint("\n");
 #endif
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 2;
 	}
 
@@ -172,8 +173,8 @@ uint8_t udpHandlePacket(Packet *p) {
 	debugPrint("UDP: No handler for ");
 	debugPrint(timeToString(get16Bit(p->d, UDPOffset + UDPDestinationOffset)));
 	debugPrint("\n");
-	free(p->d);
-	free(p);
+	mfree(p->d, p->dLength);
+	mfree(p, sizeof(Packet));
 	return 0;
 }
 
@@ -192,7 +193,7 @@ uint8_t udpRegisterHandler(uint8_t (*handler)(Packet *), uint16_t port) {
 	}
 
 	// Extend list, add new handler.
-	UdpHandler *tmp = (UdpHandler *)realloc(handlers, (registeredHandlers + 1) * sizeof(UdpHandler));
+	UdpHandler *tmp = (UdpHandler *)mrealloc(handlers, (registeredHandlers + 1) * sizeof(UdpHandler), registeredHandlers * sizeof(UdpHandler));
 	if (tmp == NULL) {
 		return 1;
 	}

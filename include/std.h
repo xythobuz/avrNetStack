@@ -1,5 +1,5 @@
 /*
- * mrf24wb0ma.c
+ * std.h
  *
  * Copyright 2012 Thomas Buck <xythobuz@me.com>
  *
@@ -18,50 +18,16 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <avr/io.h>
-#include <stdint.h>
+#ifndef _std_h
+#define _std_h
+
 #include <stdlib.h>
-#include <avr/interrupt.h>
 
-#define DEBUG 0
+extern uint32_t heapBytesAllocated;
 
-#include <net/mac.h>
-#include <net/controller.h>
+void *mmalloc(size_t size);
+void *mrealloc(void *ptr, size_t newSize, size_t oldSize);
+void *calloc(size_t n, size_t s);
+void mfree(void *ptr, size_t size);
 
-MacAddress ownMacAddress;
-
-ISR() {
-	networkInterrupt();
-}
-
-uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
-	uint8_t i;
-	for (i = 0; i < 6; i++) {
-		ownMacAddress[i] = address[i];
-	}
-	return 1;
-}
-
-void macSetInterrupt(uint8_t v) {
-
-}
-
-void macReset(void) {
-
-}
-
-uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
-	return 0;
-}
-
-uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
-	return 1;
-}
-
-uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
-	return 0;
-}
-
-Packet *macGetPacket(void) { // Returns NULL on error
-	return NULL;
-}
+#endif

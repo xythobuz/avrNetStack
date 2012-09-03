@@ -26,6 +26,7 @@
 #define DEBUG 0 // 0 to receive no debug serial output
 // 2 to also get a message for every received ARP Request.
 
+#include <std.h>
 #include <net/mac.h>
 #include <net/ipv4.h>
 #include <net/arp.h>
@@ -101,7 +102,7 @@ int8_t getFirstFreeEntry(void) {
 	if (arpTableSize < ARPMaxTableSize) {
 		// Allocate more space
 		arpTableSize++;
-		tp = (ARPTableEntry *)realloc(arpTable, (arpTableSize * sizeof(ARPTableEntry)));
+		tp = (ARPTableEntry *)mrealloc(arpTable, arpTableSize * sizeof(ARPTableEntry), (arpTableSize + 1) * sizeof(ARPTableEntry));
 		if (tp != NULL) {
 			arpTable = tp;
 			return (arpTableSize - 1);
@@ -159,7 +160,7 @@ void copyEntry(uint8_t *mac, IPv4Address ip, time_t time, uint8_t index) {
 
 void arpInit(void) {
 	uint8_t i;
-	arpTable = (ARPTableEntry *)malloc(sizeof(ARPTableEntry));
+	arpTable = (ARPTableEntry *)mmalloc(sizeof(ARPTableEntry));
 	if (arpTable != NULL) {
 		for (i = 0; i < 6; i++) {
 			arpTable[0].mac[i] = 0xFF;
@@ -178,8 +179,8 @@ uint8_t arpProcessPacket(Packet *p) {
 	if (!(isEqualFlash(p->d + MACPreambleSize, ArpPacketHeader, HEADERLENGTH) && (p->dLength >= (HEADERLENGTH + 22 + MACPreambleSize)))) {
 		// Packet invalid
 		debugPrint("ARP Packet not valid!\n");
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 2;
 	}
 
@@ -211,14 +212,14 @@ uint8_t arpProcessPacket(Packet *p) {
 				// ...except trying again.
 				debugPrint(" Again...");
 				if (macSendPacket(p)) {
-					free(p->d);
-					free(p);
+					mfree(p->d, p->dLength);
+					mfree(p, sizeof(Packet));
 					debugPrint(" Error!\n");
 					return 1;
 				}
 			}
-			free(p->d);
-			free(p);
+			mfree(p->d, p->dLength);
+			mfree(p, sizeof(Packet));
 			debugPrint(" Done!\n");
 			return 0;
 		} else {
@@ -234,8 +235,8 @@ uint8_t arpProcessPacket(Packet *p) {
 #endif
 		}
 		// Request is not for us. Ignore!
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 0;
 	} else if (p->d[MACPreambleSize + HEADERLENGTH + 1] == 2) {
 		debugPrint("Got ARP Reply\n");
@@ -263,14 +264,14 @@ uint8_t arpProcessPacket(Packet *p) {
 				copyEntry(p->d + MACPreambleSize + HEADERLENGTH + 12, p->d + MACPreambleSize + HEADERLENGTH + 18, getSystemTime(), i);
 			}
 		}
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 0;
 	} else {
 		// Neither request nor reply...
 		debugPrint("Invalid ARP Packet Type!\n");
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 2;
 	}
 	return 0;
@@ -284,7 +285,7 @@ uint8_t macReturnBuffer[6];
 uint8_t *arpGetMacFromIp(IPv4Address ip) {
 	uint8_t i, a;
 	int8_t index = findMacFromIp(ip);
-	Packet *p = (Packet *)malloc(sizeof(Packet));
+	Packet *p = (Packet *)mmalloc(sizeof(Packet));
 
 	if (p == NULL) {
 		debugPrint("Not enough memory for Packet struct!\n");
@@ -317,9 +318,9 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 		}
 		debugPrint("...");
 #endif
-		p->d = (uint8_t *)malloc(MACPreambleSize + HEADERLENGTH + ARPPacketSize);
+		p->d = (uint8_t *)mmalloc(MACPreambleSize + HEADERLENGTH + ARPPacketSize);
 		if (p->d == NULL) {
-			free(p);
+			mfree(p, sizeof(Packet));
 			return NULL;
 		}
 		for (i = 0; i < 6; i++) {
@@ -343,8 +344,8 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 			debugPrint(" Couldn't send. Trying again...");
 			if (macSendPacket(p)) {
 				debugPrint(" Giving up!\n");
-				free(p->d);
-				free(p);
+				mfree(p->d, p->dLength);
+				mfree(p, sizeof(Packet));
 				return NULL;
 			} else {
 				debugPrint(" Done!\n");

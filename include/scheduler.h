@@ -1,5 +1,5 @@
 /*
- * mrf24wb0ma.c
+ * scheduler.h
  *
  * Copyright 2012 Thomas Buck <xythobuz@me.com>
  *
@@ -18,50 +18,23 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <avr/io.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <avr/interrupt.h>
 
-#define DEBUG 0
+/*
+ * A very simple task scheduler. You can register up to 254 tasks.
+ * Each task can be executed in different frequencies,
+ * from 1ms between each execution up to (2^64 - 1)ms
+ * Add tasks with addTimedTasks(foo, 1000);
+ * Then Execute them in the main loop with while(1) { scheduler(); }
+ */
+#ifndef _scheduler_h
+#define _scheduler_h
 
-#include <net/mac.h>
-#include <net/controller.h>
+#include <time.h>
 
-MacAddress ownMacAddress;
+typedef void(*TimedTask)(void);
 
-ISR() {
-	networkInterrupt();
-}
+// 0 on success
+uint8_t addTimedTask(TimedTask func, time_t intervall);
+void scheduler(void);
 
-uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
-	uint8_t i;
-	for (i = 0; i < 6; i++) {
-		ownMacAddress[i] = address[i];
-	}
-	return 1;
-}
-
-void macSetInterrupt(uint8_t v) {
-
-}
-
-void macReset(void) {
-
-}
-
-uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
-	return 0;
-}
-
-uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
-	return 1;
-}
-
-uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
-	return 0;
-}
-
-Packet *macGetPacket(void) { // Returns NULL on error
-	return NULL;
-}
+#endif

@@ -26,6 +26,7 @@
 
 #define DEBUG 0 // 0 to 3
 
+#include <std.h>
 #include <net/mac.h>
 #include <spi.h>
 #include <net/controller.h>
@@ -285,6 +286,8 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	selectBank(0);
 #endif
 
+	DDRD &= ~(1 << PD2); // INT0 as input
+	PORTD |= (1 << PD2); // Enable internal Pull-Ups
 	MCUCR |= (1 << ISC01); // INT0 Falling Edge
 	GICR |= (1 << INT0); // Enable INT0
 
@@ -343,8 +346,8 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 
 	bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
 
-	free(p->d);
-	free(p);
+	mfree(p->d, p->dLength);
+	mfree(p, sizeof(Packet));
 
 	wdt_reset();
 	while(readControlRegister(0x1F) & 0x08); // Wait for finish or abort, ECON1.TXRTS
@@ -352,7 +355,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 
 #if DEBUG >= 2
 	// Print status vector
-	po = (uint8_t *)malloc(7 * sizeof(uint8_t));
+	po = (uint8_t *)mmalloc(7 * sizeof(uint8_t));
 	if (po != NULL) {
 		a = 1 + p->dLength;
 		writeControlRegister(0x00, (uint8_t)(a & 0xFF)); // Set ERDPTL
@@ -365,7 +368,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 			debugPrint(hexToString(po[i]));
 			debugPrint("\n");
 		}
-		free(po);
+		mfree(po, 7 * sizeof(uint8_t));
 	}
 #endif
 	if (readControlRegister(0x1D) & (1 << 1)) { // If ESTAT.TXABRT is set
@@ -390,7 +393,7 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	uint8_t d;
 	uint8_t header[6];
 	uint16_t fullLength;
-	Packet *p = (Packet *)malloc(sizeof(Packet));
+	Packet *p = (Packet *)mmalloc(sizeof(Packet));
 	if (p == NULL) {
 		return NULL;
 	}
@@ -417,7 +420,7 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	if (header[2] & (1 << 7)) {
 		// Received OK
 		p->dLength = fullLength;
-		p->d = (uint8_t *)malloc(p->dLength * sizeof(uint8_t));
+		p->d = (uint8_t *)mmalloc(p->dLength * sizeof(uint8_t));
 		if (p->d == NULL) {
 			// discardPacket();
 			return p;

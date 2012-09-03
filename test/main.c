@@ -24,15 +24,18 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
+#include <std.h>
+#include <time.h>
+#include <serial.h>
+#include <scheduler.h>
+#include <tasks.h>
+
 #include <net/mac.h>
 #include <net/icmp.h>
 #include <net/dhcp.h>
 #include <net/ntp.h>
 #include <net/arp.h>
 #include <net/udp.h>
-#include <time.h>
-#include <serial.h>
-
 #include <net/controller.h>
 
 char *getString(uint8_t id);
@@ -65,11 +68,71 @@ void printArpTable(void) {
 	}
 }
 
-int main(void) {
-	char c;
+void heartbeat(void) {
+	PORTA ^= (1 << PA6); // Toggle LED
+}
+
+void serialHandler(void) {
 	uint8_t i;
-	uint16_t j;
 	uint8_t *p;
+	char c = serialGet();
+	switch(c) {
+		case 't':
+			if ((p = arpGetMacFromIp(testIp)) == NULL) {
+				serialWriteString(getString(18));
+				break;
+			}
+			serialWriteString(getString(19));
+			for (i = 0; i < 6; i++) {
+				serialWriteString(hex2ToString(p[i]));
+				if (i < 5) {
+					serialWrite(':');
+				} else {
+					serialWrite('\n');
+				}
+			}
+			break;
+		case 'l':
+			if (macLinkIsUp()) {
+				serialWriteString(getString(3));
+			} else {
+				serialWriteString(getString(2));
+			}
+			break;
+		case 'a':
+			printArpTable();
+			break;
+		case 'n':
+			i = ntpIssueRequest();
+			serialWriteString(getString(8));
+			serialWriteString(timeToString(i));
+			serialWrite('\n');
+			break;
+		case 'd':
+			i = dhcpIssueRequest();
+			serialWriteString(getString(9));
+			serialWriteString(timeToString(i));
+			serialWrite('\n');
+			break;
+		case 'h':
+			serialWriteString(getString(10));
+			break;
+		case 'v':
+			serialWriteString(getString(0));
+			serialWrite('\n');
+			break;
+		case 'q':
+			serialWriteString(getString(11));
+			wdt_enable(WDTO_15MS);
+			while(1);
+		default:
+			serialWrite(c);
+			break;
+	}
+}
+
+int main(void) {
+	uint8_t i;
 
 	i = MCUSR & 0x1F;
 	MCUSR = 0;
@@ -83,8 +146,6 @@ int main(void) {
 	sei(); // Enable Interrupts so we get UART data before entering networkInit
 
 	networkInit(mac, defIp, defSubnet, defGateway);
-
-	PORTA &= ~(0xC0); // LEDs off
 
 	serialWriteString(getString(0));
 	serialWriteString(getString(1));
@@ -115,107 +176,17 @@ int main(void) {
 
 	arpGetMacFromIp(testIp); // Request MAC for serial command 't'
 
+	PORTA &= ~(0xC0); // LEDs off
+
+	addTimedTask(heartbeat, 500); // Toggle LED every 500ms
+	// Execute Serial Handler if a char was received
+	addTaskWithCheckIfExecute(serialHandler, serialHasChar);
+
 	while(1) {
 		wdt_reset();
-		/* i = networkHandler();
+		scheduler();
 		wdt_reset();
-		if (i != 255) {
-			// Network Handler had something to do...
-			serialWriteString(getString(4));
-			if (i == 0) {
-				serialWriteString(getString(16));
-			} else if (i == 1) {
-				serialWriteString(getString(15));
-			} else if (i == 2) {
-				serialWriteString(getString(14));
-			} else if (i == 42) {
-				serialWriteString(getString(6));
-			} else {
-				serialWriteString(timeToString(i));
-			}
-			serialWriteString(getString(7));
-			j = networkLastProtocol();
-			if (j == ARP) {
-				serialWriteString(getString(25));
-			} else if (j == IPV4) {
-				serialWriteString(getString(26));
-				serialWrite(' ');
-				c = ipv4LastProtocol();
-				if (c == ICMP) {
-					serialWriteString(getString(27));
-				} else if (c == TCP) {
-					serialWriteString(getString(28));
-				} else if (c == UDP) {
-					serialWriteString(getString(29));
-					serialWrite(':');
-					serialWriteString(timeToString(udpLastPort()));
-				} else {
-					serialWriteString(hexToString(c));
-				}
-			} else {
-				serialWriteString(hexToString(j));
-			}
-			serialWrite('\n');
-		} */
-
-		if (serialHasChar()) {
-			c = serialGet();
-			switch(c) {
-				case 't':
-					if ((p = arpGetMacFromIp(testIp)) == NULL) {
-						serialWriteString(getString(18));
-						break;
-					}
-					serialWriteString(getString(19));
-					for (i = 0; i < 6; i++) {
-						serialWriteString(hex2ToString(p[i]));
-						if (i < 5) {
-							serialWrite(':');
-						} else {
-							serialWrite('\n');
-						}
-					}
-					break;
-				case 'l':
-					if (macLinkIsUp()) {
-						serialWriteString(getString(3));
-					} else {
-						serialWriteString(getString(2));
-					}
-					break;
-				case 'a':
-					printArpTable();
-					break;
-				case 'n':
-					i = ntpIssueRequest();
-					serialWriteString(getString(8));
-					serialWriteString(timeToString(i));
-					serialWrite('\n');
-					break;
-				case 'd':
-					i = dhcpIssueRequest();
-					serialWriteString(getString(9));
-					serialWriteString(timeToString(i));
-					serialWrite('\n');
-					break;
-				case 'h':
-					serialWriteString(getString(10));
-					break;
-				case 'v':
-					serialWriteString(getString(0));
-					serialWrite('\n');
-					break;
-				case 'q':
-					serialWriteString(getString(11));
-					wdt_enable(WDTO_15MS);
-					while(1);
-				default:
-					serialWrite(c);
-					break;
-			}
-		}
-
-		PORTA ^= (1 << PA6);
+		tasks();
 	}
 
 	return 0;

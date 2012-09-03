@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <std.h>
 #include <net/ipv4.h>
 #include <net/udp.h>
 #include <time.h>
@@ -128,7 +129,7 @@ uint8_t *toDnsName(uint8_t *domain) {
 		v = stringPartLength(domain, '.', i);
 		sum += v + 1; // length byte
 	}
-	name = (uint8_t *)malloc(sum * sizeof(uint8_t));
+	name = (uint8_t *)mmalloc(sum * sizeof(uint8_t));
 	if (name == NULL) {
 		return NULL; // No memory
 	}
