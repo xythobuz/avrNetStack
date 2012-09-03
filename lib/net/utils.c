@@ -27,36 +27,6 @@
 #include <net/udp.h>
 #include <net/dns.h>
 
-void freeDnsRecord(DnsRecord *dr) {
-	if (dr != NULL) {
-		if (dr->name != NULL) {
-			free(dr->name);
-		}
-		if (dr->rdata != NULL) {
-			free(dr->rdata);
-		}
-		free(dr);
-	}
-}
-
-void freeDnsTableEntry(DnsTableEntry *d) {
-	if (d != NULL) {
-		if (d->name != NULL) {
-			free(d->name);
-		}
-		free(d);
-	}
-}
-
-void freeDnsQuestion(DnsQuestion *d) {
-	if (d != NULL) {
-		if (d->name != NULL) {
-			free(d->name);
-		}
-		free(d);
-	}
-}
-
 uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint8_t l) {
 	uint8_t i;
 	for (i = 0; i < l; i++) {

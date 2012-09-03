@@ -24,6 +24,7 @@
 
 #define DEBUG 0 // 0 to receive no debug serial output
 
+#include <std.h>
 #include <time.h>
 #include <net/mac.h>
 #include <net/arp.h>
@@ -144,8 +145,8 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 		debugPrint(hexToString(p->d[MACPreambleSize]));
 		debugPrint("!\n");
 #endif
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 2;
 	} else {
 		debugPrint("Valid IPv4 Packet!\n");
@@ -156,15 +157,15 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 		debugPrint("Fragment Offset is ");
 		debugPrint(hexToString(w & 0x1FFF));
 		debugPrint("!\n");
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 2;
 	}
 	if (w & 0x2000) {
 		// Part of a fragmented IPv4 Packet... No support for that
 		debugPrint("More Fragments follow!\n");
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 2;
 	}
 
@@ -174,8 +175,8 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 		debugPrint("IPv4 Packet for us!\n");
 	} else {
 		debugPrint("IPv4 Packet not for us!\n");
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 0;
 	}
 
@@ -215,14 +216,14 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 		debugPrint("No handler for: ");
 		debugPrint(hexToString(pr));
 		debugPrint("!\n");
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 0;
 #endif
 	}
 
-	free(p->d);
-	free(p);
+	mfree(p->d, p->dLength);
+	mfree(p, sizeof(Packet));
 	return 0;
 }
 
@@ -252,8 +253,8 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 		p->d[MACPreambleSize + IPv4PacketDestinationOffset + tLength] = target[tLength];
 	}
 	if ((mac = arpGetMacFromIp(target)) == NULL) { // Target MAC Unknown
-		free(p->d);
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 3; // Ensure the target Mac is known!
 	}
 	for (tLength = 0; tLength < 6; tLength++) {

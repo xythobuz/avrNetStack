@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <std.h>
 #include <net/udp.h>
 #include <time.h>
 #include <net/dhcp.h>

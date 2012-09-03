@@ -26,6 +26,7 @@
 
 #define DEBUG 1
 
+#include <std.h>
 #include <net/utils.h>
 #include <net/icmp.h>
 #include <serial.h>
@@ -118,8 +119,8 @@ uint8_t icmpProcessPacket(Packet *p) {
 		debugPrint(hexToString(cs));
 		debugPrint(" != 0x0000\n");
 #endif
-		free(p->d),
-		free(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
 		return 2; // Invalid
 	} else {
 		debugPrint("Valid ICMP Packet!\n");
@@ -133,8 +134,8 @@ uint8_t icmpProcessPacket(Packet *p) {
 #endif
 	}
 
-	free(p->d);
-	free(p);
+	mfree(p->d, p->dLength);
+	mfree(p, sizeof(Packet));
 	return 0;
 }
 

@@ -39,7 +39,7 @@ struct DnsTableEntry {
 
 extern DnsTableEntry *dnsTable;
 
-typedef struct {
+/* typedef struct {
 	uint8_t *name; // 3www8xythobuz3org0
 	uint16_t qType;
 	uint16_t qClass;
@@ -66,7 +66,7 @@ typedef struct {
 	uint16_t anCount;
 	uint16_t nsCount;
 	uint16_t arCount;
-} DnsPacket;
+} DnsPacket; */
 
 void dnsRegisterMessageCallback(void (*debugOutput)(char *));
 
