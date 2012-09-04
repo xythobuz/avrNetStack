@@ -62,24 +62,27 @@ uint8_t isBroadcastIp(uint8_t *d) {
 }
 
 #if (!defined(DISABLE_IPV4_CHECKSUM)) || (!defined(DISABLE_UDP_CHECKSUM))
-uint16_t checksum(uint8_t *rawData, uint16_t l) {
-	uint32_t a = 0;
-	uint16_t i;
-	uint16_t w;
+uint16_t checksum(uint8_t *addr, uint16_t count) {
+	// C Implementation Example from RFC 1071, p. 7, slightly adapted
+	// Compute Internet Checksum for count bytes beginning at addr
+	register uint32_t sum = 0;
 
-	for (i = 0; i < l; i += 2) {
-		if (i == (l - 1)) {
-			w = ((uint16_t)rawData[i] << 8);
-		} else {
-			w = ((uint16_t)rawData[i] << 8);
-			w |= rawData[i + 1];
-		}
-		a += w;
-		
+	while (count > 1) {
+		sum += (((uint16_t)(*addr++)) << 8);
+		sum += (*addr++); // Reference Implementation assumes wrong endianness...
+		count -= 2;
 	}
-	a = (a & 0xFFFF) + ((a >> 16) & 0xF); // 1's complement 16bit sum
-	a = ~a; // 1's complement of 1's complement 16bit sum
-	return a;
+
+	// Add left-over byte, if any
+	if (count > 0)
+		sum += (((uint16_t)(*addr++)) << 8);
+
+	// Fold 32-bit sum to 16 bits
+	while (sum >> 16) {
+		sum = (sum & 0xFFFF) + (sum >> 16);
+	}
+
+	return ~sum;
 }
 #endif
 

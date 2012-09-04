@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 1
+#define DEBUG 3
 
 #include <std.h>
 #include <net/utils.h>
@@ -47,7 +47,7 @@ uint16_t checksum(uint8_t *d, uint16_t l); // ipv4.c
 
 uint16_t icmpChecksum(Packet *p) {
 #if DEBUG >= 3
-	uint8_t i;
+	uint16_t i;
 	debugPrint("Length: ");
 	debugPrint(timeToString(p->dLength));
 	debugPrint(" - ");
@@ -55,9 +55,9 @@ uint16_t icmpChecksum(Packet *p) {
 	debugPrint(" = ");
 	debugPrint(timeToString(p->dLength - ICMPOffset));
 	debugPrint("\nICMP Packet Data:\n");
-	for (i = 0; i < ICMPPacketSize; i++) {
+	for (i = 0; i < p->dLength - ICMPOffset; i++) {
 		debugPrint(hexToString(p->d[ICMPOffset + i]));
-		if (i < (ICMPPacketSize - 1)) {
+		if (i < (p->dLength - ICMPOffset - 1)) {
 			debugPrint(" ");
 		}
 	}
@@ -69,7 +69,7 @@ uint16_t icmpChecksum(Packet *p) {
 
 #ifndef DISABLE_ICMP_ECHO
 uint8_t icmpAnswerEcho(Packet *p) {
-	// Just change code to zero, recompute checksums, send.
+	// Just change code to zero, recompute checksum, send.
 	uint8_t i;
 	IPv4Address target;
 	uint16_t cs = 0x0000;
@@ -100,7 +100,7 @@ void icmpInit(void) {}
 uint8_t icmpProcessPacket(Packet *p) {
 	uint8_t type, code;
 #ifndef DISABLE_ICMP_CHECKSUM
-	uint16_t cs;
+	uint16_t cs, ocs;
 #endif
 
 	type = p->d[ICMPOffset];
@@ -112,12 +112,17 @@ uint8_t icmpProcessPacket(Packet *p) {
 #endif
 
 #ifndef DISABLE_ICMP_CHECKSUM
-	cs = icmpChecksum(p);
-	if (cs != 0x0000) {
+	ocs = get16Bit(p->d, ICMPOffset + 2); // Store Checksum
+	p->d[ICMPOffset + 2] = 0;
+	p->d[ICMPOffset + 3] = 0; // Clear Checksum Field
+	cs = icmpChecksum(p); // Calculate Checksum
+	if (cs != ocs) {
 #if DEBUG >= 1
 		debugPrint("ICMP Checksum invalid: ");
 		debugPrint(hexToString(cs));
-		debugPrint(" != 0x0000\n");
+		debugPrint(" != ");
+		debugPrint(hexToString(ocs));
+		debugPrint("\n");
 #endif
 		mfree(p->d, p->dLength);
 		mfree(p, sizeof(Packet));
@@ -130,6 +135,7 @@ uint8_t icmpProcessPacket(Packet *p) {
 	if ((type == 8) && (code == 0)) {
 		// Echo request. Send reply
 #ifndef DISABLE_ICMP_ECHO
+		debugPrint("Sending Echo Response...\n");
 		return icmpAnswerEcho(p);
 #endif
 	}
