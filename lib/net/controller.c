@@ -24,7 +24,7 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 2 // 0 to receive no debug serial output
 
 #include <std.h>
 #include <time.h>
@@ -83,8 +83,8 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
   #endif
 #endif
 
-	// "Not really" allowed by C Standard, but works...
-	addConditionalTask((TimedTask)networkHandler, macPacketsReceived);
+	// Uncomment to enable manual polling
+	// addConditionalTask((TimedTask)networkHandler, macPacketsReceived);
 }
 
 void networkInterrupt(void) {
@@ -127,6 +127,7 @@ uint8_t networkHandler(void) {
 			debugPrint("Not enough memory to receive packet with ");
 			debugPrint(timeToString(p->dLength));
 			debugPrint(" bytes!\n");
+			mfree(p, sizeof(Packet));
 			return 1;
 		}
 

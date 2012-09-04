@@ -20,7 +20,6 @@
  */
 #include <stdint.h>
 #include <avr/io.h>
-#include <util/atomic.h>
 
 #include <spi.h>
 
@@ -40,9 +39,7 @@ void spiInit(void) {
 }
 
 uint8_t spiSendByte(uint8_t d) {
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		SPDR = d;
-		while (!(SPSR & (1 << SPIF))); // Wait for transmission
-	}
+	SPDR = d;
+	while (!(SPSR & (1 << SPIF))); // Wait for transmission
 	return SPDR;
 }

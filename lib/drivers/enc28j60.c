@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
+#include <util/atomic.h>
 
 #define DEBUG 1 // 0 to 3
 
@@ -51,27 +52,31 @@ uint8_t readControlRegister(uint8_t a) {
 	uint8_t r;
 	// Opcode: 000
 	// Argument: aaaaa
-	ACTIVATE();
-	spiSendByte(a & 0x1F);
-	// Dummy byte if MAC or MII Register
-	if (((currentBank == 2) && (a < 0x1B))
-		|| ((currentBank == 3) && ((a <= 0x05) || (a == 0x0A)))) {
-		spiReadByte();
-	}
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		ACTIVATE();
+		spiSendByte(a & 0x1F);
+		// Dummy byte if MAC or MII Register
+		if (((currentBank == 2) && (a < 0x1B))
+			|| ((currentBank == 3) && ((a <= 0x05) || (a == 0x0A)))) {
+			spiReadByte();
+		}
 
-	r = spiReadByte();
-	DEACTIVATE();
+		r = spiReadByte();
+		DEACTIVATE();
+	}
 	return r;
 }
 
 uint8_t *readBufferMemory(uint8_t *d, uint8_t length) {
 	uint8_t i;
-	ACTIVATE();
-	spiSendByte(0x3A);
-	for (i = 0; i < length; i++) {
-		d[i] = spiReadByte();
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		ACTIVATE();
+		spiSendByte(0x3A);
+		for (i = 0; i < length; i++) {
+			d[i] = spiReadByte();
+		}
+		DEACTIVATE();
 	}
-	DEACTIVATE();
 	return d;
 }
 
@@ -79,10 +84,12 @@ void writeControlRegister(uint8_t a, uint8_t d) {
 	// Opcode: 010
 	// Argument: aaaaa
 	// Following: dddddddd
-	ACTIVATE();
-	spiSendByte(0x40 | (a & 0x1F));
-	spiSendByte(d);
-	DEACTIVATE();
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		ACTIVATE();
+		spiSendByte(0x40 | (a & 0x1F));
+		spiSendByte(d);
+		DEACTIVATE();
+	}
 }
 
 void writeBufferMemory(uint8_t *d, uint8_t length) {
@@ -90,40 +97,48 @@ void writeBufferMemory(uint8_t *d, uint8_t length) {
 	// Opcode: 011
 	// Argument: 11010
 	// Following: dddddddd
-	ACTIVATE();
-	spiSendByte(0x7A);
-	for (i = 0; i < length; i++) {
-		spiSendByte(d[i]);
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		ACTIVATE();
+		spiSendByte(0x7A);
+		for (i = 0; i < length; i++) {
+			spiSendByte(d[i]);
+		}
+		DEACTIVATE();
 	}
-	DEACTIVATE();
 }
 
 void bitFieldSet(uint8_t a, uint8_t d) {
 	// Opcode: 100
 	// Argument: aaaaa
 	// Following: dddddddd
-	ACTIVATE();
-	spiSendByte(0x80 | (a & 0x1F));
-	spiSendByte(d);
-	DEACTIVATE();
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		ACTIVATE();
+		spiSendByte(0x80 | (a & 0x1F));
+		spiSendByte(d);
+		DEACTIVATE();
+	}
 }
 
 void bitFieldClear(uint8_t a, uint8_t d) {
 	// Opcode: 101
 	// Argument: aaaaa
 	// Following: dddddddd
-	ACTIVATE();
-	spiSendByte(0xA0 | (a & 0x1F));
-	spiSendByte(d);
-	DEACTIVATE();
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		ACTIVATE();
+		spiSendByte(0xA0 | (a & 0x1F));
+		spiSendByte(d);
+		DEACTIVATE();
+	}
 }
 
 void systemResetCommand(void) {
 	// Opcode 111
 	// Argument: 11111
-	ACTIVATE();
-	spiSendByte(0xFF);
-	DEACTIVATE();
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		ACTIVATE();
+		spiSendByte(0xFF);
+		DEACTIVATE();
+	}
 }
 
 // ----------------------------------
@@ -180,9 +195,30 @@ void discardPacket(void) {
 // ----------------------------------
 
 ISR(INT0_vect) {
-	PORTA |= (1 << PA7);
+#if DEBUG >= 1
+	PORTA |= (1 << PA7); // LED2
+	debugPrint("Works\n");
+#endif
 	networkInterrupt();
+#if DEBUG >= 1
 	PORTA &= ~(1 << PA7);
+}
+}
+
+void macClearInterruptFlags(void) {
+	bitFieldClear(0x1C, 0x7B); // Clear all interrupt flags
+}
+
+void macSetInterrupt(uint8_t v) {
+	if (v) {
+		GICR |= (1 << INT0); // Enable INT0
+	} else {
+		GICR &= ~(1 << INT0); // Disable INT0
+	}
+}
+
+void macReset(void) {
+	systemResetCommand();
 }
 
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
@@ -286,8 +322,8 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 #endif
 
 	DDRD &= ~(1 << PD2); // INT0 as input
-	MCUCR |= (1 << ISC01); // INT0 Falling Edge
-	// MCUCR &= ~((1 << ISC00) | (1 << ISC01)); // INT0 Low Level
+	PORTD |= (1 << PD2); // Enable internal ~50k pull ups
+	MCUCR &= ~((1 << ISC00) | (1 << ISC01)); // INT0 Low Level Trigger
 
 	macClearInterruptFlags();
 	macSetInterrupt(1);
@@ -296,22 +332,6 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
 
 	return 0;
-}
-
-void macClearInterruptFlags(void) {
-	bitFieldClear(0x1C, 0x7B); // Clear all interrupt flags
-}
-
-void macSetInterrupt(uint8_t v) {
-	if (v) {
-		GICR |= (1 << INT0); // Enable INT0
-	} else {
-		GICR &= ~(1 << INT0); // Disable INT0
-	}
-}
-
-void macReset(void) {
-	systemResetCommand();
 }
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
@@ -432,7 +452,7 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	if (header[2] & (1 << 7)) {
 		// Received OK
 
-#if DEBUG >= 1
+#if DEBUG >= 4
 		debugPrint("Received Packet with ");
 		debugPrint(timeToString(fullLength));
 		debugPrint(" bytes...\n");
