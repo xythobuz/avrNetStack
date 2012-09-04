@@ -24,7 +24,14 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 3
+#define DEBUG 1
+
+#define DISABLE_ICMP_CHECKSUM
+/*
+ * The ICMP Checksum Algorithm is not working. Right now, it is not needed,
+ * because we only want to answer Ping Requests, so we just have to decrease
+ * the checksum value by 0x0800...
+ */
 
 #include <std.h>
 #include <net/utils.h>
@@ -82,6 +89,10 @@ uint8_t icmpAnswerEcho(Packet *p) {
 	p->d[ICMPOffset + 3] = 0; // Clear Checksum Field
 #ifndef DISABLE_ICMP_CHECKSUM
 	cs = icmpChecksum(p);
+#else
+	// Checksum field was not cleared...
+	cs = get16Bit(p->d, ICMPOffset + 2);
+	cs -= 0x0800;
 #endif
 	p->d[ICMPOffset + 2] = (cs & 0xFF00) >> 8;
 	p->d[ICMPOffset + 3] = (cs & 0x00FF);

@@ -357,9 +357,13 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	mfree(p->d, p->dLength);
 	mfree(p, sizeof(Packet));
 
-	// wdt_reset();
 	while(readControlRegister(0x1F) & 0x08); // Wait for finish or abort, ECON1.TXRTS
-	// wdt_reset();
+
+#if DEBUG >= 1
+	debugPrint("Sent Packet with ");
+	debugPrint(timeToString(p->dLength));
+	debugPrint(" bytes...\n");
+#endif
 
 #if DEBUG >= 2
 	// Print status vector
@@ -427,6 +431,13 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	
 	if (header[2] & (1 << 7)) {
 		// Received OK
+
+#if DEBUG >= 1
+		debugPrint("Received Packet with ");
+		debugPrint(timeToString(fullLength));
+		debugPrint(" bytes...\n");
+#endif
+
 		p->dLength = fullLength;
 		p->d = (uint8_t *)mmalloc(p->dLength * sizeof(uint8_t));
 		if (p->d == NULL) {
