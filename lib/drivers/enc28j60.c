@@ -202,7 +202,7 @@ ISR(INT0_vect) {
 	networkInterrupt();
 #if DEBUG >= 1
 	PORTA &= ~(1 << PA7);
-}
+#endif
 }
 
 void macClearInterruptFlags(void) {
