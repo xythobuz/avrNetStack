@@ -10166,6 +10166,11 @@ USART&lt;p&gt;
 <part name="GND18" library="supply1" deviceset="GND" device=""/>
 <part name="L1" library="resistor" deviceset="L-EU" device="0204/7" value="10u"/>
 <part name="VDD10" library="supply1" deviceset="VDD" device=""/>
+<part name="C1" library="resistor" deviceset="C-EU" device="025-030X050" value="100n"/>
+<part name="C3" library="resistor" deviceset="C-EU" device="025-030X050" value="100n"/>
+<part name="P+6" library="supply1" deviceset="VCC" device=""/>
+<part name="GND19" library="supply1" deviceset="GND" device=""/>
+<part name="GND20" library="supply1" deviceset="GND" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -10251,6 +10256,11 @@ USART&lt;p&gt;
 <instance part="GND18" gate="1" x="160.02" y="63.5" rot="R90"/>
 <instance part="L1" gate="G$1" x="337.82" y="68.58"/>
 <instance part="VDD10" gate="G$1" x="337.82" y="58.42" rot="R180"/>
+<instance part="C1" gate="G$1" x="45.72" y="96.52" rot="R180"/>
+<instance part="C3" gate="G$1" x="35.56" y="101.6" rot="R270"/>
+<instance part="P+6" gate="VCC" x="38.1" y="99.06" rot="R90"/>
+<instance part="GND19" gate="1" x="38.1" y="93.98" rot="R270"/>
+<instance part="GND20" gate="1" x="27.94" y="101.6" rot="R270"/>
 </instances>
 <busses>
 </busses>
@@ -10312,6 +10322,18 @@ USART&lt;p&gt;
 <pinref part="P+5" gate="VCC" pin="VCC"/>
 <wire x1="154.94" y1="78.74" x2="154.94" y2="81.28" width="0.1524" layer="91"/>
 <junction x="154.94" y="78.74"/>
+</segment>
+<segment>
+<pinref part="P+6" gate="VCC" pin="VCC"/>
+<wire x1="40.64" y1="99.06" x2="43.18" y2="99.06" width="0.1524" layer="91"/>
+<wire x1="43.18" y1="99.06" x2="43.18" y2="101.6" width="0.1524" layer="91"/>
+<pinref part="IC1" gate="G$1" pin="AVCC"/>
+<wire x1="50.8" y1="99.06" x2="48.26" y2="99.06" width="0.1524" layer="91"/>
+<wire x1="48.26" y1="99.06" x2="48.26" y2="101.6" width="0.1524" layer="91"/>
+<pinref part="C1" gate="G$1" pin="2"/>
+<wire x1="48.26" y1="101.6" x2="45.72" y2="101.6" width="0.1524" layer="91"/>
+<wire x1="43.18" y1="101.6" x2="45.72" y2="101.6" width="0.1524" layer="91"/>
+<junction x="45.72" y="101.6"/>
 </segment>
 </net>
 <net name="GND" class="0">
@@ -10487,6 +10509,20 @@ USART&lt;p&gt;
 <pinref part="JP4" gate="JP" pin="GND@1"/>
 <wire x1="152.4" y1="63.5" x2="154.94" y2="63.5" width="0.1524" layer="91"/>
 <junction x="154.94" y="63.5"/>
+</segment>
+<segment>
+<pinref part="C3" gate="G$1" pin="2"/>
+<pinref part="GND20" gate="1" pin="GND"/>
+</segment>
+<segment>
+<pinref part="IC1" gate="G$1" pin="AGND"/>
+<wire x1="50.8" y1="96.52" x2="48.26" y2="96.52" width="0.1524" layer="91"/>
+<wire x1="48.26" y1="96.52" x2="48.26" y2="93.98" width="0.1524" layer="91"/>
+<pinref part="C1" gate="G$1" pin="1"/>
+<wire x1="48.26" y1="93.98" x2="45.72" y2="93.98" width="0.1524" layer="91"/>
+<pinref part="GND19" gate="1" pin="GND"/>
+<wire x1="40.64" y1="93.98" x2="45.72" y2="93.98" width="0.1524" layer="91"/>
+<junction x="45.72" y="93.98"/>
 </segment>
 </net>
 <net name="N$12" class="0">
@@ -10883,6 +10919,16 @@ USART&lt;p&gt;
 <wire x1="119.38" y1="71.12" x2="119.38" y2="60.96" width="0.1524" layer="91"/>
 <pinref part="IC1" gate="G$1" pin="(TCK)PC2"/>
 <wire x1="119.38" y1="60.96" x2="91.44" y2="60.96" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$34" class="0">
+<segment>
+<pinref part="IC1" gate="G$1" pin="AREF"/>
+<wire x1="50.8" y1="101.6" x2="50.8" y2="104.14" width="0.1524" layer="91"/>
+<wire x1="50.8" y1="104.14" x2="40.64" y2="104.14" width="0.1524" layer="91"/>
+<wire x1="40.64" y1="104.14" x2="40.64" y2="101.6" width="0.1524" layer="91"/>
+<pinref part="C3" gate="G$1" pin="1"/>
+<wire x1="40.64" y1="101.6" x2="38.1" y2="101.6" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>
