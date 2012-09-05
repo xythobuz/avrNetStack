@@ -21,12 +21,10 @@
 #ifndef _utils_h
 #define _utils_h
 
-#include <net/udp.h>
-#include <net/ipv4.h>
-#include <net/icmp.h>
-#include <net/dns.h>
+#include <net/controller.h>
 
 uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint8_t l);
 uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l);
+void dumpPacket(Packet *p);
 
 #endif

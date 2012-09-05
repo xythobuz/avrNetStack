@@ -31,10 +31,16 @@
 #include <net/mac.h>
 #include <spi.h>
 #include <net/controller.h>
+#include <net/utils.h>
 
 #define CSPORT PORTA
 #define CSPIN PA1
 #define CSDDR DDRA
+
+#define INTPORT PORTD
+#define INTPORTPIN PIND
+#define INTPIN PD2
+#define INTDDR DDRD
 
 #define ACTIVATE() (CSPORT &= ~(1 << CSPIN))
 #define DEACTIVATE() (CSPORT |= (1 << CSPIN))
@@ -194,31 +200,16 @@ void discardPacket(void) {
 // |            MAC API             |
 // ----------------------------------
 
-ISR(INT0_vect) {
-#if DEBUG >= 1
-	PORTA |= (1 << PA7); // LED2
-	debugPrint("Works\n");
-#endif
-	networkInterrupt();
-#if DEBUG >= 1
-	PORTA &= ~(1 << PA7);
-#endif
-}
-
-void macClearInterruptFlags(void) {
-	bitFieldClear(0x1C, 0x7B); // Clear all interrupt flags
-}
-
-void macSetInterrupt(uint8_t v) {
-	if (v) {
-		GICR |= (1 << INT0); // Enable INT0
-	} else {
-		GICR &= ~(1 << INT0); // Disable INT0
-	}
-}
-
 void macReset(void) {
 	systemResetCommand();
+}
+
+uint8_t macHasInterrupt(void) {
+	if (INTPORTPIN & (1 << INTPIN)) {
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
@@ -321,12 +312,7 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	debugPrint("!\n");
 #endif
 
-	DDRD &= ~(1 << PD2); // INT0 as input
-	PORTD |= (1 << PD2); // Enable internal ~50k pull ups
-	MCUCR &= ~((1 << ISC00) | (1 << ISC01)); // INT0 Low Level Trigger
-
-	macClearInterruptFlags();
-	macSetInterrupt(1);
+	INTDDR &= ~(1 << INTPIN);
 
 	// Enable packet reception
 	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
@@ -373,6 +359,10 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	writeControlRegister(0x07, (uint8_t)((p->dLength & 0xFF00) >> 8)); // ETXNDH --> dLength
 
 	bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
+
+#if DEBUG >= 2
+	dumpPacket(p);
+#endif
 
 	mfree(p->d, p->dLength);
 	mfree(p, sizeof(Packet));

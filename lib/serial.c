@@ -177,14 +177,14 @@ uint8_t serialInit(uint16_t baud, uint8_t databits, uint8_t parity, uint8_t stop
 
 uint8_t serialHasChar() {
 #ifdef SERIALNONBLOCK
-	return (rxRead != rxWrite); // True if char available
+	if (rxRead != rxWrite) { // True if char available
 #else
 	if (SERIALA & RXC) {
+#endif
 		return 1;
 	} else {
 		return 0;
 	}
-#endif
 }
 
 uint8_t serialGet() {

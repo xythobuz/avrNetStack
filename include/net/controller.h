@@ -46,9 +46,10 @@
 // |            RAM Usage            |
 // -----------------------------------
 
-// This times 14bytes is max. allocated RAM for ARP Cache
-#define ARPMaxTableSize 8 // Should be less than 127
-#define BUFFSIZE 80
+#define ARPMaxTableSize 10 // This times 14 bytes will be allocated max
+#define BUFFSIZE 80 // General String Buffer Size
+#define DEBUGOUT(x) serialWriteString(x) // Debug Output Function
+
 
 // -----------------------------------
 // |          External API           |
@@ -65,8 +66,13 @@ typedef struct {
 #define is16BitEqual(x, y, z) ((x[y] == ((z & 0xFF00) >> 8)) && (x[y+1] == (z & 0x00FF)))
 #define get16Bit(x, y) ((x[y] << 8) | x[y+1])
 
+inline void set16Bit(uint8_t *d, uint16_t p, uint16_t v) {
+	d[p] = (v & 0xFF00) >> 8;
+	d[p + 1] = (v & 0x00FF);
+}
+
 #if DEBUG >= 1
-#define debugPrint(x) serialWriteString(x)
+#define debugPrint(x) DEBUGOUT(x)
 #else
 #define debugPrint(x)
 #endif
@@ -77,8 +83,6 @@ char *timeToString(time_t s);
 char *hexToString(uint64_t s);
 char *hex2ToString(uint64_t s);
 void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway);
-
-void networkInterrupt(void); // Called on Packet Reception Interrupt by driver
 
 uint8_t networkHandler(void); // 0xFF if nothing to do
 // 42 if unhandled protocol --> networkLastProtocol()

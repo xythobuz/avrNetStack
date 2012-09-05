@@ -53,7 +53,6 @@ uint8_t macSendPacket(Packet *p); // 0 on success, 1 on PHY error
 uint8_t macPacketsReceived(void); // number of packets ready
 Packet *macGetPacket(void);
 
-void macClearInterruptFlags(void);
-void macSetInterrupt(uint8_t v); // 0 = off
+uint8_t macHasInterrupt(void);
 
 #endif

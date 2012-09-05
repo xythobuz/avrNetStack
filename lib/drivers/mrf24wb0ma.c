@@ -21,7 +21,6 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <avr/interrupt.h>
 
 #define DEBUG 0
 
@@ -30,24 +29,12 @@
 
 MacAddress ownMacAddress;
 
-ISR() {
-	networkInterrupt();
-}
-
 uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	uint8_t i;
 	for (i = 0; i < 6; i++) {
 		ownMacAddress[i] = address[i];
 	}
 	return 1;
-}
-
-void macClearInterruptFlags(void) {
-
-}
-
-void macSetInterrupt(uint8_t v) {
-
 }
 
 void macReset(void) {

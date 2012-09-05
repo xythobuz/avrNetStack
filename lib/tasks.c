@@ -21,13 +21,17 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define DEBUG 0
+
 #include <std.h>
 #include <scheduler.h> // TimedTask typedef
 #include <tasks.h>
+#include <net/controller.h>
 
 TimedTask *tasksWithCheck = NULL;
 TestFunc *taskChecks = NULL;
 uint8_t tasksWithCheckRegistered = 0;
+uint8_t nextCheckTask = 0;
 
 // ----------------------
 // |    Internal API    |
@@ -75,12 +79,20 @@ uint8_t addConditionalTask(TimedTask func, TestFunc testFunc) {
 }
 
 void tasks(void) {
-	uint8_t i;
-
 	// Check for Tasks that have a check function
-	for (i = 0; i < tasksWithCheckRegistered; i++) {
-		if (taskChecks[i]()) {
-			tasksWithCheck[i]();
+	if (tasksWithCheckRegistered > 0) {
+		if ((*taskChecks[nextCheckTask])() != 0) {
+			(*tasksWithCheck[nextCheckTask])();
+		}
+
+		debugPrint("Checked for Task ");
+		debugPrint(timeToString(nextCheckTask));
+		debugPrint("\n");
+
+		if (nextCheckTask < (tasksWithCheckRegistered - 1)) {
+			nextCheckTask++;
+		} else {
+			nextCheckTask = 0;
 		}
 	}
 }

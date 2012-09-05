@@ -104,10 +104,9 @@ uint8_t addTimedTask(TimedTask func, time_t intervall) {
 	return 0;
 }
 
-time_t lastTimeSchedulerWasCalled = 0;
-
 void scheduler(void) {
 	time_t t = getSystemTime(), d;
+	static time_t lastTimeSchedulerWasCalled = 0;
 	uint8_t i;
 
 	// Execute Timed Tasks
@@ -116,7 +115,7 @@ void scheduler(void) {
 		for (i = 0; i < timedTasksRegistered; i++) {
 			timedTaskCounter[i] += d;
 			if (timedTaskCounter[i] >= timedTaskIntervall[i]) {
-				timedTasks[i](); // Execute timed task
+				(*timedTasks[i])(); // Execute timed task
 				timedTaskCounter[i] = 0;
 			}
 		}
