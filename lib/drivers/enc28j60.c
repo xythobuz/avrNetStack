@@ -25,7 +25,7 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 
-#define DEBUG 1 // 0 to 3
+#define DEBUG 2
 
 #include <std.h>
 #include <net/mac.h>
@@ -322,7 +322,7 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
 	uint16_t p = readPhyRegister(0x11); // Read PHSTAT2
-#if DEBUG >= 3
+#if DEBUG >= 4
 	debugPrint("PHSTAT1: ");
 	debugPrint(hexToString(readPhyRegister(0x01)));
 	debugPrint("\nPHSTAT2: ");
@@ -340,7 +340,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	// Place Frame data in buffer, with a preceding control byte
 	// This control byte can be 0x00, as we set everything needed in MACON3
 	uint8_t i = 0x00;
-#if DEBUG >= 2
+#if DEBUG >= 3
 	uint16_t a;
 	uint8_t *po;
 #endif
@@ -375,7 +375,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	debugPrint(" bytes...\n");
 #endif
 
-#if DEBUG >= 2
+#if DEBUG >= 3
 	// Print status vector
 	po = (uint8_t *)mmalloc(7 * sizeof(uint8_t));
 	if (po != NULL) {

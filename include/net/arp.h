@@ -35,8 +35,10 @@ typedef struct {
 } ARPTableEntry;
 
 #define ARPPacketSize 22 // Without header
+#define ARPOffset MACPreambleSize + 6
 
 /* typedef struct {
+	// 6 byte header...
 	uint16_t       operation; // 1 for request, 2 for reply
 	MacAddress     senderMac;
 	IPv4Address    senderIp;

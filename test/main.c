@@ -99,10 +99,10 @@ int main(void) {
 	PORTA &= ~((1 << PA7) | (1 << PA6)); // LEDs off
 
 	addTimedTask(heartbeat, 500); // Toggle LED every 500ms
-	// Execute Serial Handler if a char was received
-	addConditionalTask(serialHandler, serialHasChar);
+	addConditionalTask(serialHandler, serialHasChar); // Execute Serial Handler if char received
 
 	while(1) {
+		// Run the tasks
 		wdt_reset();
 		scheduler();
 		wdt_reset();
@@ -144,12 +144,13 @@ void serialHandler(void) {
 	serialWrite(c - 32); // to uppercase
 	serialWriteString(getString(7)); // ": "
 	switch(c) {
-		case 'm':
+		case 'm': // Number of bytes allocated
 			serialWriteString(timeToString(heapBytesAllocated));
 			serialWriteString(getString(4)); // " bytes "
 			serialWriteString(getString(6)); // "allocated\n"
 			break;
-		case 't':
+
+		case 't': // Get / Print MAC of testIp
 			if ((p = arpGetMacFromIp(testIp)) == NULL) {
 				serialWriteString(getString(18));
 				break;
@@ -164,39 +165,47 @@ void serialHandler(void) {
 				}
 			}
 			break;
-		case 'l':
+
+		case 'l': // Link Status
 			if (macLinkIsUp()) {
 				serialWriteString(getString(3));
 			} else {
 				serialWriteString(getString(2));
 			}
 			break;
-		case 'a':
+
+		case 'a': // ARP Table
 			printArpTable();
 			break;
-		case 'n':
+
+		case 'n': // Send NTP Request
 			i = ntpIssueRequest();
 			serialWriteString(getString(8));
 			serialWriteString(timeToString(i));
 			serialWrite('\n');
 			break;
-		case 'd':
+
+		case 'd': // Send DHCP Request
 			i = dhcpIssueRequest();
 			serialWriteString(getString(9));
 			serialWriteString(timeToString(i));
 			serialWrite('\n');
 			break;
-		case 'h':
+
+		case 'h': // Print Help String
 			serialWriteString(getString(10));
 			break;
-		case 'v':
+
+		case 'v': // Print Version String
 			serialWriteString(getString(0));
 			serialWrite('\n');
 			break;
-		case 'q':
+
+		case 'q': // Trigger Watchdog Reset
 			serialWriteString(getString(11));
 			wdt_enable(WDTO_15MS);
 			while(1);
+
 		default:
 			serialWrite('\n');
 			break;

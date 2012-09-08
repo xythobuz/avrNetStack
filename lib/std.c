@@ -21,14 +21,17 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-uint64_t heapBytesAllocated = 0;
+#include <std.h>
+
+uint32_t heapBytesAllocated = 0;
 
 void *mmalloc(size_t size) {
-	void *p = malloc(size);
+	/* void *p = malloc(size);
 	if (p != NULL) {
 		heapBytesAllocated += size;
 	}
-	return p;
+	return p; */
+	return mcalloc(size, 1); // Clear memory to zero!
 }
 
 void *mrealloc(void *ptr, size_t newSize, size_t oldSize) {
@@ -40,7 +43,7 @@ void *mrealloc(void *ptr, size_t newSize, size_t oldSize) {
 	return p;
 }
 
-void *calloc(size_t n, size_t s) {
+void *mcalloc(size_t n, size_t s) {
 	void *p = calloc(n, s);
 	if (p != NULL) {
 		heapBytesAllocated += (n * s);

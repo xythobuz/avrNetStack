@@ -24,7 +24,7 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
-#define DEBUG 2 // 0 to receive no debug serial output
+#define DEBUG 1 // 0 to receive no debug serial output
 
 #include <std.h>
 #include <time.h>
@@ -59,12 +59,23 @@ char *hex2ToString(uint64_t s) {
 }
 
 void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
+	uint8_t i;
 	initSystemTimer();
 	macInitialize(mac);
 	debugPrint("Hardware Driver initialized...\n");
 	arpInit();
 	ipv4Init(ip, subnet, gateway);
-	debugPrint("IPv4 initialized...\n");
+#if DEBUG >= 1
+	debugPrint("IPv4 initialized: ");
+	for (i = 0; i < 4; i++) {
+		debugPrint(timeToString(ip[i]));
+		if (i < 3) {
+			debugPrint(".");
+		} else {
+			debugPrint("\n");
+		}
+	}
+#endif
 #ifndef DISABLE_ICMP
 	icmpInit();
 	debugPrint("ICMP initialized...\n");
@@ -83,8 +94,7 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
   #endif
 #endif
 
-	// Uncomment to enable manual polling
-	addConditionalTask((TimedTask)networkHandler, macHasInterrupt);
+	addConditionalTask((TimedTask)networkHandler, macHasInterrupt); // Enable polling
 }
 
 uint8_t networkHandler(void) {

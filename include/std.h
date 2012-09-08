@@ -27,7 +27,7 @@ extern uint32_t heapBytesAllocated; // Number of bytes allocated
 
 void *mmalloc(size_t size); // Use like regular malloc
 void *mrealloc(void *ptr, size_t newSize, size_t oldSize); // like realloc, but needs oldsize
-void *calloc(size_t n, size_t s); // Use like regular calloc
+void *mcalloc(size_t n, size_t s); // Use like regular calloc
 void mfree(void *ptr, size_t size); // Use like free, but give it the size too
 
 #endif

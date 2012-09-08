@@ -24,8 +24,10 @@
 #include <avr/pgmspace.h>
 
 #include <net/controller.h>
+#include <net/arp.h>
 #include <net/mac.h>
 #include <net/ipv4.h>
+#include <net/icmp.h>
 
 #define print(x) DEBUGOUT(x)
 
@@ -94,22 +96,27 @@ void dumpPacket(Packet *p) {
 		print(timeToString(get16Bit(p->d, MACPreambleSize + 2)));
 		print("\nSource: ");
 		for (i = 0; i < 4; i++) {
-			print(timeToString(p->d[MACPreambleSize + IPv4PacketSourceOffset]));
+			print(timeToString(p->d[MACPreambleSize + IPv4PacketSourceOffset + i]));
 			if (i < 3) {
 				print(".");
 			}
 		}
 		print("\nDestination: ");
 		for (i = 0; i < 4; i++) {
-			print(timeToString(p->d[MACPreambleSize + IPv4PacketDestinationOffset]));
+			print(timeToString(p->d[MACPreambleSize + IPv4PacketDestinationOffset + i]));
 			if (i < 3) {
 				print(".");
 			}
 		}
 		print("\nProtocol: ");
 		print(hexToString(p->d[MACPreambleSize + IPv4PacketProtocolOffset]));
+		print("\n");
 		if (p->d[MACPreambleSize + IPv4PacketProtocolOffset] == ICMP) {
-			print("ICMP\n");
+			print("ICMP\nType: ");
+			print(timeToString(p->d[ICMPOffset]));
+			print("\nCode: ");
+			print(timeToString(p->d[ICMPOffset + 1]));
+			print("\n");
 		} else if (p->d[MACPreambleSize + IPv4PacketProtocolOffset] == TCP) {
 			print("TCP\n");
 		} else if (p->d[MACPreambleSize + IPv4PacketProtocolOffset] == UDP) {
@@ -119,25 +126,26 @@ void dumpPacket(Packet *p) {
 		}
 	} else if (tl == ARP) {
 		print("ARP ");
-		if (get16Bit(p->d, MACPreambleSize) == 1) {
+		if (get16Bit(p->d, ARPOffset) == 1) {
 			print("Request");
 		} else {
 			print("Reply");
 		}
-		print("\nSource:");
+		print("\nSource: ");
 		for (i = 0; i < 4; i++) {
-			print(timeToString(p->d[MACPreambleSize + 8]));
+			print(timeToString(p->d[ARPOffset + 8 + i]));
 			if (i < 3) {
 				print(".");
 			}
 		}
-		print("\nTarget:");
+		print("\nTarget: ");
 		for (i = 0; i < 4; i++) {
-			print(timeToString(p->d[MACPreambleSize + 18]));
+			print(timeToString(p->d[ARPOffset + 18 + i]));
 			if (i < 3) {
 				print(".");
 			}
 		}
+		print("\n");
 	} else {
 		print("Unknown Type!\n");
 	}
