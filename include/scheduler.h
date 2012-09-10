@@ -29,8 +29,10 @@
 #ifndef _scheduler_h
 #define _scheduler_h
 
-#include <time.h>
+#include <time.h> // time_t definition
 #include <tasks.h> // Task definition
+
+#define schedulerTimeFunc(x) getSystemTime(x) // has to return system time in milliseconds
 
 // Add a new timed task. Calling scheduler() in your main-loop
 // will cause a call to func() every intervall milliseconds.

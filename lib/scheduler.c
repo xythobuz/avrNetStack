@@ -109,7 +109,7 @@ uint8_t addTimedTask(Task func, time_t intervall) {
 }
 
 void scheduler(void) {
-	time_t t = getSystemTime(), d;
+	time_t t = schedulerTimeFunc(), d;
 	static time_t lastTimeSchedulerWasCalled = 0;
 	uint8_t i;
 
