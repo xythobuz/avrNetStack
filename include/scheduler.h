@@ -30,12 +30,13 @@
 #define _scheduler_h
 
 #include <time.h>
-
-typedef void(*TimedTask)(void);
+#include <tasks.h> // Task definition
 
 // Add a new timed task. Calling scheduler() in your main-loop
 // will cause a call to func() every intervall milliseconds.
-uint8_t addTimedTask(TimedTask func, time_t intervall); // 0 on success
+uint8_t addTimedTask(Task func, time_t intervall); // 0 on success
 void scheduler(void); // Call this in your main loop!
+
+uint8_t schedulerRegistered(void);
 
 #endif

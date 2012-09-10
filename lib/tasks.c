@@ -24,11 +24,10 @@
 #define DEBUG 0
 
 #include <std.h>
-#include <scheduler.h> // TimedTask typedef
 #include <tasks.h>
 #include <net/controller.h>
 
-TimedTask *tasksWithCheck = NULL;
+Task *tasksWithCheck = NULL;
 TestFunc *taskChecks = NULL;
 uint8_t tasksWithCheckRegistered = 0;
 uint8_t nextCheckTask = 0;
@@ -39,7 +38,7 @@ uint8_t nextCheckTask = 0;
 
 uint8_t extendTaskCheckList(void) {
 	TestFunc *p;
-	TimedTask *q;
+	Task *q;
 
 	// Extend Check List
 	p = (TestFunc *)mrealloc(taskChecks, (tasksWithCheckRegistered + 1) * sizeof(TestFunc), tasksWithCheckRegistered * sizeof(TestFunc));
@@ -49,7 +48,7 @@ uint8_t extendTaskCheckList(void) {
 	taskChecks = p;
 
 	// Extend Task List
-	q = (TimedTask *)mrealloc(tasksWithCheck, (tasksWithCheckRegistered + 1) * sizeof(TimedTask), tasksWithCheckRegistered * sizeof(TimedTask));
+	q = (Task *)mrealloc(tasksWithCheck, (tasksWithCheckRegistered + 1) * sizeof(Task), tasksWithCheckRegistered * sizeof(Task));
 	if (q == NULL) {
 		// Try to revert size of intervall list
 		p = (TestFunc *)mrealloc(taskChecks, tasksWithCheckRegistered * sizeof(TestFunc), (tasksWithCheckRegistered + 1) * sizeof(TestFunc));
@@ -68,7 +67,11 @@ uint8_t extendTaskCheckList(void) {
 // |    External API    |
 // ----------------------
 
-uint8_t addConditionalTask(TimedTask func, TestFunc testFunc) {
+uint8_t tasksRegistered(void) {
+	return tasksWithCheckRegistered;
+}
+
+uint8_t addConditionalTask(Task func, TestFunc testFunc) {
 	// func will be executed if testFunc returns a value other than zero!
 	if (extendTaskCheckList()) {
 		return 1;

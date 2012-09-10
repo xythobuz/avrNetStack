@@ -176,6 +176,8 @@ void arpInit(void) {
 uint8_t arpProcessPacket(Packet *p) {
 	uint8_t i;
 
+	assert(arpTableSize > 0); // At least the broadcast MAC should be there
+
 	if (!(isEqualFlash(p->d + MACPreambleSize, ArpPacketHeader, HEADERLENGTH) && (p->dLength >= (HEADERLENGTH + 22 + MACPreambleSize)))) {
 		// Packet invalid
 		debugPrint("ARP Packet not valid!\n");

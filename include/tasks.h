@@ -21,13 +21,14 @@
 #ifndef _tasks_h
 #define _tasks_h
 
-#include <scheduler.h> // TimedTask typedef
-
+typedef void (*Task)(void);
 typedef uint8_t (*TestFunc)(void);
 
 // Adds another conditional task that will cause func() to be called
 // when testFunc() returns a value other than zero.
-uint8_t addConditionalTask(TimedTask func, TestFunc testFunc); // 0 on success
+uint8_t addConditionalTask(Task func, TestFunc testFunc); // 0 on success
 void tasks(void); // Call in your main loop!
+
+uint8_t tasksRegistered(void);
 
 #endif

@@ -35,7 +35,7 @@
 #include <time.h>
 #include <scheduler.h>
 
-TimedTask *timedTasks = NULL;
+Task *timedTasks = NULL;
 time_t *timedTaskIntervall = NULL;
 time_t *timedTaskCounter = NULL;
 uint8_t timedTasksRegistered = 0;
@@ -46,7 +46,7 @@ uint8_t timedTasksRegistered = 0;
 
 uint8_t extendTimedTaskList(void) {
 	time_t *p;
-	TimedTask *q;
+	Task *q;
 
 	// Extend Intervall List
 	p = (time_t *)mrealloc(timedTaskIntervall, (timedTasksRegistered + 1) * sizeof(time_t), timedTasksRegistered * sizeof(time_t));
@@ -68,7 +68,7 @@ uint8_t extendTimedTaskList(void) {
 	timedTaskCounter = p;
 
 	// Extend Timed Task List
-	q = (TimedTask *)mrealloc(timedTasks, (timedTasksRegistered + 1) * sizeof(TimedTask), timedTasksRegistered * sizeof(TimedTask));
+	q = (Task *)mrealloc(timedTasks, (timedTasksRegistered + 1) * sizeof(Task), timedTasksRegistered * sizeof(Task));
 	if (q == NULL) {
 		// Try to revert size of intervall list
 		p = (time_t *)mrealloc(timedTaskIntervall, timedTasksRegistered * sizeof(time_t), (timedTasksRegistered + 1) * sizeof(time_t));
@@ -92,8 +92,12 @@ uint8_t extendTimedTaskList(void) {
 // |    External API    |
 // ----------------------
 
+uint8_t schedulerRegistered(void) {
+	return timedTasksRegistered;
+}
+
 // 0 on success
-uint8_t addTimedTask(TimedTask func, time_t intervall) {
+uint8_t addTimedTask(Task func, time_t intervall) {
 	// func will be called every time_t milliseconds
 	if (extendTimedTaskList()) {
 		return 1;

@@ -94,7 +94,7 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
   #endif
 #endif
 
-	addConditionalTask((TimedTask)networkHandler, macHasInterrupt); // Enable polling
+	addConditionalTask((Task)networkHandler, macHasInterrupt); // Enable polling
 }
 
 uint8_t networkHandler(void) {

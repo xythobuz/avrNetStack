@@ -322,7 +322,7 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
 	uint16_t p = readPhyRegister(0x11); // Read PHSTAT2
-#if DEBUG >= 4
+#if DEBUG >= 5
 	debugPrint("PHSTAT1: ");
 	debugPrint(hexToString(readPhyRegister(0x01)));
 	debugPrint("\nPHSTAT2: ");
@@ -340,7 +340,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	// Place Frame data in buffer, with a preceding control byte
 	// This control byte can be 0x00, as we set everything needed in MACON3
 	uint8_t i = 0x00;
-#if DEBUG >= 3
+#if DEBUG >= 4
 	uint16_t a;
 	uint8_t *po;
 #endif
@@ -360,7 +360,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 
 	bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
 
-#if DEBUG >= 2
+#if DEBUG >= 3
 	dumpPacket(p);
 #endif
 
@@ -375,7 +375,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	debugPrint(" bytes...\n");
 #endif
 
-#if DEBUG >= 3
+#if DEBUG >= 4
 	// Print status vector
 	po = (uint8_t *)mmalloc(7 * sizeof(uint8_t));
 	if (po != NULL) {
@@ -442,7 +442,7 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	if (header[2] & (1 << 7)) {
 		// Received OK
 
-#if DEBUG >= 4
+#if DEBUG >= 2
 		debugPrint("Received Packet with ");
 		debugPrint(timeToString(fullLength));
 		debugPrint(" bytes...\n");

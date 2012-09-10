@@ -23,6 +23,7 @@
 
 #include <time.h>
 #include <serial.h>
+#include <avr/wdt.h>
 
 // -----------------------------------
 // |        Feature Selection        |
@@ -49,7 +50,21 @@
 #define ARPMaxTableSize 10 // This times 14 bytes will be allocated max
 #define BUFFSIZE 80 // General String Buffer Size
 #define DEBUGOUT(x) serialWriteString(x) // Debug Output Function
-
+#define ASSERTFUNC(x) ({ 								\
+	if (!x) {											\
+		serialWriteString("Error: ");					\
+		serialWriteString(__FILE__);					\
+		serialWriteString(":");							\
+		serialWriteString(__LINE__);					\
+		serialWriteString(" ");							\
+		serialWriteString(__func__);					\
+		serialWriteString(": Assertion '");				\
+		serialWriteString(#x);							\
+		serialWriteString("' failed.\nResetting\n");	\
+		wdt_enable(WDTO_2S);							\
+		while(1);										\
+	}													\
+})
 
 // -----------------------------------
 // |          External API           |
@@ -73,8 +88,10 @@ inline void set16Bit(uint8_t *d, uint16_t p, uint16_t v) {
 
 #if DEBUG >= 1
 #define debugPrint(x) DEBUGOUT(x)
+#define assert(x) ASSERTFUNC(x)
 #else
-#define debugPrint(x)
+#define debugPrint(ignore)
+#define assert(ignore)
 #endif
 
 extern char buff[BUFFSIZE];

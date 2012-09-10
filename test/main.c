@@ -144,6 +144,15 @@ void serialHandler(void) {
 	serialWrite(c - 32); // to uppercase
 	serialWriteString(getString(7)); // ": "
 	switch(c) {
+		case 's': // Status
+			serialWriteString(timeToString(tasksRegistered()));
+			serialWriteString(getString(14)); // " Tasks"
+			serialWriteString(getString(25)); // ", "
+			serialWriteString(timeToString(schedulerRegistered()));
+			serialWriteString(getString(16)); // " Scheduler"
+			serialWriteString(getString(15)); // "\n"
+			break;
+
 		case 'm': // Number of bytes allocated
 			serialWriteString(timeToString(heapBytesAllocated));
 			serialWriteString(getString(4)); // " bytes "
