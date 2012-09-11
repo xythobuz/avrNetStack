@@ -80,7 +80,7 @@ void serialWrite(uint8_t data);
  *
  * Blocks if the buffer is full!
  */
-void serialWriteString(char *data);
+void serialWriteString(const char *data);
 
 /* void serialClose(void)
  *

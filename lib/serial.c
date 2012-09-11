@@ -236,7 +236,7 @@ void serialWrite(uint8_t data) {
 #endif
 }
 
-void serialWriteString(char *data) {
+void serialWriteString(const char *data) {
 	while (*data != '\0') {
 		serialWrite(*data++);
 	}

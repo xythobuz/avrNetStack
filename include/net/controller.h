@@ -25,6 +25,8 @@
 #include <serial.h>
 #include <avr/wdt.h>
 
+#include <debug.h>
+
 // -----------------------------------
 // |        Feature Selection        |
 // -----------------------------------
@@ -49,39 +51,6 @@
 
 #define ARPMaxTableSize 10 // This times 14 bytes will be allocated max
 #define BUFFSIZE 80 // General String Buffer Size
-
-// -----------------------------------
-// |          Debug Options          |
-// -----------------------------------
-
-#define DEBUGOUT(x) serialWriteString(x) // Debug Output Function
-
-// assert Implementation
-#define ASSERTFUNC(x) ({ 								\
-	if (!x) {											\
-		serialWriteString("Error: ");					\
-		serialWriteString(__FILE__);					\
-		serialWriteString(":");							\
-		serialWriteString(__LINE__);					\
-		serialWriteString(" ");							\
-		serialWriteString(__func__);					\
-		serialWriteString(": Assertion '");				\
-		serialWriteString(#x);							\
-		serialWriteString("' failed.\nResetting\n");	\
-		wdt_enable(WDTO_2S);							\
-		while(1);										\
-	}													\
-})
-
-// Controls Debug Output with DEBUG definition.
-// Define DEBUG before including this file!
-#if DEBUG >= 1
-#define debugPrint(x) DEBUGOUT(x)
-#define assert(x) ASSERTFUNC(x)
-#else
-#define debugPrint(ignore)
-#define assert(ignore)
-#endif
 
 // -----------------------------------
 // |          External API           |
