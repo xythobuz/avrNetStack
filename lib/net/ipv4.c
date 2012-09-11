@@ -65,7 +65,7 @@ uint8_t isBroadcastIp(uint8_t *d) {
 uint16_t checksum(uint8_t *addr, uint16_t count) {
 	// C Implementation Example from RFC 1071, p. 7, slightly adapted
 	// Compute Internet Checksum for count bytes beginning at addr
-	register uint32_t sum = 0;
+	uint32_t sum = 0;
 
 	while (count > 1) {
 		sum += (((uint16_t)(*addr++)) << 8);

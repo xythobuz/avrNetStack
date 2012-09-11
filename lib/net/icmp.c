@@ -26,11 +26,9 @@
 
 #define DEBUG 1
 
-#define DISABLE_ICMP_CHECKSUM
 /*
- * The ICMP Checksum Algorithm is not working. Right now, it is not needed,
- * because we only want to answer Ping Requests, so we just have to decrease
- * the checksum value by 0x0800...
+ * The ICMP Checksum Algorithm is only producing valid results when sending packets.
+ * Received ICMP Packets are always detected as invalid checksum...
  */
 
 #include <std.h>
@@ -72,33 +70,43 @@ uint16_t icmpChecksum(Packet *p) {
 #endif
 	return checksum(p->d + ICMPOffset, p->dLength - ICMPOffset);
 }
-#endif
+#endif // DISABLE_ICMP_CHECKSUM
 
 #ifndef DISABLE_ICMP_ECHO
 uint8_t icmpAnswerEcho(Packet *p) {
 	// Just change code to zero, recompute checksum, send.
 	uint8_t i;
+	uint8_t *po;
 	IPv4Address target;
 	uint16_t cs = 0x0000;
 	for (i = 0; i < 4; i++) {
 		// Get Target IP
 		target[i] = p->d[MACPreambleSize + IPv4PacketSourceOffset + i];
 	}
-	p->d[ICMPOffset + 1] = 0x00; // Echo Reply
+	p->d[ICMPOffset] = 0x00; // Echo Reply
 	p->d[ICMPOffset + 2] = 0;
 	p->d[ICMPOffset + 3] = 0; // Clear Checksum Field
+
+	if (p->dLength > ICMPOffset + ICMPPacketSize) {
+		// We strip the last 4 bytes from the icmp payload
+		po = mrealloc(p->d, p->dLength - 4, p->dLength);
+		if (po != NULL) {
+			p->d = po;
+		}
+		p->dLength -= 4;
+	}
+
 #ifndef DISABLE_ICMP_CHECKSUM
 	cs = icmpChecksum(p);
 #else
 	// Checksum field was not cleared...
-	cs = get16Bit(p->d, ICMPOffset + 2);
-	cs -= 0x0800;
+	cs = get16Bit(p->d, ICMPOffset + 2) - 0x0800;
 #endif
 	p->d[ICMPOffset + 2] = (cs & 0xFF00) >> 8;
 	p->d[ICMPOffset + 3] = (cs & 0x00FF);
 	return ipv4SendPacket(p, target, ICMP);
 }
-#endif
+#endif // DISABLE_ICMP_ECHO
 
 // ----------------------
 // |    External API    |
@@ -135,9 +143,9 @@ uint8_t icmpProcessPacket(Packet *p) {
 		debugPrint(hexToString(ocs));
 		debugPrint("\n");
 #endif
-		mfree(p->d, p->dLength);
-		mfree(p, sizeof(Packet));
-		return 2; // Invalid
+		//mfree(p->d, p->dLength);
+		//mfree(p, sizeof(Packet));
+		//return 2; // Invalid
 	} else {
 		debugPrint("Valid ICMP Packet!\n");
 	}

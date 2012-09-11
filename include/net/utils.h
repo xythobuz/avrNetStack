@@ -25,6 +25,5 @@
 
 uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint8_t l);
 uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l);
-void dumpPacket(Packet *p);
 
 #endif

@@ -45,7 +45,7 @@ void heartbeat(void);
 void serialHandler(void);
 
 // Thats, the MAC of my WLAN Module, with some bytes swapped...
-MacAddress mac = {0x00, 0x1E, 0x99, 0x02, 0xC0, 0x42};
+MacAddress mac = {0x02, 0x1E, 0x99, 0x02, 0xC0, 0x42};
 IPv4Address defIp = {192, 168, 0, 42};
 IPv4Address defSubnet = {255, 255, 255, 0};
 IPv4Address defGateway = {192, 168, 0, 1};

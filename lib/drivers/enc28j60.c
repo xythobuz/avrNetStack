@@ -196,6 +196,20 @@ void discardPacket(void) {
 	bitFieldSet(0x1E, (1 << 6)); // Set ECON2.PKTDEC
 }
 
+#define print(x) DEBUGOUT(x)
+
+void dumpPacketRaw(Packet *p) {
+	uint16_t i;
+	print("\nPacket:\n");
+	for (i = 0; i < p->dLength; i++) {
+		print(hex2ToString(p->d[i]));
+		if (i < (p->dLength - 1)) {
+			print(" ");
+		}
+	}
+	print("\n\n");
+}
+
 // ----------------------------------
 // |            MAC API             |
 // ----------------------------------
@@ -361,7 +375,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
 
 #if DEBUG >= 3
-	dumpPacket(p);
+	dumpPacketRaw(p);
 #endif
 
 	mfree(p->d, p->dLength);
