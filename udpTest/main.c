@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -32,6 +33,8 @@
 char buffer[BUFFSIZE];
 int s;
 
+void usage(char *e);
+void processArgs(int argc, char **argv, int *port);
 void intHandler(int dummy);
 
 int main(int argc, char **argv) {
@@ -39,38 +42,62 @@ int main(int argc, char **argv) {
 	socklen_t sl;
 	struct sockaddr_in si, si2;
 
+	processArgs(argc, argv, &port);
+
 	// Open Socket
 	if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
 		printf("Could not open socket!\n");
 		return 2;
 	}
 
-	// Fill si Struct
 	memset((char *) &si, 0, sizeof(si)); // Clear to zero
 	si.sin_family = AF_INET;
 	si.sin_port = htons(port);
 	si.sin_addr.s_addr = htonl(INADDR_ANY);
 	if (bind(s, (struct sockaddr *)&si, sizeof(si)) == -1) {
-		printf("Could not bind!\n");
+		printf("Could not bind to port!\n");
 		return 2;
 	}
 
+	if (fcntl(s, F_SETFL, O_NONBLOCK, 1) == -1) {
+		printf("Could not set to nonblock mode!\n");
+		return 2;
+	}
+
+	// Register Interrupt Handlers to exit in a clean way...
 	signal(SIGINT, intHandler);
 	signal(SIGQUIT, intHandler);
+
 	printf("Waiting for UDP Packets on Port %d\nStop with CTRL+C...\n", port);
 
 	while(1) {
-		// recvfrom is blocking...
-		if (recvfrom(s, buffer, BUFFSIZE, 0, (struct sockaddr *)&si2, &sl) == -1) {
-			printf("Could not receive Packet!\n");
-			close(s);
-			return 2;
+		if (recvfrom(s, buffer, BUFFSIZE, 0, (struct sockaddr *)&si2, &sl) > 0) {
+			printf("Got Packet from %s:%d\nData: %s\n\n", inet_ntoa(si2.sin_addr), ntohs(si2.sin_port), buffer);
 		}
-		printf("Packet from %s:%d\nData: %s\n\n", inet_ntoa(si2.sin_addr), ntohs(si2.sin_port), buffer);
 	}
 
 	close(s);
 	return 0;
+}
+
+void usage(char *e) {
+	printf("Usage:\n");
+	printf("%s [-p 42]\n", e);
+	exit(1);
+}
+
+void processArgs(int argc, char **argv, int *port) {
+	if (argc == 1) {
+		// Default values
+	} else if (argc == 3) {
+		if (strcmp(argv[1], "-p") == 0) {
+			*port = atoi(argv[2]);
+		} else {
+			usage(argv[0]);
+		}
+	} else {
+		usage(argv[0]);
+	}
 }
 
 void intHandler(int dummy) {
