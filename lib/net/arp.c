@@ -341,17 +341,12 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 		p->d[MACPreambleSize + HEADERLENGTH] = 0;
 		p->d[MACPreambleSize + HEADERLENGTH + 1] = 1; // Request
 		p->dLength = MACPreambleSize + HEADERLENGTH + ARPPacketSize;
-		if (macSendPacket(p)) { // Can't do anything if error...
-			// ...except try again
-			debugPrint(" Couldn't send. Trying again...");
-			if (macSendPacket(p)) {
-				debugPrint(" Giving up!\n");
-				mfree(p->d, p->dLength);
-				mfree(p, sizeof(Packet));
-				return NULL;
-			} else {
-				debugPrint(" Done!\n");
-			}
+		i = macSendPacket(p);
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
+		if (i) {
+			debugPrint(" Couldn't send!\n");
+			return NULL;
 		} else {
 			debugPrint(" Done!\n");
 		}

@@ -233,6 +233,8 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 	uint16_t tLength = p->dLength - MACPreambleSize;
 	uint8_t *mac = NULL;
+
+	// Prepare IPv4 Header
 	p->d[MACPreambleSize + 0] = (4) << 4; // Version
 	p->d[MACPreambleSize + 0] |= 5; // InternetHeaderLength
 	p->d[MACPreambleSize + 1] = 0; // Type Of Service
@@ -255,21 +257,28 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 		p->d[MACPreambleSize + IPv4PacketSourceOffset + tLength] = ownIpAddress[tLength];
 		p->d[MACPreambleSize + IPv4PacketDestinationOffset + tLength] = target[tLength];
 	}
+
+	// Aquire MAC
 	if ((mac = arpGetMacFromIp(target)) == NULL) { // Target MAC Unknown
 		mfree(p->d, p->dLength);
 		mfree(p, sizeof(Packet));
 		return 3; // Ensure the target Mac is known!
 	}
+
+	// Insert MACs
 	for (tLength = 0; tLength < 6; tLength++) {
 		p->d[tLength] = mac[tLength]; // Destination
 		p->d[6 + tLength] = ownMacAddress[tLength]; // Source
 	}
 	p->d[12] = (IPV4 & 0xFF00) >> 8;
-	p->d[13] = (IPV4 & 0x00FF);
-	if (macSendPacket(p)) {
-		if (macSendPacket(p)) {
-			return 2;
-		}
+	p->d[13] = (IPV4 & 0x00FF); // IPv4 Protocol
+
+	// Try to send packet...
+	tLength = macSendPacket(p);
+	mfree(p->d, p->dLength);
+	mfree(p, sizeof(Packet));
+	if (tLength) {
+		return 2;
 	}
 	return 0;
 }

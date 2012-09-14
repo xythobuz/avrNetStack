@@ -378,9 +378,6 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	dumpPacketRaw(p);
 #endif
 
-	mfree(p->d, p->dLength);
-	mfree(p, sizeof(Packet));
-
 	while(readControlRegister(0x1F) & 0x08); // Wait for finish or abort, ECON1.TXRTS
 
 #if DEBUG >= 1
