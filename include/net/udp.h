@@ -49,4 +49,9 @@ uint8_t udpRegisterHandler(uint8_t (*handler)(Packet *), uint16_t port);
 
 uint16_t udpLastPort(void);
 
+// Allocate large enough Packet, fill in data, then call this.
+// UDP Header will be filled, then the Packet goes into the
+// IPv4 Transmission Buffer...
+uint8_t udpSendPacket(Packet *p, uint8_t *targetIp, uint16_t targetPort, uint16_t sourcePort);
+
 #endif

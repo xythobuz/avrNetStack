@@ -309,11 +309,18 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 
 		// Try to send packet...
 		tLength = macSendPacket(p);
+		if (tLength) {
+			// Could not send, so put into buffer to try again later...
+			if (extendTransmissionBuffer() != OK) {
+				mfree(p->d, p->dLength);
+				mfree(p, sizeof(Packet));
+				return 1;
+			}
+			ipv4Queue[ipv4PacketsInQueue - 1] = p;
+			return 0;
+		}
 		mfree(p->d, p->dLength);
 		mfree(p, sizeof(Packet));
-		if (tLength) {
-			return 2;
-		}
 		return 0;
 	} else {
 		// MAC Unknown, insert packet into queue

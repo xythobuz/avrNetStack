@@ -70,11 +70,11 @@ typedef struct {
 // Both includes depend on this Packet definition, so we can include them only now!
 
 // d = data, p = position, v = value
-#define is16BitEqual(d, p, v) ((d[p] == ((v & 0xFF00) >> 8)) && (d[p+1] == (v & 0x00FF)))
-#define get16Bit(d, p) ((d[p] << 8) | d[p+1])
+#define is16BitEqual(d, p, v) (((d)[(p)] == (((v) & 0xFF00) >> 8)) && ((d)[(p)+1] == ((v) & 0x00FF)))
+#define get16Bit(d, p) (((d)[(p)] << 8) | (d)[(p)+1])
 #define set16Bit(d, p, v) ({	\
-	d[p] = (v & 0xFF00) >> 8;	\
-	d[p + 1] = (v & 0x00FF);	\
+	(d)[(p)] = ((v) & 0xFF00) >> 8;	\
+	(d)[(p) + 1] = ((v) & 0x00FF);	\
 })
 
 extern char buff[BUFFSIZE];

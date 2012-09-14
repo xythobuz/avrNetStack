@@ -201,4 +201,19 @@ uint8_t udpRegisterHandler(uint8_t (*handler)(Packet *), uint16_t port) {
 	return 0;
 }
 
+uint8_t udpSendPacket(Packet *p, uint8_t *targetIp, uint16_t targetPort, uint16_t sourcePort) {
+	uint8_t i;
+
+	// We have to write ip addresses before calculating the checksum...
+	for (i = 0; i < 4; i++) {
+		p->d[MACPreambleSize + IPv4PacketSourceOffset] = ownIpAddress[i];
+		p->d[MACPreambleSize + IPv4PacketDestinationOffset] = targetIp[i];
+	}
+	set16Bit(p->d, UDPOffset + UDPSourceOffset, sourcePort);
+	set16Bit(p->d, UDPOffset + UDPDestinationOffset, targetPort);
+	set16Bit(p->d, UDPOffset + UDPLengthOffset, p->dLength - UDPOffset);
+	set16Bit(p->d, UDPOffset + UDPChecksumOffset, udpChecksum(p));
+	return ipv4SendPacket(p, targetIp, UDP);
+}
+
 #endif // DISABLE_UDP
