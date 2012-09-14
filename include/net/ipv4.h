@@ -53,4 +53,7 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol);
 
 uint8_t ipv4LastProtocol(void);
 
+void ipv4SendQueue(void); // Send next packet in queue
+uint8_t ipv4PacketsToSend(void); // Is something in the queue?
+
 #endif

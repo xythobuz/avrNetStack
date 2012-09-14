@@ -38,11 +38,50 @@ IPv4Address ownIpAddress;
 IPv4Address subnetmask;
 IPv4Address defaultGateway;
 
+uint16_t risingIdentification = 1;
+
+// Transmission Buffer
+Packet **ipv4Queue = NULL;
+uint8_t ipv4PacketsInQueue = 0;
+
 // ----------------------
 // |    Internal API    |
 // ----------------------
 
-uint16_t risingIdentification = 1;
+uint8_t extendTransmissionBuffer(void) {
+	Packet **p;
+	p = (Packet **)mrealloc(ipv4Queue, (ipv4PacketsInQueue + 1) * sizeof(Packet), ipv4PacketsInQueue * sizeof(Packet));
+	if (p == NULL) {
+		return MEM;
+	}
+	ipv4Queue = p;
+	ipv4PacketsInQueue++;
+	return OK;
+}
+
+void removeFromTransmissionBuffer(uint8_t pos) {
+	// move data after pos onto pos,
+	// reduce size of queue
+	uint8_t i;
+	Packet **p;
+
+	// Free entry
+	mfree(ipv4Queue[pos]->d, ipv4Queue[pos]->dLength);
+	mfree(ipv4Queue[pos], sizeof(Packet));
+
+	// Move following entries
+	for (i = pos; i < ipv4PacketsInQueue - 1; i++) {
+		ipv4Queue[i] = ipv4Queue[i + 1];
+	}
+
+	// Reduce array size
+	p = (Packet **)mrealloc(ipv4Queue, ipv4PacketsInQueue * sizeof(Packet), (ipv4PacketsInQueue + 1) * sizeof(Packet));
+	if (p != NULL) {
+		ipv4Queue = p; // Should always happen...
+	}
+
+	ipv4PacketsInQueue--;
+}
 
 uint8_t isBroadcastIp(uint8_t *d) {
 	uint8_t i;
@@ -259,26 +298,77 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 	}
 
 	// Aquire MAC
-	if ((mac = arpGetMacFromIp(target)) == NULL) { // Target MAC Unknown
+	if ((mac = arpGetMacFromIp(target)) != NULL) { // Target MAC known
+		// Insert MACs
+		for (tLength = 0; tLength < 6; tLength++) {
+			p->d[tLength] = mac[tLength]; // Destination
+			p->d[6 + tLength] = ownMacAddress[tLength]; // Source
+		}
+		p->d[12] = (IPV4 & 0xFF00) >> 8;
+		p->d[13] = (IPV4 & 0x00FF); // IPv4 Protocol
+
+		// Try to send packet...
+		tLength = macSendPacket(p);
 		mfree(p->d, p->dLength);
 		mfree(p, sizeof(Packet));
-		return 3; // Ensure the target Mac is known!
+		if (tLength) {
+			return 2;
+		}
+		return 0;
+	} else {
+		// MAC Unknown, insert packet into queue
+		if (extendTransmissionBuffer() != OK) {
+			mfree(p->d, p->dLength);
+			mfree(p, sizeof(Packet));
+			return 1;
+		}
+		ipv4Queue[ipv4PacketsInQueue - 1] = p;
+		return 0;
 	}
+}
 
-	// Insert MACs
-	for (tLength = 0; tLength < 6; tLength++) {
-		p->d[tLength] = mac[tLength]; // Destination
-		p->d[6 + tLength] = ownMacAddress[tLength]; // Source
+void ipv4SendQueue(void) {
+	uint8_t i, pos;
+	uint8_t *mac;
+
+	pos = ipv4PacketsToSend();
+	if (pos == 0) {
+		return;
 	}
-	p->d[12] = (IPV4 & 0xFF00) >> 8;
-	p->d[13] = (IPV4 & 0x00FF); // IPv4 Protocol
+	pos -= 1; // Now pos has position of next ready packet in queue
+
+	mac = arpGetMacFromIp(ipv4Queue[pos]->d + MACPreambleSize + IPv4PacketDestinationOffset);
+
+	// Send Packet, Insert MACs
+	for (i = 0; i < 6; i++) {
+		ipv4Queue[pos]->d[i] = mac[i]; // Destination
+		ipv4Queue[pos]->d[6 + i] = ownMacAddress[i]; // Source
+	}
+	ipv4Queue[pos]->d[12] = (IPV4 & 0xFF00) >> 8;
+	ipv4Queue[pos]->d[13] = (IPV4 & 0x00FF); // IPv4 Protocol
 
 	// Try to send packet...
-	tLength = macSendPacket(p);
-	mfree(p->d, p->dLength);
-	mfree(p, sizeof(Packet));
-	if (tLength) {
-		return 2;
+	if (macSendPacket(ipv4Queue[pos]) == 0) {
+		removeFromTransmissionBuffer(pos);
 	}
+}
+
+uint8_t ipv4PacketsToSend(void) {
+	// Check if we got the MAC Address in the ARP Cache first...
+	// Returns != 0 if we found a packet
+	// (return - 1) is position in queue of packet to send next
+	uint8_t i;
+
+	if (ipv4Queue == NULL) {
+		return 0;
+	}
+
+	for (i = 0; i < ipv4PacketsInQueue; i++) {
+		if (arpGetMacFromIp(ipv4Queue[i]->d + MACPreambleSize + IPv4PacketDestinationOffset) != NULL) {
+			// MAC is now available
+			return i + 1;
+		}
+	}
+
 	return 0;
 }

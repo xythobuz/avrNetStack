@@ -27,6 +27,10 @@
 
 #include <debug.h>
 
+#define OK 0
+#define MEM 1
+#define ERROR 2
+
 // -----------------------------------
 // |        Feature Selection        |
 // -----------------------------------
