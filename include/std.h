@@ -23,6 +23,8 @@
 
 #include <stdlib.h>
 
+// #define DISABLE_HEAP_LOG // Uncomment this line to disable allocation logging...
+
 extern uint32_t heapBytesAllocated; // Number of bytes allocated
 
 void *mmalloc(size_t size); // Use like regular malloc

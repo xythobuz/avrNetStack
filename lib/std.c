@@ -22,16 +22,14 @@
 #include <stdint.h>
 
 #include <std.h>
+#include <net/controller.h> // Maybe DISABLE_HEAP_LOG is defined here?
 
 uint32_t heapBytesAllocated = 0;
 
+#ifndef DISABLE_HEAP_LOG
+
 void *mmalloc(size_t size) {
-	/* void *p = malloc(size);
-	if (p != NULL) {
-		heapBytesAllocated += size;
-	}
-	return p; */
-	return mcalloc(size, 1); // Clear memory to zero!
+	return mcalloc(size, 1); // Always clear allocated memory to zero!
 }
 
 void *mrealloc(void *ptr, size_t newSize, size_t oldSize) {
@@ -55,3 +53,23 @@ void mfree(void *ptr, size_t size) {
 	free(ptr);
 	heapBytesAllocated -= size;
 }
+
+#else // DISABLE_HEAP_LOG defined
+
+inline void *mmalloc(size_t size) {
+	return malloc(size);
+}
+
+inline void *mrealloc(void *ptr, size_t newSize, size_t oldSize) {
+	return realloc(ptr, newSize);
+}
+
+inline void *mcalloc(size_t n, size_t s) {
+	return calloc(n, s);
+}
+
+inline void mfree(void *ptr, size_t size) {
+	free(ptr);
+}
+
+#endif // DISABLE_HEAP_LOG

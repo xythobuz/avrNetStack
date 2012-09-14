@@ -21,6 +21,8 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
+// #define DISABLE_HEAP_LOG // Uncomment to disable counting allocated bytes
+
 #define DEBUGOUT(x) serialWriteString(x) // Debug Output Function
 
 // assert Implementation
