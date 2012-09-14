@@ -52,8 +52,8 @@ const char string22[] PROGMEM = "Brown-Out Reset";
 const char string23[] PROGMEM = "Watchdog Reset";
 const char string24[] PROGMEM = "JTAG Reset";
 const char string25[] PROGMEM = ", ";
-const char string26[] PROGMEM = "";
-const char string27[] PROGMEM = "";
+const char string26[] PROGMEM = "Not enough memory!\n";
+const char string27[] PROGMEM = "Packet sent";
 const char string28[] PROGMEM = "";
 const char string29[] PROGMEM = "";
 

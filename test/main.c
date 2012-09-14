@@ -44,12 +44,14 @@ void printArpTable(void);
 void heartbeat(void);
 void serialHandler(void);
 
-// Thats, the MAC of my WLAN Module, with some bytes swapped...
+// Thats the MAC of my WLAN Module, with some bytes swapped...
 MacAddress mac = {0x02, 0x1E, 0x99, 0x02, 0xC0, 0x42};
 IPv4Address defIp = {192, 168, 0, 42};
 IPv4Address defSubnet = {255, 255, 255, 0};
 IPv4Address defGateway = {192, 168, 0, 1};
+
 IPv4Address testIp = { 192, 168, 0, 103 };
+#define TESTPORT 6600
 
 int main(void) {
 	uint8_t i;
@@ -94,8 +96,6 @@ int main(void) {
 
 	wdt_enable(WDTO_2S);
 
-	arpGetMacFromIp(testIp); // Request MAC for serial command 't'
-
 	PORTA &= ~((1 << PA7) | (1 << PA6)); // LEDs off
 
 	addTimedTask(heartbeat, 500); // Toggle LED every 500ms
@@ -139,7 +139,7 @@ void heartbeat(void) {
 
 void serialHandler(void) {
 	uint8_t i;
-	uint8_t *p;
+	Packet *p;
 	char c = serialGet();
 	serialWrite(c - 32); // to uppercase
 	serialWriteString(getString(7)); // ": "
@@ -159,19 +159,33 @@ void serialHandler(void) {
 			serialWriteString(getString(6)); // "allocated\n"
 			break;
 
-		case 't': // Get / Print MAC of testIp
-			if ((p = arpGetMacFromIp(testIp)) == NULL) {
-				serialWriteString(getString(18));
-				break;
-			}
-			serialWriteString(getString(19));
-			for (i = 0; i < 6; i++) {
-				serialWriteString(hex2ToString(p[i]));
-				if (i < 5) {
-					serialWrite(':');
-				} else {
-					serialWrite('\n');
+		case 't': // Send UDP Packet to testIp
+			if ((p = (Packet *)mmalloc(sizeof(Packet))) != NULL) {
+				p->dLength = UDPOffset + UDPDataOffset + 12; // "Hello World."
+				p->d = (uint8_t *)mmalloc(p->dLength);
+				if (p->d == NULL) {
+					serialWriteString(getString(26)); // "Not enough memory!\n"
+					mfree(p, sizeof(Packet));
+					break;
 				}
+				p->d[UDPOffset + UDPDataOffset + 0] = 'H';
+				p->d[UDPOffset + UDPDataOffset + 1] = 'e';
+				p->d[UDPOffset + UDPDataOffset + 2] = 'l';
+				p->d[UDPOffset + UDPDataOffset + 3] = 'l';
+				p->d[UDPOffset + UDPDataOffset + 4] = 'o';
+				p->d[UDPOffset + UDPDataOffset + 5] = ' ';
+				p->d[UDPOffset + UDPDataOffset + 6] = 'W';
+				p->d[UDPOffset + UDPDataOffset + 7] = 'o';
+				p->d[UDPOffset + UDPDataOffset + 8] = 'r';
+				p->d[UDPOffset + UDPDataOffset + 9] = 'l';
+				p->d[UDPOffset + UDPDataOffset + 10] = 'd';
+				p->d[UDPOffset + UDPDataOffset + 11] = '.';
+				serialWriteString(getString(27)); // "Packet sent"
+				serialWriteString(getString(7)); // ": "
+				serialWriteString(timeToString(udpSendPacket(p, testIp, TESTPORT, TESTPORT)));
+				serialWriteString(getString(15)); // "\n"
+			} else {
+				serialWriteString(getString(26)); // "Not enough memory!\n"
 			}
 			break;
 

@@ -27,7 +27,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#define DEFPORT 4242
+#define DEFPORT 6600
 #define BUFFSIZE 128
 
 char buffer[BUFFSIZE];
