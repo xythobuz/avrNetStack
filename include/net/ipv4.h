@@ -26,30 +26,6 @@
 
 typedef uint8_t IPv4Address[4];
 
-/* typedef struct {
-	uint8_t version;
-	uint8_t internetHeaderLength; // This times 4 is the complete header length
-	uint8_t typeOfService;
-	// First 16bit
-
-	uint16_t totalLength; // 16bit
-	uint16_t identification; // 16bit
-	uint8_t flags; // 3bit
-	uint16_t fragmentOffset; // 13bit
-	// Next 48bit
-
-	uint8_t timeToLive;
-	uint8_t protocol;
-	uint16_t headerChecksum;
-	// Next 32bit
-
-	IPv4Address sourceIp;
-	IPv4Address destinationIp;
-	uint8_t *options; // Not NULL if internetHeaderLength > 5
-	uint8_t *data;
-	uint16_t dLength; // Real length of data buffer
-} IPv4Packet; */
-
 #define IPv4PacketFlagsOffset 6
 #define IPv4PacketProtocolOffset 9
 #define IPv4PacketSourceOffset 12

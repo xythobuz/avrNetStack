@@ -18,15 +18,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with avrNetStack.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* typedef struct {
- * 		// 6 byte header...
- * 		uint16_t       operation; // 1 for request, 2 for reply
- * 		MacAddress     senderMac;
- * 		IPv4Address    senderIp;
- * 		MacAddress     targetMac;
- * 		IPv4Address    targetIp;
- * } ArpPacket;
- */
 #ifndef _arp_h
 #define _arp_h
 
@@ -45,6 +36,11 @@ typedef struct {
 
 #define ARPPacketSize 22 // Without header
 #define ARPOffset MACPreambleSize + 6
+#define ARPOperationOffset 0
+#define ARPSourceMacOffset 2
+#define ARPSourceIpOffset 8
+#define ARPDestinationMacOffset 12
+#define ARPDestinationIpOffset 18
 
 extern ARPTableEntry *arpTable;
 extern uint8_t arpTableSize;

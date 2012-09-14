@@ -25,15 +25,6 @@
 #include <net/ipv4.h>
 #include <net/controller.h>
 
-/* typedef struct {
-	uint16_t source;
-	uint16_t destination;
-	uint16_t length; // Minimum Headerlength (8)
-	uint16_t checksum;
-	uint8_t *data;
-	uint16_t dLength;
-} UdpPacket; */
-
 #define UDPOffset (MACPreambleSize + IPv4PacketHeaderLength)
 #define UDPSourceOffset 0
 #define UDPDestinationOffset 2

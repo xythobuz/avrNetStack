@@ -87,8 +87,10 @@ uint8_t icmpAnswerEcho(Packet *p) {
 	p->d[ICMPOffset + 2] = 0;
 	p->d[ICMPOffset + 3] = 0; // Clear Checksum Field
 
-	if (p->dLength > ICMPOffset + ICMPPacketSize) {
+	if (p->dLength > ICMPOffset + ICMPPacketSize + 4) {
 		// We strip the last 4 bytes from the icmp payload
+		// To be honest, i don't know why, but ping
+		// is reporting a wrong total length otherwise...
 		po = mrealloc(p->d, p->dLength - 4, p->dLength);
 		if (po != NULL) {
 			p->d = po;

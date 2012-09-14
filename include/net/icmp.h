@@ -24,17 +24,12 @@
 #include <net/mac.h>
 #include <net/ipv4.h>
 
-/* typedef struct {
-	uint8_t type;
-	uint8_t code;
-	uint16_t checksum;
-	uint32_t restOfHeader;
-	uint8_t *data; // Optional
-	uint16_t dLength;
-} IcmpPacket; */
-
 #define ICMPOffset (MACPreambleSize + IPv4PacketHeaderLength)
-#define ICMPPacketSize 8
+#define ICMPPacketSize 4
+#define ICMPTypeOffset 0
+#define ICMPCodeOffset 1
+#define ICMPChecksumOffset 2
+#define ICMPDataOffset 4
 
 void icmpInit(void);
 

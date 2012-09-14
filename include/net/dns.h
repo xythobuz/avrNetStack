@@ -39,35 +39,6 @@ struct DnsTableEntry {
 
 extern DnsTableEntry *dnsTable;
 
-/* typedef struct {
-	uint8_t *name; // 3www8xythobuz3org0
-	uint16_t qType;
-	uint16_t qClass;
-} DnsQuestion;
-
-typedef struct {
-	uint8_t *name;
-	uint16_t type;
-	uint16_t class;
-	uint32_t ttl;
-	uint16_t rlength;
-	uint8_t *rdata;
-} DnsRecord;
-
-typedef struct {
-	uint16_t id;
-
-	// From MSB to LSB:
-	// QR(1bit), Opcode(4bit), AA(1),
-	// TC(1), RD(1), RA(1), Z(3), RCODE(4)
-	uint16_t flags;
-
-	uint16_t qdCount;
-	uint16_t anCount;
-	uint16_t nsCount;
-	uint16_t arCount;
-} DnsPacket; */
-
 void dnsRegisterMessageCallback(void (*debugOutput)(char *));
 
 uint8_t dnsHandler(Packet up);

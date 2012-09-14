@@ -31,15 +31,9 @@ typedef uint8_t MacAddress[6];
 #include <net/controller.h>
 
 #define MACPreambleSize 0x0E
-
-/* typedef struct {
-	MacAddress destination;
-	MacAddress source;
-	uint16_t   typeLength; // type/length field in packet
-
-	uint8_t    *data;
-	uint16_t   dLength; // real length of data[]
-} MacPacket; */
+#define MACDestinationOffset 0
+#define MACSourceOffset 6
+#define MACTypeOffset 12
 
 extern MacAddress ownMacAddress;
 
