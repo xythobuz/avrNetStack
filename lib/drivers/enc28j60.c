@@ -25,7 +25,7 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 
-#define DEBUG 2
+#define DEBUG 1
 
 #include <std.h>
 #include <net/mac.h>
@@ -196,18 +196,16 @@ void discardPacket(void) {
 	bitFieldSet(0x1E, (1 << 6)); // Set ECON2.PKTDEC
 }
 
-#define print(x) DEBUGOUT(x)
-
 void dumpPacketRaw(Packet *p) {
 	uint16_t i;
-	print("\nPacket:\n");
+	debugPrint("\nPacket:\n");
 	for (i = 0; i < p->dLength; i++) {
-		print(hex2ToString(p->d[i]));
+		debugPrint(hex2ToString(p->d[i]));
 		if (i < (p->dLength - 1)) {
-			print(" ");
+			debugPrint(" ");
 		}
 	}
-	print("\n\n");
+	debugPrint("\n\n");
 }
 
 // ----------------------------------
@@ -237,8 +235,10 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 	systemResetCommand();
 
-	for (i = 0; i < 6; i++) {
-		ownMacAddress[i] = address[i];
+	if ((address != NULL) && (address != ownMacAddress)) {
+		for (i = 0; i < 6; i++) {
+			ownMacAddress[i] = address[i];
+		}
 	}
 
 	selectBank(0);
@@ -278,12 +278,12 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	// 8) For half duplex, set MACLCON1 & 2 to their default values
 	// 9) Write local MAC Address into MAADR1:MAADR6
 	selectBank(3);
-	writeControlRegister(0x04, address[0]);
-	writeControlRegister(0x05, address[1]);
-	writeControlRegister(0x02, address[2]);
-	writeControlRegister(0x03, address[3]);
-	writeControlRegister(0x00, address[4]);
-	writeControlRegister(0x01, address[5]);
+	writeControlRegister(0x04, ownMacAddress[0]);
+	writeControlRegister(0x05, ownMacAddress[1]);
+	writeControlRegister(0x02, ownMacAddress[2]);
+	writeControlRegister(0x03, ownMacAddress[3]);
+	writeControlRegister(0x00, ownMacAddress[4]);
+	writeControlRegister(0x01, ownMacAddress[5]);
 	// Always reset bank selection to zero!!
 	selectBank(0);
 
@@ -428,6 +428,11 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	uint16_t fullLength;
 	Packet *p = (Packet *)mmalloc(sizeof(Packet));
 	if (p == NULL) {
+#if DEBUG >= 1
+		debugPrint("Couldn't allocate ");
+		debugPrint(timeToString(sizeof(Packet)));
+		debugPrint(" bytes (Packet struct)...\n");
+#endif
 		return NULL;
 	}
 
@@ -452,13 +457,11 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	
 	if (header[2] & (1 << 7)) {
 		// Received OK
-
 #if DEBUG >= 2
 		debugPrint("Received Packet with ");
 		debugPrint(timeToString(fullLength));
 		debugPrint(" bytes...\n");
 #endif
-
 		p->dLength = fullLength;
 		p->d = (uint8_t *)mmalloc(p->dLength * sizeof(uint8_t));
 		if (p->d == NULL) {

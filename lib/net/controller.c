@@ -24,7 +24,7 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 2 // 0 to receive no debug serial output
 
 #include <std.h>
 #include <time.h>
@@ -57,6 +57,19 @@ char *hex2ToString(uint64_t s) {
 	ultoa(s, buff, 16);
 	return buff;
 }
+
+#if DEBUG >= 2
+char *typeString(uint16_t t) {
+	if (tl == IPV4) {
+		return "IPv4";
+	} else if (tl == ARP) {
+		return "ARP";
+	} else if (tl == IPV6) {
+		return "IPv6";
+	}
+	return "Unknown";
+}
+#endif
 
 void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 	uint8_t i;
@@ -108,11 +121,6 @@ uint8_t networkHandler(void) {
 			debugPrint("Not enough memory to allocate Packet struct!\n");
 			return 1;
 		}
-		if ((p->dLength == 0) || (p->dLength > 1500)) {
-			debugPrint("ENC gives invalid data. Resetting...\n");
-			wdt_enable(WDTO_15MS);
-			while(1);
-		}
 		if (p->d == NULL) {
 			debugPrint("Not enough memory to receive packet with ");
 			debugPrint(timeToString(p->dLength));
@@ -120,14 +128,22 @@ uint8_t networkHandler(void) {
 			mfree(p, sizeof(Packet));
 			return 1;
 		}
+		if ((p->dLength == 0) || (p->dLength > 1600)) {
+			debugPrint("ENC gives invalid data. Resetting...\n");
+			macInitialize(NULL); // already initialized
+			mfree(p->d, p->dLength);
+			mfree(p, sizeof(Packet));
+		}
+
+		tl = get16Bit(p->d, 12);
 
 #if DEBUG >= 2
-		debugPrint("Packet with ");
+		debugPrint(typeString(tl));
+		debugPrint(" Packet with ");
 		debugPrint(timeToString(p->dLength));
 		debugPrint(" bytes Received!\n");
 #endif
 
-		tl = get16Bit(p->d, 12);
 		if (tl == IPV4) {
 			// IPv4 Packet
 			return ipv4ProcessPacket(p);

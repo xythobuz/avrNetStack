@@ -24,12 +24,13 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 /*
  * The ICMP Checksum Algorithm is only producing valid results when sending packets.
  * Received ICMP Packets are always detected as invalid checksum...
  */
+#define ICMP_CHECKSUM_DONT_CARE
 
 #include <std.h>
 #include <net/utils.h>
@@ -145,9 +146,11 @@ uint8_t icmpProcessPacket(Packet *p) {
 		debugPrint(hexToString(ocs));
 		debugPrint("\n");
 #endif
-		//mfree(p->d, p->dLength);
-		//mfree(p, sizeof(Packet));
-		//return 2; // Invalid
+#ifndef ICMP_CHECKSUM_DONT_CARE
+		mfree(p->d, p->dLength);
+		mfree(p, sizeof(Packet));
+		return 2; // Invalid
+#endif
 	} else {
 		debugPrint("Valid ICMP Packet!\n");
 	}

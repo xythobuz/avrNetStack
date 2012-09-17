@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DEBUG 0 // 0 to receive no debug serial output
+#define DEBUG 1 // 0 to receive no debug serial output
 
 #include <std.h>
 #include <time.h>
@@ -343,6 +343,8 @@ void ipv4SendQueue(void) {
 		return;
 	}
 	pos -= 1; // Now pos has position of next ready packet in queue
+
+	debugPrint("Working on IPv4 Send Queue...\n");
 
 	mac = arpGetMacFromIp(ipv4Queue[pos]->d + MACPreambleSize + IPv4PacketDestinationOffset);
 
