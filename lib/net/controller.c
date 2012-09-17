@@ -72,27 +72,17 @@ char *typeString(uint16_t t) {
 #endif
 
 void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
-	uint8_t i;
 	initSystemTimer();
 	macInitialize(mac);
 	debugPrint("Hardware Driver initialized...\n");
 	arpInit();
 	ipv4Init(ip, subnet, gateway);
-#if DEBUG >= 1
-	debugPrint("IPv4 initialized: ");
-	for (i = 0; i < 4; i++) {
-		debugPrint(timeToString(ip[i]));
-		if (i < 3) {
-			debugPrint(".");
-		} else {
-			debugPrint("\n");
-		}
-	}
-#endif
+
 #ifndef DISABLE_ICMP
 	icmpInit();
 	debugPrint("ICMP initialized...\n");
 #endif
+
 #ifndef DISABLE_UDP
 	udpInit();
 	debugPrint("UDP initialized...\n");

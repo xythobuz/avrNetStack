@@ -26,7 +26,8 @@
 #include <time.h>
 #include <net/controller.h>
 
-#define ARPTableTimeToLive 300000 // 5 Minutes (in milliseconds)
+#define ARPTableTimeToLive 300000 // Keep unused Cache entries for 5 Minutes
+#define ARPTableTimeout 10000 // Wait 10 seconds for ARP Replys
 
 typedef struct {
 	IPv4Address ip;

@@ -76,9 +76,16 @@ uint8_t oldestEntry(void) {
 
 int8_t tooOldEntry(void) {
 	uint8_t i;
-	time_t time = getSystemTime();
+	time_t t, time = getSystemTime();
 	for (i = 0; i < arpTableSize; i++) {
-		if (((arpTable[i].time + ARPTableTimeToLive) <= time) && (arpTable[i].time != 0)) {
+		if (!isZero(arpTable[i].mac, 6)) {
+			// Normal full entry
+			t = arpTable[i].time + ARPTableTimeToLive;
+		} else {
+			// Waiting for Reply
+			t = arpTable[i].time + ARPTableTimeout;
+		}
+		if ((t <= time) && (arpTable[i].time != 0)) {
 			return i;
 		}
 	}
