@@ -311,6 +311,10 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 		tLength = macSendPacket(p);
 		if (tLength) {
 			// Could not send, so put into buffer to try again later...
+			debugPrint("Moved Packet into IPv4 Transmit Buffer (");
+			debugPrint(timeToString(tLength));
+			debugPrint(")\n");
+
 			if (extendTransmissionBuffer() != OK) {
 				mfree(p->d, p->dLength);
 				mfree(p, sizeof(Packet));
@@ -324,7 +328,10 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 		return 0;
 	} else {
 		// MAC Unknown, insert packet into queue
+		debugPrint("MAC Unknown. Moved Packet into IPv4 Transmit Buffer.\n");
+
 		if (extendTransmissionBuffer() != OK) {
+			debugPrint("Could not extend Transmit Buffer!\n");
 			mfree(p->d, p->dLength);
 			mfree(p, sizeof(Packet));
 			return 1;

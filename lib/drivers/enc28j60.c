@@ -25,7 +25,12 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 
-#define DEBUG 1
+#define DEBUG 3
+// 1 -> ENC28J60 Revision and Sent Packets
+// 2 -> 1 + Received Packets
+// 3 -> 1 + 2 + Raw Sent Packet Dump
+// 4 -> 1 + 2 + 3 + Sent Packets Status Vector
+// 5 -> 1 + 2 + 3 + 4 + PHSTAT Registers on LinkIsUp
 
 #include <std.h>
 #include <net/mac.h>
@@ -428,11 +433,6 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	uint16_t fullLength;
 	Packet *p = (Packet *)mmalloc(sizeof(Packet));
 	if (p == NULL) {
-#if DEBUG >= 1
-		debugPrint("Couldn't allocate ");
-		debugPrint(timeToString(sizeof(Packet)));
-		debugPrint(" bytes (Packet struct)...\n");
-#endif
 		return NULL;
 	}
 

@@ -111,18 +111,18 @@ uint8_t networkHandler(void) {
 			debugPrint("Not enough memory to allocate Packet struct!\n");
 			return 1;
 		}
+		if ((p->dLength == 0) || (p->dLength > 1600)) {
+			debugPrint("ENC gives invalid data. Resetting...\n");
+			macInitialize(NULL); // already initialized
+			mfree(p->d, p->dLength);
+			mfree(p, sizeof(Packet));
+		}
 		if (p->d == NULL) {
 			debugPrint("Not enough memory to receive packet with ");
 			debugPrint(timeToString(p->dLength));
 			debugPrint(" bytes!\n");
 			mfree(p, sizeof(Packet));
 			return 1;
-		}
-		if ((p->dLength == 0) || (p->dLength > 1600)) {
-			debugPrint("ENC gives invalid data. Resetting...\n");
-			macInitialize(NULL); // already initialized
-			mfree(p->d, p->dLength);
-			mfree(p, sizeof(Packet));
 		}
 
 		tl = get16Bit(p->d, 12);

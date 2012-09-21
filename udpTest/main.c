@@ -56,11 +56,13 @@ int main(int argc, char **argv) {
 	si.sin_addr.s_addr = htonl(INADDR_ANY);
 	if (bind(s, (struct sockaddr *)&si, sizeof(si)) == -1) {
 		printf("Could not bind to port!\n");
+		close(s);
 		return 2;
 	}
 
 	if (fcntl(s, F_SETFL, O_NONBLOCK, 1) == -1) {
 		printf("Could not set to nonblock mode!\n");
+		close(s);
 		return 2;
 	}
 
