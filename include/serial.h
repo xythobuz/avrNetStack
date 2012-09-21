@@ -88,4 +88,6 @@ void serialWriteString(const char *data);
  */
 void serialClose(void);
 
+uint8_t transmitBufferEmpty(void);
+
 #endif

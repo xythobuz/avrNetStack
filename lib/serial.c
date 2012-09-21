@@ -242,6 +242,18 @@ void serialWriteString(const char *data) {
 	}
 }
 
+uint8_t transmitBufferEmpty(void) {
+#ifdef SERIALNONBLOCK
+	if (txRead != txWrite) {
+		return 1;
+	} else {
+		return 0;
+	}
+#else
+	return 1;
+#endif
+}
+
 void serialClose() {
 	SERIALB = 0;
 	SERIALC = 0;

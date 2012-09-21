@@ -128,6 +128,8 @@ uint8_t networkHandler(void) {
 		tl = get16Bit(p->d, 12);
 
 #if DEBUG >= 2
+		debugPrint(timeToString(getSystemTimeSeconds()));
+		debugPrint(" - ");
 		debugPrint(typeString(tl));
 		debugPrint(" Packet with ");
 		debugPrint(timeToString(p->dLength));

@@ -142,6 +142,8 @@ void serialHandler(void) {
 	Packet *p;
 	char c = serialGet();
 	serialWrite(c - 32); // to uppercase
+	serialWriteString(getString(28)); // " - "
+	serialWriteString(timeToString(getSystemTimeSeconds()));
 	serialWriteString(getString(7)); // ": "
 	switch(c) {
 		case 's': // Status
@@ -226,6 +228,9 @@ void serialHandler(void) {
 
 		case 'q': // Trigger Watchdog Reset
 			serialWriteString(getString(11));
+			while(!transmitBufferEmpty()) {
+				wdt_reset();
+			}
 			wdt_enable(WDTO_15MS);
 			while(1);
 

@@ -54,7 +54,7 @@ const char string24[] PROGMEM = "JTAG Reset";
 const char string25[] PROGMEM = ", ";
 const char string26[] PROGMEM = "Not enough memory!\n";
 const char string27[] PROGMEM = "Packet sent";
-const char string28[] PROGMEM = "";
+const char string28[] PROGMEM = " - ";
 const char string29[] PROGMEM = "";
 
 // Last index + 1
