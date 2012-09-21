@@ -113,9 +113,12 @@ uint8_t networkHandler(void) {
 		}
 		if ((p->dLength == 0) || (p->dLength > 1600)) {
 			debugPrint("ENC gives invalid data. Resetting...\n");
-			macInitialize(NULL); // already initialized
-			mfree(p->d, p->dLength);
-			mfree(p, sizeof(Packet));
+			// This is not enough, so we reset the entire CPU!
+			// macInitialize(NULL); // already initialized
+			// mfree(p->d, p->dLength);
+			// mfree(p, sizeof(Packet));
+			wdt_enable(WDTO_15MS);
+			while(1);
 		}
 		if (p->d == NULL) {
 			debugPrint("Not enough memory to receive packet with ");
