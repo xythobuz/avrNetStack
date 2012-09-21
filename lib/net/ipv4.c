@@ -273,7 +273,9 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 	uint16_t tLength = p->dLength - MACPreambleSize;
 	uint8_t *mac = NULL;
 
-	// Prepare IPv4 Header
+	// Prepare Header Data
+	p->d[12] = (IPV4 & 0xFF00) >> 8;
+	p->d[13] = (IPV4 & 0x00FF); // IPv4 Protocol
 	p->d[MACPreambleSize + 0] = (4) << 4; // Version
 	p->d[MACPreambleSize + 0] |= 5; // InternetHeaderLength
 	p->d[MACPreambleSize + 1] = 0; // Type Of Service
@@ -286,16 +288,17 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 	p->d[MACPreambleSize + 8] = 0xFF; // Time To Live
 	p->d[MACPreambleSize + 10] = 0;
 	p->d[MACPreambleSize + 11] = 0; // Checksum field
-#ifndef DISABLE_IPV4_CHECKSUM
-	tLength = checksum(p->d + MACPreambleSize, IPv4PacketHeaderLength);
-	p->d[MACPreambleSize + 10] = (tLength & 0xFF00) >> 8;
-	p->d[MACPreambleSize + 11] = (tLength & 0x00FF);
-#endif
 	p->d[MACPreambleSize + IPv4PacketProtocolOffset] = protocol;
 	for (tLength = 0; tLength < 4; tLength++) {
 		p->d[MACPreambleSize + IPv4PacketSourceOffset + tLength] = ownIpAddress[tLength];
 		p->d[MACPreambleSize + IPv4PacketDestinationOffset + tLength] = target[tLength];
 	}
+
+#ifndef DISABLE_IPV4_CHECKSUM
+	tLength = checksum(p->d + MACPreambleSize, IPv4PacketHeaderLength);
+	p->d[MACPreambleSize + 10] = (tLength & 0xFF00) >> 8;
+	p->d[MACPreambleSize + 11] = (tLength & 0x00FF);
+#endif
 
 	// Aquire MAC
 	if ((mac = arpGetMacFromIp(target)) != NULL) { // Target MAC known
@@ -304,8 +307,6 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 			p->d[tLength] = mac[tLength]; // Destination
 			p->d[6 + tLength] = ownMacAddress[tLength]; // Source
 		}
-		p->d[12] = (IPV4 & 0xFF00) >> 8;
-		p->d[13] = (IPV4 & 0x00FF); // IPv4 Protocol
 
 		// Try to send packet...
 		tLength = macSendPacket(p);
