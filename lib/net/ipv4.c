@@ -77,7 +77,7 @@ void removeFromTransmissionBuffer(uint8_t pos) {
 	}
 
 	// Reduce array size
-	p = (Packet **)mrealloc(ipv4Queue, ipv4PacketsInQueue * sizeof(Packet), (ipv4PacketsInQueue + 1) * sizeof(Packet));
+	p = (Packet **)mrealloc(ipv4Queue, (ipv4PacketsInQueue - 1) * sizeof(Packet), ipv4PacketsInQueue * sizeof(Packet));
 	if (p != NULL) {
 		ipv4Queue = p; // Should always happen...
 	}

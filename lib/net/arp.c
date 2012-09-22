@@ -109,7 +109,7 @@ int8_t getFirstFreeEntry(void) {
 	if (arpTableSize < ARPMaxTableSize) {
 		// Allocate more space
 		arpTableSize++;
-		tp = (ARPTableEntry *)mrealloc(arpTable, arpTableSize * sizeof(ARPTableEntry), (arpTableSize + 1) * sizeof(ARPTableEntry));
+		tp = (ARPTableEntry *)mrealloc(arpTable, arpTableSize * sizeof(ARPTableEntry), (arpTableSize - 1) * sizeof(ARPTableEntry));
 		if (tp != NULL) {
 			arpTable = tp;
 			return (arpTableSize - 1);
@@ -294,12 +294,7 @@ uint8_t macReturnBuffer[6];
 uint8_t *arpGetMacFromIp(IPv4Address ip) {
 	uint8_t i, a;
 	int8_t index = findMacFromIp(ip);
-	Packet *p = (Packet *)mmalloc(sizeof(Packet));
-
-	if (p == NULL) {
-		debugPrint("Not enough memory for Packet struct!\n");
-		return NULL;
-	}
+	Packet *p;
 
 	if (index != -1) {
 		a = 0;
@@ -327,6 +322,11 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 		}
 		debugPrint("...");
 #endif
+		p = (Packet *)mmalloc(sizeof(Packet));
+		if (p == NULL) {
+			debugPrint("Not enough memory for Packet struct!\n");
+			return NULL;
+		}
 		p->d = (uint8_t *)mmalloc(MACPreambleSize + HEADERLENGTH + ARPPacketSize);
 		if (p->d == NULL) {
 			mfree(p, sizeof(Packet));
