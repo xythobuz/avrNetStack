@@ -24,7 +24,9 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
-#define DEBUG 2 // 0 to receive no debug serial output
+#define DEBUG 1 // 0 to receive no debug serial output
+// 1 -> Init & Error Messages
+// 2 -> Message for each received packet and it's type
 
 #include <std.h>
 #include <time.h>
@@ -109,6 +111,8 @@ uint8_t networkHandler(void) {
 
 		if (p == NULL) {
 			debugPrint("Not enough memory to allocate Packet struct!\n");
+			debugPrint(timeToString(heapBytesAllocated));
+			debugPrint(" bytes should be allocated...\n");
 			return 1;
 		}
 		if ((p->dLength == 0) || (p->dLength > 1600)) {

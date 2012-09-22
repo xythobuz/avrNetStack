@@ -28,6 +28,7 @@
 #include <net/icmp.h>
 #include <net/utils.h>
 #include <net/udp.h>
+#include <net/utils.h>
 #include <net/controller.h>
 
 #ifndef DISABLE_UDP
@@ -68,10 +69,11 @@ uint16_t udpChecksum(Packet *p) {
 	// We create the pseudo header in our already present buffer,
 	// calculate the checksum,
 	// then move the ip addresses back to their old places, so it can be used again...
-	
+	// Required: UDP Length, Source and Target IP, UDP Data
+
 	// Move IPs (8 bytes) from IPv4PacketSourceOffset (12) to 8
 	for (i = 0; i < 8; i++) {
-		p->d[MACPreambleSize + 8 + i] = p->d[MACPreambleSize + 12 + i];
+		p->d[MACPreambleSize + 8 + i] = p->d[MACPreambleSize + IPv4PacketSourceOffset + i];
 	}
 
 	// Insert data for Pseudo Header
@@ -87,7 +89,7 @@ uint16_t udpChecksum(Packet *p) {
 #if DEBUG >= 2
 	debugPrint("\nChecksum data size: ");
 	debugPrint(timeToString(12 + get16Bit(p->d, UDPOffset + UDPLengthOffset)));
-	debugPrint(" bytes.\nHeader:\n");
+	debugPrint(" bytes.\nPseudo Header: ");
 	for (i = 0; i < 12; i++) {
 		if (i < 8) {
 			debugPrint(timeToString((p->d + MACPreambleSize + 8)[i]));
@@ -98,7 +100,7 @@ uint16_t udpChecksum(Packet *p) {
 			debugPrint(" ");
 		}
 	}
-	debugPrint("\n");
+	debugPrint("\nUDP Header: ");
 	for (i = 0; i < 8; i++) {
 		debugPrint(hex2ToString((p->d + MACPreambleSize + 20)[i]));
 		if (i < 7) {
@@ -209,8 +211,8 @@ uint8_t udpSendPacket(Packet *p, uint8_t *targetIp, uint16_t targetPort, uint16_
 
 	// We have to write ip addresses before calculating the checksum...
 	for (i = 0; i < 4; i++) {
-		p->d[MACPreambleSize + IPv4PacketSourceOffset] = ownIpAddress[i];
-		p->d[MACPreambleSize + IPv4PacketDestinationOffset] = targetIp[i];
+		p->d[MACPreambleSize + IPv4PacketSourceOffset + i] = ownIpAddress[i];
+		p->d[MACPreambleSize + IPv4PacketDestinationOffset + i] = targetIp[i];
 	}
 	set16Bit(p->d, UDPOffset + UDPSourceOffset, sourcePort);
 	set16Bit(p->d, UDPOffset + UDPDestinationOffset, targetPort);

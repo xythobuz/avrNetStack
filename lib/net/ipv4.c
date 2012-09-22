@@ -22,7 +22,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 0 // 0 to receive no debug serial output
+// 1 for init, error and status messages
+// 2 for ips of each packet.
 
 #include <std.h>
 #include <time.h>
@@ -196,9 +198,11 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 
 	w = get16Bit(p->d, MACPreambleSize + IPv4PacketFlagsOffset);
 	if (w & 0x1FFF) {
+#if DEBUG >= 1
 		debugPrint("Fragment Offset is ");
 		debugPrint(hexToString(w & 0x1FFF));
 		debugPrint("!\n");
+#endif
 		mfree(p->d, p->dLength);
 		mfree(p, sizeof(Packet));
 		return 2;
@@ -258,10 +262,10 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 		debugPrint("No handler for: ");
 		debugPrint(hexToString(pr));
 		debugPrint("!\n");
+#endif
 		mfree(p->d, p->dLength);
 		mfree(p, sizeof(Packet));
 		return 0;
-#endif
 	}
 
 	mfree(p->d, p->dLength);

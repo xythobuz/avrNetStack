@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define DEBUG 1
+
 #include <std.h>
 #include <net/controller.h> // Maybe DISABLE_HEAP_LOG is defined here?
 
@@ -37,6 +39,16 @@ void *mrealloc(void *ptr, size_t newSize, size_t oldSize) {
 	if (p != NULL) {
 		heapBytesAllocated += newSize;
 		heapBytesAllocated -= oldSize;
+	#if DEBUG >= 1
+		if (newSize > oldSize) {
+			debugPrint("  + ");
+			debugPrint(timeToString(newSize - oldSize));
+		} else {
+			debugPrint("  - ");
+			debugPrint(timeToString(oldSize - newSize));
+		}
+		debugPrint("\n");
+#endif
 	}
 	return p;
 }
@@ -45,6 +57,11 @@ void *mcalloc(size_t n, size_t s) {
 	void *p = calloc(n, s);
 	if (p != NULL) {
 		heapBytesAllocated += (n * s);
+#if DEBUG >= 1
+		debugPrint("  + ");
+		debugPrint(timeToString(n * s));
+		debugPrint("\n");
+#endif
 	}
 	return p;
 }
@@ -52,6 +69,11 @@ void *mcalloc(size_t n, size_t s) {
 void mfree(void *ptr, size_t size) {
 	free(ptr);
 	heapBytesAllocated -= size;
+#if DEBUG >= 1
+	debugPrint("  - ");
+	debugPrint(timeToString(size));
+	debugPrint("\n");
+#endif
 }
 
 #else // DISABLE_HEAP_LOG defined

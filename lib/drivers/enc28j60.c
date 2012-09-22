@@ -25,12 +25,12 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 
-#define DEBUG 3
-// 1 -> ENC28J60 Revision and Sent Packets
-// 2 -> 1 + Received Packets
-// 3 -> 1 + 2 + Raw Sent Packet Dump
-// 4 -> 1 + 2 + 3 + Sent Packets Status Vector
-// 5 -> 1 + 2 + 3 + 4 + PHSTAT Registers on LinkIsUp
+#define DEBUG 1
+// 1 --> ENC28J60 Revision
+// 2 --> 1 + Received and Sent Packets
+// 3 --> 1 + 2 + Raw Sent Packet Dump
+// 4 --> 1 + 2 + 3 + Sent Packets Status Vector
+// 5 --> 1 + 2 + 3 + 4 + PHSTAT Registers on LinkIsUp
 
 #include <std.h>
 #include <net/mac.h>
@@ -199,18 +199,6 @@ void discardPacket(void) {
 	writeControlRegister(0x0C, (uint8_t)(nextPacketPointer & 0xFF)); // set ERXRDPTL
 	writeControlRegister(0x0D, (uint8_t)((nextPacketPointer & 0xFF00) >> 8)); // set ERXRDPTH --> nextPacketPointer
 	bitFieldSet(0x1E, (1 << 6)); // Set ECON2.PKTDEC
-}
-
-void dumpPacketRaw(Packet *p) {
-	uint16_t i;
-	debugPrint("\nPacket:\n");
-	for (i = 0; i < p->dLength; i++) {
-		debugPrint(hex2ToString(p->d[i]));
-		if (i < (p->dLength - 1)) {
-			debugPrint(" ");
-		}
-	}
-	debugPrint("\n\n");
 }
 
 // ----------------------------------
@@ -385,7 +373,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 
 	while(readControlRegister(0x1F) & 0x08); // Wait for finish or abort, ECON1.TXRTS
 
-#if DEBUG >= 1
+#if DEBUG >= 2
 	debugPrint("Sent Packet with ");
 	debugPrint(timeToString(p->dLength));
 	debugPrint(" bytes...\n");

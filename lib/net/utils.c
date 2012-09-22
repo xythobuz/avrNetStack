@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
+#include <net/mac.h>
+
 uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint8_t l) {
 	uint8_t i;
 	for (i = 0; i < l; i++) {
@@ -41,4 +43,16 @@ uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l) {
 		}
 	}
 	return 1;
+}
+
+void dumpPacketRaw(Packet *p) {
+	uint16_t i;
+	debugPrint("\nRaw Packet Dump:\n");
+	for (i = 0; i < p->dLength; i++) {
+		debugPrint(hex2ToString(p->d[i]));
+		if (i < (p->dLength - 1)) {
+			debugPrint(" ");
+		}
+	}
+	debugPrint("\n\n");
 }
