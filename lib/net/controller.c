@@ -73,6 +73,22 @@ char *typeString(uint16_t t) {
 }
 #endif
 
+#if DEBUG >= 1
+uint8_t debugUdpHandler(Packet *p) {
+	uint16_t i, max;
+	max = get16Bit(p->d, UDPOffset + UDPLengthOffset);
+	debugPrint("Data: ");
+	for (i = 0; i < max; i++) {
+		serialWrite(p->d[UDPOffset + UDPDataOffset + i]);
+		if (i < (max - 1)) {
+			debugPrint(" ");
+		}
+	}
+	debugPrint("\n");
+	return 0;
+}
+#endif
+
 void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 	initSystemTimer();
 	macInitialize(mac);
@@ -88,15 +104,18 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 #ifndef DISABLE_UDP
 	udpInit();
 	debugPrint("UDP initialized...\n");
-  #ifndef DISABLE_DHCP
+#if DEBUG >= 1
+	udpRegisterHandler(&debugUdpHandler, 6600);
+#endif
+#ifndef DISABLE_DHCP
 	// udpRegisterHandler(&dhcpHandler, 68);
-  #endif
-  #ifndef DISABLE_DNS
+#endif
+#ifndef DISABLE_DNS
 	// udpRegisterHandler(&dnsHandler, 53);
-  #endif
-  #ifndef DISABLE_NTP
+#endif
+#ifndef DISABLE_NTP
 	// udpRegisterHandler(&ntpHandler, 123);
-  #endif
+#endif
 #endif
 
 	addConditionalTask((Task)networkHandler, macHasInterrupt); // Enable polling

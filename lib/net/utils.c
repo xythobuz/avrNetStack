@@ -23,7 +23,10 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
+#define DEBUG 1 // Enable dumpPacketRaw
+
 #include <net/mac.h>
+#include <net/controller.h>
 
 uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint8_t l) {
 	uint8_t i;
@@ -46,6 +49,7 @@ uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l) {
 }
 
 void dumpPacketRaw(Packet *p) {
+#if DEBUG >= 1
 	uint16_t i;
 	debugPrint("\nRaw Packet Dump:\n");
 	for (i = 0; i < p->dLength; i++) {
@@ -55,4 +59,5 @@ void dumpPacketRaw(Packet *p) {
 		}
 	}
 	debugPrint("\n\n");
+#endif
 }
