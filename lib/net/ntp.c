@@ -22,6 +22,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define DEBUG 0
+
 #include <std.h>
 #include <time.h>
 #include <net/ipv4.h>
@@ -40,21 +42,19 @@
 uint8_t ntpServerDomain[] = "0.de.pool.ntp.org";
 #endif
 
-IPv4Address ntpServer = {78, 46, 85, 230};
+IPv4Address ntpServer = { 78, 46, 85, 230 };
 
 uint8_t ntpHandler(Packet *p) {
 	time_t stamp = 0;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 16] << 56;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 17] << 48;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 18] << 40;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 19] << 32;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 20] << 24;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 21] << 16;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 22] << 8;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 23];
+	debugPrint("Got NTP Response!\n");
+	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 16] << 24;
+	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 17] << 16;
+	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 18] << 8;
+	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 19];
 	setNtpTimestamp(stamp);
 	mfree(p->d, p->dLength);
 	mfree(p, sizeof(Packet));
+	debugPrint("Injected new timestamp!\n");
 	return 0;
 }
 
@@ -84,6 +84,8 @@ uint8_t ntpIssueRequest(void) {
 	for (i = 1; i < NTPMessageSize; i++) {
 		p->d[UDPOffset + UDPDataOffset + i] = 0x00; // Yes, SNTP is simple...
 	}
+
+	debugPrint("Sending NTP Request...\n");
 
 	return udpSendPacket(p, ntpServer, 123, 123);
 }

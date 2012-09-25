@@ -400,13 +400,19 @@ uint8_t ipv4PacketsToSend(void) {
 	// Returns != 0 if we found a packet
 	// (return - 1) is position in queue of packet to send next
 	uint8_t i;
+	uint8_t *mac;
 
 	if (ipv4Queue == NULL) {
 		return 0;
 	}
 
 	for (i = 0; i < ipv4PacketsInQueue; i++) {
-		if (arpGetMacFromIp(ipv4Queue[i]->d + MACPreambleSize + IPv4PacketDestinationOffset) != NULL) {
+		if (isIpInThisNetwork(ipv4Queue[i]->d + MACPreambleSize + IPv4PacketDestinationOffset)) {
+			mac = arpGetMacFromIp(ipv4Queue[i]->d + MACPreambleSize + IPv4PacketDestinationOffset);
+		} else {
+			mac = arpGetMacFromIp(defaultGateway);
+		}
+		if (mac != NULL) {
 			// MAC is now available
 			return i + 1;
 		}

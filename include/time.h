@@ -21,19 +21,9 @@
 #ifndef _time_h
 #define _time_h
 
+#define TIMEZONE 2 // If you're eg. GMT-5, enter -5 or -4 on DST 
+
 typedef uint64_t time_t; // For milliseconds since system start or UNIX timestamp
-
-typedef struct {
-	uint16_t milliseconds;
-	uint8_t seconds;
-	uint8_t minutes;
-	uint8_t hours;
-	uint8_t day;
-	uint8_t month;
-	uint16_t year;
-} Time;
-
-volatile extern Time currentTime;
 
 void initSystemTimer(void);
 
@@ -43,11 +33,8 @@ time_t getSystemTimeSeconds(void); // System uptime in seconds
 time_t diffTime(time_t a, time_t b);
 
 uint8_t daysInMonth(uint8_t month, uint16_t year);
-void setTime(Time *t);
 
-void incrementSeconds(Time *t, time_t sec);
 void setTimestamp(time_t unix);
 void setNtpTimestamp(time_t ntp);
-time_t getUnixTimestamp(void); // Really expensive...
 
 #endif

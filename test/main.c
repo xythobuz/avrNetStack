@@ -195,6 +195,10 @@ void serialHandler(void) {
 	serialWriteString(timeToString(getSystemTimeSeconds()));
 	serialWriteString(getString(7)); // ": "
 	switch(c) {
+		case 't': // Time
+			serialWriteString(timeToString(getSystemTimeSeconds()));
+			serialWriteString(getString(15)); // "\n"
+			break;
 		case 'p': // Ping Internet
 			pingTool();
 			break;

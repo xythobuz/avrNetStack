@@ -114,7 +114,8 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 	// udpRegisterHandler(&dnsHandler, 53);
 #endif
 #ifndef DISABLE_NTP
-	// udpRegisterHandler(&ntpHandler, 123);
+	udpRegisterHandler(&ntpHandler, 123);
+	ntpIssueRequest();
 #endif
 #endif
 
