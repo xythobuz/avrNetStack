@@ -53,6 +53,9 @@ IPv4Address defGateway = {192, 168, 0, 1};
 IPv4Address testIp = { 192, 168, 0, 103 };
 #define TESTPORT 6600
 
+// IPv4Address pingIp = { 80, 150, 6, 143 }; // xythobuz.org
+IPv4Address pingIp = { 192, 168, 0, 103 };
+
 int main(void) {
 	uint8_t i;
 
@@ -137,15 +140,62 @@ void heartbeat(void) {
 	PORTA ^= (1 << PA6); // Toggle LED
 }
 
+#define IDLE 0
+#define PINGED 1
+#define FINISHED 2
+volatile uint8_t pingState = IDLE;
+volatile time_t pingTime, responseTime;
+
+void pingInterrupt(Packet *p) {
+	responseTime = getSystemTime();
+	pingState = FINISHED;
+	mfree(p->d, p->dLength);
+	mfree(p, sizeof(Packet));
+}
+
+void pingTool(void) {
+	if (pingState == PINGED) {
+		// Check if we got a timeout
+		if (diffTime(getSystemTime(), pingTime) > 1000) {
+			serialWriteString(getString(31)); // "Timed out :(\n"
+			pingState = IDLE;
+			registerEchoReplyHandler(NULL);
+		} else {
+			serialWriteString(getString(32)); // "Hasn't timed out yet!\n"
+		}
+	} else if (pingState == FINISHED) {
+		// Print Response Time
+		serialWriteString(getString(19)); // "RoundTripTime"
+		serialWriteString(getString(7)); // ": "
+		serialWriteString(timeToString(diffTime(pingTime, responseTime)));
+		serialWriteString(getString(18)); // " ms"
+		serialWriteString(getString(15)); // "\n"
+		pingState = IDLE;
+		registerEchoReplyHandler(NULL);
+	} else { // IDLE
+		// Send an Echo Request to pingIp
+		serialWriteString(getString(30)); // "Sending Echo Request...\n"
+		registerEchoReplyHandler(pingInterrupt);
+		sendEchoRequest(pingIp);
+		pingTime = getSystemTime();
+		responseTime = 0;
+		pingState = PINGED;
+	}
+}
+
 void serialHandler(void) {
 	uint8_t i;
 	Packet *p;
+	
 	char c = serialGet();
 	serialWrite(c - 32); // to uppercase
 	serialWriteString(getString(28)); // " - "
 	serialWriteString(timeToString(getSystemTimeSeconds()));
 	serialWriteString(getString(7)); // ": "
 	switch(c) {
+		case 'p': // Ping Internet
+			pingTool();
+			break;
 		case 's': // Status
 			serialWriteString(timeToString(tasksRegistered()));
 			serialWriteString(getString(14)); // " Tasks"
@@ -161,7 +211,7 @@ void serialHandler(void) {
 			serialWriteString(getString(6)); // "allocated\n"
 			break;
 
-		case 't': // Send UDP Packet to testIp
+		case 'u': // Send UDP Packet to testIp
 			if ((p = (Packet *)mmalloc(sizeof(Packet))) != NULL) {
 				p->dLength = UDPOffset + UDPDataOffset + 12; // "Hello World."
 				p->d = (uint8_t *)mmalloc(p->dLength);
@@ -235,7 +285,7 @@ void serialHandler(void) {
 			while(1);
 
 		default:
-			serialWrite('\n');
+			serialWriteString(getString(29));
 			break;
 	}
 }

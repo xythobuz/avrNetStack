@@ -36,7 +36,7 @@ const char string6[] PROGMEM = "allocated\n";
 const char string7[] PROGMEM = ": ";
 const char string8[] PROGMEM = "NTP Request: ";
 const char string9[] PROGMEM = "DHCP Request: ";
-const char string10[] PROGMEM = "Commands: hqvdnaltms\n";
+const char string10[] PROGMEM = "Commands: (h)elp, (q)uit, (l)ink,\n  (v)ersion, (m)em, (s)tatus,\n  (a)rp, (n)tp, (d)hcp,\n  (u)dp, (P)ing\n";
 const char string11[] PROGMEM = "Good Bye...\n\n";
 const char string12[] PROGMEM = "\nARP Table:\n";
 const char string13[] PROGMEM = " --> ";
@@ -44,8 +44,8 @@ const char string14[] PROGMEM = " Tasks";
 const char string15[] PROGMEM = "\n";
 const char string16[] PROGMEM = " Scheduler";
 const char string17[] PROGMEM = "Waiting...\n";
-const char string18[] PROGMEM = "Not yet known...\n";
-const char string19[] PROGMEM = "Test MAC: ";
+const char string18[] PROGMEM = " ms";
+const char string19[] PROGMEM = "RoundTripTime";
 const char string20[] PROGMEM = "Power-On Reset";
 const char string21[] PROGMEM = "External Reset";
 const char string22[] PROGMEM = "Brown-Out Reset";
@@ -55,17 +55,21 @@ const char string25[] PROGMEM = ", ";
 const char string26[] PROGMEM = "Not enough memory!\n";
 const char string27[] PROGMEM = "Packet sent";
 const char string28[] PROGMEM = " - ";
-const char string29[] PROGMEM = "";
+const char string29[] PROGMEM = "Command unknown!\n";
+const char string30[] PROGMEM = "Sending Echo Request...\n";
+const char string31[] PROGMEM = "Timed out :(\n";
+const char string32[] PROGMEM = "Hasn't timed out yet!\n";
 
 // Last index + 1
-#define STRINGNUM 30
+#define STRINGNUM 33
 
 PGM_P stringTable[STRINGNUM] PROGMEM = { string0, string1, string2, string3, string4,
 									string5, string6, string7, string8, string9,
 									string10, string11, string12, string13, string14,
 									string15, string16, string17, string18, string19,
 									string20, string21, string22, string23, string24,
-									string25, string26, string27, string28, string29 };
+									string25, string26, string27, string28, string29,
+									string30, string31, string32 };
 
 const char stringNotFoundError[] PROGMEM = "String not found!\n";
 

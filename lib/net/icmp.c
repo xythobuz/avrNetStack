@@ -40,6 +40,8 @@
 
 #ifndef DISABLE_ICMP
 
+void (*echoHandler)(Packet *) = NULL;
+
 #if DEBUG >= 2
 char *icmpMessage(uint8_t type, uint8_t code);
 #endif
@@ -75,7 +77,7 @@ uint16_t icmpChecksum(Packet *p) {
 
 #ifndef DISABLE_ICMP_ECHO
 uint8_t icmpAnswerEcho(Packet *p) {
-	// Just change code to zero, recompute checksum, send.
+	// Just change type to zero, recompute checksum, send.
 	uint8_t i;
 	uint8_t *po;
 	IPv4Address target;
@@ -164,11 +166,45 @@ uint8_t icmpProcessPacket(Packet *p) {
 #endif
 	}
 
+	if ((type == 0) && (code == 0) && (echoHandler != NULL)) {
+		echoHandler(p);
+		return 0; // echoHandler has to free p
+	}
+
 	mfree(p->d, p->dLength);
 	mfree(p, sizeof(Packet));
 	return 0;
 }
 
+void registerEchoReplyHandler(void (*func)(Packet *)) {
+	echoHandler = func;
+}
+
+void sendEchoRequest(uint8_t *ip) {
+#ifndef DISABLE_ICMP_CHECKSUM
+	uint16_t cs;
+#endif
+	Packet *p = (Packet *)mmalloc(sizeof(Packet));
+	if (p == NULL) {
+		return;
+	}
+	p->dLength = ICMPOffset + ICMPPacketSize + 4;
+	p->d = (uint8_t *)mmalloc(p->dLength);
+	if (p->d == NULL) {
+		mfree(p, sizeof(Packet));
+		return;
+	}
+	p->d[ICMPOffset] = 8; // Type
+	p->d[ICMPOffset + 1] = 0; // Code
+	p->d[ICMPOffset + 2] = 0;
+	p->d[ICMPOffset + 3] = 0; // Clear checksum field
+	// We leave the echo id as random data...
+#ifndef DISABLE_ICMP_CHECKSUM
+	cs = icmpChecksum(p);
+	set16Bit(p->d, ICMPOffset + 2, cs);
+#endif
+	ipv4SendPacket(p, ip, ICMP);
+}
 
 // ----------------------
 // |    Messages API    |

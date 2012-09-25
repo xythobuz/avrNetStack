@@ -37,4 +37,8 @@ void icmpInit(void);
 // p freed afterwards
 uint8_t icmpProcessPacket(Packet *p);
 
+void registerEchoReplyHandler(void (*func)(Packet *)); // func has to free p->d and p
+
+void sendEchoRequest(uint8_t *ip);
+
 #endif
