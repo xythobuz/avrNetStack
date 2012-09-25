@@ -53,9 +53,6 @@ IPv4Address defGateway = {192, 168, 0, 1};
 IPv4Address testIp = { 192, 168, 0, 103 };
 #define TESTPORT 6600
 
-// IPv4Address pingIp = { 80, 150, 6, 143 }; // xythobuz.org
-IPv4Address pingIp = { 192, 168, 0, 103 };
-
 int main(void) {
 	uint8_t i;
 
@@ -144,6 +141,8 @@ void heartbeat(void) {
 #define PINGED 1
 uint8_t pingState = IDLE;
 time_t pingTime, responseTime;
+IPv4Address pingIpA = { 192, 168, 0, 103 };
+IPv4Address pingIpB = { 80, 150, 6, 143 };
 
 void pingInterrupt(Packet *p) {
 	responseTime = getSystemTime();
@@ -159,6 +158,7 @@ void pingInterrupt(Packet *p) {
 }
 
 void pingTool(void) {
+	uint8_t c;
 	if (pingState == PINGED) {
 		// Check if we got a timeout
 		if (diffTime(getSystemTime(), pingTime) > 1000) {
@@ -170,9 +170,15 @@ void pingTool(void) {
 		}
 	} else { // IDLE
 		// Send an Echo Request to pingIp
-		serialWriteString(getString(30)); // "Sending Echo Request...\n"
+		serialWriteString(getString(30)); // "(1)Internal or (2)External?\n"
 		registerEchoReplyHandler(pingInterrupt);
-		sendEchoRequest(pingIp);
+		while (!serialHasChar()) { wdt_reset(); }
+		c = serialGet();
+		if ((c == '1') || (c == 'a')) {
+			sendEchoRequest(pingIpA);
+		} else {
+			sendEchoRequest(pingIpB);
+		}
 		pingTime = getSystemTime();
 		responseTime = 0;
 		pingState = PINGED;

@@ -56,7 +56,7 @@ const char string26[] PROGMEM = "Not enough memory!\n";
 const char string27[] PROGMEM = "Packet sent";
 const char string28[] PROGMEM = " - ";
 const char string29[] PROGMEM = "Command unknown!\n";
-const char string30[] PROGMEM = "Sending Echo Request...\n";
+const char string30[] PROGMEM = "(1)Internal or (2)External?\n";
 const char string31[] PROGMEM = "Timed out :(\n";
 const char string32[] PROGMEM = "Hasn't timed out yet!\n";
 
