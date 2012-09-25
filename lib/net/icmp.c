@@ -181,9 +181,7 @@ void registerEchoReplyHandler(void (*func)(Packet *)) {
 }
 
 void sendEchoRequest(uint8_t *ip) {
-#ifndef DISABLE_ICMP_CHECKSUM
 	uint16_t cs;
-#endif
 	Packet *p = (Packet *)mmalloc(sizeof(Packet));
 	if (p == NULL) {
 		return;
@@ -198,7 +196,10 @@ void sendEchoRequest(uint8_t *ip) {
 	p->d[ICMPOffset + 1] = 0; // Code
 	p->d[ICMPOffset + 2] = 0;
 	p->d[ICMPOffset + 3] = 0; // Clear checksum field
-	// We leave the echo id as random data...
+	// We fill the echo id with random data...
+	for (cs = 0; cs < 4; cs++) {
+		p->d[ICMPOffset + 4 + cs] = (uint8_t)(rand() & 0xFF);
+	}
 #ifndef DISABLE_ICMP_CHECKSUM
 	cs = icmpChecksum(p);
 	set16Bit(p->d, ICMPOffset + 2, cs);

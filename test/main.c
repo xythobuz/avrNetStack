@@ -142,15 +142,20 @@ void heartbeat(void) {
 
 #define IDLE 0
 #define PINGED 1
-#define FINISHED 2
-volatile uint8_t pingState = IDLE;
-volatile time_t pingTime, responseTime;
+uint8_t pingState = IDLE;
+time_t pingTime, responseTime;
 
 void pingInterrupt(Packet *p) {
 	responseTime = getSystemTime();
-	pingState = FINISHED;
 	mfree(p->d, p->dLength);
 	mfree(p, sizeof(Packet));
+	pingState = IDLE;
+	registerEchoReplyHandler(NULL);
+	serialWriteString(getString(19)); // "RoundTripTime"
+	serialWriteString(getString(7)); // ": "
+	serialWriteString(timeToString(diffTime(pingTime, responseTime)));
+	serialWriteString(getString(18)); // " ms"
+	serialWriteString(getString(15)); // "\n"
 }
 
 void pingTool(void) {
@@ -163,15 +168,6 @@ void pingTool(void) {
 		} else {
 			serialWriteString(getString(32)); // "Hasn't timed out yet!\n"
 		}
-	} else if (pingState == FINISHED) {
-		// Print Response Time
-		serialWriteString(getString(19)); // "RoundTripTime"
-		serialWriteString(getString(7)); // ": "
-		serialWriteString(timeToString(diffTime(pingTime, responseTime)));
-		serialWriteString(getString(18)); // " ms"
-		serialWriteString(getString(15)); // "\n"
-		pingState = IDLE;
-		registerEchoReplyHandler(NULL);
 	} else { // IDLE
 		// Send an Echo Request to pingIp
 		serialWriteString(getString(30)); // "Sending Echo Request...\n"
