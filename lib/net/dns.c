@@ -153,7 +153,7 @@ void dnsRegisterMessageCallback(void (*debugOutput)(char *)) {
 	debugOutHandler = debugOutput;
 }
 
-uint8_t dnsHandler(Packet p) {
+uint8_t dnsHandler(Packet *p) {
 	return 0;
 }
 

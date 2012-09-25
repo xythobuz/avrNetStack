@@ -118,26 +118,7 @@ ISR(TIMER2_COMP_vect) {
 	currentTime.milliseconds++;
 	if (currentTime.milliseconds >= 1000) {
 		currentTime.milliseconds = 0;
-		currentTime.seconds++;
-		if (currentTime.seconds >= 60) {
-			currentTime.seconds = 0;
-			currentTime.minutes++;
-			if (currentTime.minutes >= 60) {
-				currentTime.minutes = 0;
-				currentTime.hours++;
-				if (currentTime.hours >= 24) {
-					currentTime.hours = 0;
-					currentTime.day++;
-					if (currentTime.day >= daysInMonth(currentTime.month, currentTime.year)) {
-						currentTime.day = 1;
-						currentTime.month++;
-						if (currentTime.month >= 13) {
-							currentTime.year++;
-						}
-					}
-				}
-			}
-		}
+		incrementSeconds((Time *)&currentTime, 1);
 	}
 }
 
@@ -195,6 +176,7 @@ void setNtpTimestamp(time_t ntp) {
 	t->minutes = 0;
 	t->seconds = 0;
 	incrementSeconds(t, ntp);
+	setTime(t);
 	mfree(t, sizeof(Time));
 }
 
@@ -210,6 +192,7 @@ void setTimestamp(time_t unix) {
 	t->minutes = 0;
 	t->seconds = 0;
 	incrementSeconds(t, unix);
+	setTime(t);
 	mfree(t, sizeof(Time));
 }
 

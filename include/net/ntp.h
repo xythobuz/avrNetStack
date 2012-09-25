@@ -36,7 +36,7 @@ extern uint8_t ntpServerDomain[];
 
 extern IPv4Address ntpServer;
 
-uint8_t ntpHandler(Packet up);
+uint8_t ntpHandler(Packet *p);
 uint8_t ntpIssueRequest(void);
 
 #endif

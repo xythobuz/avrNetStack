@@ -45,6 +45,7 @@ time_t diffTime(time_t a, time_t b);
 uint8_t daysInMonth(uint8_t month, uint16_t year);
 void setTime(Time *t);
 
+void incrementSeconds(Time *t, time_t sec);
 void setTimestamp(time_t unix);
 void setNtpTimestamp(time_t ntp);
 time_t getUnixTimestamp(void); // Really expensive...

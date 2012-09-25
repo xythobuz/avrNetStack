@@ -43,10 +43,10 @@
 // #define DISABLE_ICMP_UDP_MSG          // Don't send ICMP Error for unhandled port.
 // #define DISABLE_UDP                   // Disable the complete UDP Protocol
 // #define DISABLE_UDP_CHECKSUM          // Prevent UDP Checksum calculation
-// #define DISABLE_DHCP                  // Disable DHCP. Enter valid IP etc. in controller.c
-// #define DISABLE_DNS                   // Disable DNS. Uses UDP, not TCP!
-// #define DISABLE_DNS_STRINGS           // Disable DNS Debug Output
-// #define DISABLE_DNS_DOMAIN_VALIDATION // Don't check if domains are valid
+#define DISABLE_DHCP                  // Disable DHCP. Enter valid IP etc. in controller.c
+#define DISABLE_DNS                   // Disable DNS. Uses UDP, not TCP!
+#define DISABLE_DNS_STRINGS           // Disable DNS Debug Output
+#define DISABLE_DNS_DOMAIN_VALIDATION // Don't check if domains are valid
 // #define DISABLE_NTP                   // Disable NTP.
 
 // -----------------------------------
