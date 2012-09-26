@@ -132,12 +132,6 @@ uint16_t udpChecksum(Packet *p) {
 
 void udpInit(void) {}
 
-uint16_t udpLastPortUsed = 0;
-
-uint16_t udpLastPort(void) {
-	return udpLastPortUsed;
-}
-
 // 0 on success, 1 not enough mem, 2 invalid
 uint8_t udpHandlePacket(Packet *p) {
 	uint8_t i;
@@ -158,8 +152,6 @@ uint8_t udpHandlePacket(Packet *p) {
 		mfree(p, sizeof(Packet));
 		return 2;
 	}
-
-	udpLastPortUsed = get16Bit(p->d, UDPOffset + UDPDestinationOffset);
 
 	// Look for a handler
 	for (i = 0; i < registeredHandlers; i++) {

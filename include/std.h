@@ -25,6 +25,9 @@
 
 // #define DISABLE_HEAP_LOG // Uncomment this line to disable allocation logging...
 
+extern uint8_t __heap_start; // Declared in linker script
+#define HEAPSIZE (SP - (uint16_t)&__heap_start)
+
 extern uint32_t heapBytesAllocated; // Number of bytes allocated
 
 void *mmalloc(size_t size); // Use like regular malloc

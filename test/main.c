@@ -213,6 +213,8 @@ void serialHandler(void) {
 
 		case 'm': // Number of bytes allocated
 			serialWriteString(timeToString(heapBytesAllocated));
+			serialWrite('/');
+			serialWriteString(timeToString(HEAPSIZE));
 			serialWriteString(getString(4)); // " bytes "
 			serialWriteString(getString(6)); // "allocated\n"
 			break;
