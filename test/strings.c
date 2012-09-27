@@ -59,9 +59,11 @@ const char string29[] PROGMEM = "Command unknown!\n";
 const char string30[] PROGMEM = "(1)Internal or (2)External?\n";
 const char string31[] PROGMEM = "Timed out :(\n";
 const char string32[] PROGMEM = "Hasn't timed out yet!\n";
+const char string33[] PROGMEM = "How many times? (0 - 9)\n";
+const char string34[] PROGMEM = "Invalid!\n";
 
 // Last index + 1
-#define STRINGNUM 33
+#define STRINGNUM 35
 
 PGM_P stringTable[STRINGNUM] PROGMEM = { string0, string1, string2, string3, string4,
 									string5, string6, string7, string8, string9,
@@ -69,7 +71,7 @@ PGM_P stringTable[STRINGNUM] PROGMEM = { string0, string1, string2, string3, str
 									string15, string16, string17, string18, string19,
 									string20, string21, string22, string23, string24,
 									string25, string26, string27, string28, string29,
-									string30, string31, string32 };
+									string30, string31, string32, string33, string34 };
 
 const char stringNotFoundError[] PROGMEM = "String not found!\n";
 

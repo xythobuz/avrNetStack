@@ -137,9 +137,7 @@ void heartbeat(void) {
 	PORTA ^= (1 << PA6); // Toggle LED
 }
 
-#define IDLE 0
-#define PINGED 1
-uint8_t pingState = IDLE;
+uint8_t pingState = 0, pingMode = 0;
 time_t pingTime, responseTime;
 IPv4Address pingIpA = { 192, 168, 0, 103 };
 IPv4Address pingIpB = { 80, 150, 6, 143 };
@@ -148,40 +146,60 @@ void pingInterrupt(Packet *p) {
 	responseTime = getSystemTime();
 	mfree(p->d, p->dLength);
 	mfree(p, sizeof(Packet));
-	pingState = IDLE;
-	registerEchoReplyHandler(NULL);
+
 	serialWriteString(getString(19)); // "RoundTripTime"
 	serialWriteString(getString(7)); // ": "
 	serialWriteString(timeToString(diffTime(pingTime, responseTime)));
 	serialWriteString(getString(18)); // " ms"
 	serialWriteString(getString(15)); // "\n"
+
+	pingState--;
+	if (pingState == 0) {
+		registerEchoReplyHandler(NULL);
+	} else {
+		if (pingMode) {
+			sendEchoRequest(pingIpB);
+		} else {
+			sendEchoRequest(pingIpA);
+		}
+		pingTime = getSystemTime();
+	}
 }
 
 void pingTool(void) {
 	uint8_t c;
-	if (pingState == PINGED) {
+	if (pingState) {
 		// Check if we got a timeout
 		if (diffTime(getSystemTime(), pingTime) > 1000) {
 			serialWriteString(getString(31)); // "Timed out :(\n"
-			pingState = IDLE;
+			pingState = 0;
 			registerEchoReplyHandler(NULL);
 		} else {
 			serialWriteString(getString(32)); // "Hasn't timed out yet!\n"
 		}
-	} else { // IDLE
+	} else {
 		// Send an Echo Request to pingIp
 		serialWriteString(getString(30)); // "(1)Internal or (2)External?\n"
-		registerEchoReplyHandler(pingInterrupt);
 		while (!serialHasChar()) { wdt_reset(); }
 		c = serialGet();
 		if ((c == '1') || (c == 'a')) {
 			sendEchoRequest(pingIpA);
+			pingMode = 0;
 		} else {
 			sendEchoRequest(pingIpB);
+			pingMode = 1;
 		}
-		pingTime = getSystemTime();
-		responseTime = 0;
-		pingState = PINGED;
+		serialWriteString(getString(33)); // "How many times? (0 - 9)\n"
+		while (!serialHasChar()) { wdt_reset(); }
+		c = serialGet();
+		if ((c >= '0') && (c <= '9')) {
+			pingState = c - '0';
+			registerEchoReplyHandler(pingInterrupt);
+			pingTime = getSystemTime();
+			responseTime = 0;
+		} else {
+			serialWriteString(getString(34)); // "Invalid!\n"
+		}
 	}
 }
 

@@ -27,8 +27,8 @@
 #define SERIALNONBLOCK
 
 // RX & TX buffer size in bytes
-#define RX_BUFFER_SIZE 64
-#define TX_BUFFER_SIZE 64
+#define RX_BUFFER_SIZE 16
+#define TX_BUFFER_SIZE 128
 
 // Select Baudrate with this macro
 #define BAUD(baudRate,xtalCpu) ((xtalCpu)/((baudRate)*16l)-1)
