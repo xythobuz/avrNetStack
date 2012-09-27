@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 0 // 0 to receive no debug serial output
+#define DEBUG 2 // 0 to receive no debug serial output
 // 2 to also get a message for every received ARP Request.
 
 #include <std.h>
@@ -161,6 +161,18 @@ void copyEntry(uint8_t *mac, IPv4Address ip, time_t time, uint8_t index) {
 	}
 }
 
+uint8_t isIpInThisNetwork(uint8_t *d) {
+	uint8_t i;
+	for (i = 0; i < 4; i++) {
+		if (subnetmask[i] == 255) {
+			if (d[i] != defaultGateway[i]) {
+				return 0;
+			}
+		}
+	}
+	return 1;
+}
+
 // ------------------------
 // |     External API     |
 // ------------------------
@@ -296,6 +308,20 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 	int8_t index = findMacFromIp(ip);
 	Packet *p;
 
+	if (!isIpInThisNetwork(ip)) {
+#if DEBUG >= 1
+		debugPrint("ARP Cache Request for IP: ");
+		for (i = 0; i < 4; i++) {
+			debugPrint(timeToString(ip[i]));
+			if (i < 3) {
+				debugPrint(".");
+			}
+		}
+		debugPrint("\nRedirecting to default Gateway...\n");
+#endif
+		return arpGetMacFromIp(defaultGateway);
+	}
+
 	if (index != -1) {
 		a = 0;
 		for (i = 0; i < 6; i++) {
@@ -306,6 +332,7 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 		}
 		if (a == 0) {
 			// Not yet found but already requested. Return NULL!
+			debugPrint("MAC already requested, waiting for response...\n");
 			return NULL;
 		}
 		arpTable[index].time = getSystemTime();

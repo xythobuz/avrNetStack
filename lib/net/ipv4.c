@@ -102,18 +102,6 @@ uint8_t isBroadcastIp(uint8_t *d) {
 	return 1;
 }
 
-uint8_t isIpInThisNetwork(uint8_t *d) {
-	uint8_t i;
-	for (i = 0; i < 4; i++) {
-		if (subnetmask[i] == 255) {
-			if (d[i] != defaultGateway[i]) {
-				return 0;
-			}
-		}
-	}
-	return 1;
-}
-
 #if (!defined(DISABLE_IPV4_CHECKSUM)) || (!defined(DISABLE_UDP_CHECKSUM))
 uint16_t checksum(uint8_t *addr, uint16_t count) {
 	// C Implementation Example from RFC 1071, p. 7, slightly adapted
@@ -317,11 +305,7 @@ uint8_t ipv4SendPacket(Packet *p, uint8_t *target, uint8_t protocol) {
 #endif
 
 	// Aquire MAC
-	if (isIpInThisNetwork(target)) {
-		mac = arpGetMacFromIp(target);
-	} else {
-		mac = arpGetMacFromIp(defaultGateway);
-	}
+	mac = arpGetMacFromIp(target);
 	if (mac != NULL) { // Target MAC known
 		// Insert MACs
 		for (tLength = 0; tLength < 6; tLength++) {
@@ -375,11 +359,7 @@ void ipv4SendQueue(void) {
 
 	debugPrint("Working on IPv4 Send Queue...\n");
 
-	if (isIpInThisNetwork(ipv4Queue[pos]->d + MACPreambleSize + IPv4PacketDestinationOffset)) {
-		mac = arpGetMacFromIp(ipv4Queue[pos]->d + MACPreambleSize + IPv4PacketDestinationOffset);
-	} else {
-		mac = arpGetMacFromIp(defaultGateway);
-	}
+	mac = arpGetMacFromIp(ipv4Queue[pos]->d + MACPreambleSize + IPv4PacketDestinationOffset);
 
 	// Send Packet, Insert MACs
 	for (i = 0; i < 6; i++) {
@@ -407,11 +387,7 @@ uint8_t ipv4PacketsToSend(void) {
 	}
 
 	for (i = 0; i < ipv4PacketsInQueue; i++) {
-		if (isIpInThisNetwork(ipv4Queue[i]->d + MACPreambleSize + IPv4PacketDestinationOffset)) {
-			mac = arpGetMacFromIp(ipv4Queue[i]->d + MACPreambleSize + IPv4PacketDestinationOffset);
-		} else {
-			mac = arpGetMacFromIp(defaultGateway);
-		}
+		mac = arpGetMacFromIp(ipv4Queue[i]->d + MACPreambleSize + IPv4PacketDestinationOffset);
 		if (mac != NULL) {
 			// MAC is now available
 			return i + 1;
