@@ -96,6 +96,15 @@
 #endif
 
 #ifdef SERIALNONBLOCK
+
+#if (RX_BUFFER_SIZE < 2) || (TX_BUFFER_SIZE < 2)
+#error SERIAL BUFFER TOO SMALL!
+#endif
+
+#if (RX_BUFFER_SIZE + TX_BUFFER_SIZE) >= (RAMEND - 0x60)
+#error SERIAL BUFFER TOO LARGE!
+#endif
+
 uint8_t volatile rxBuffer[RX_BUFFER_SIZE];
 uint8_t volatile txBuffer[TX_BUFFER_SIZE];
 uint16_t volatile rxRead = 0;
@@ -126,7 +135,7 @@ ISR(SERIALTRANSMITINTERRUPT) { // Data register empty
 		SERIALB &= ~(1 << SERIALUDRIE); // Disable Interrupt
 	}
 }
-#endif
+#endif // SERIALNONBLOCK
 
 uint8_t serialInit(uint16_t baud, uint8_t databits, uint8_t parity, uint8_t stopbits) {
 	if (parity > ODD) {

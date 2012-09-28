@@ -61,6 +61,7 @@ int main(void) {
 	wdt_disable();
 
 	serialInit(BAUD(39400, F_CPU), 8, NONE, 1);
+	initSystemTimer();
 
 	DDRA |= (1 << PA7) | (1 << PA6);
 	PORTA |= (1 << PA7) | (1 << PA6); // LEDs on
@@ -69,23 +70,25 @@ int main(void) {
 
 	networkInit(mac, defIp, defSubnet, defGateway);
 
-	serialWriteString(getString(0));
-	serialWriteString(getString(1));
-	serialWriteString(getString(5));
+	serialWriteString(getString(0)); // avrNetStack-Debug
+	serialWriteString(getString(1)); //  initialized!\n
+	serialWriteString(getString(5)); // MCUCSR: 
 	if (i == 0x01) {
-		serialWriteString(getString(20));
+		serialWriteString(getString(20)); // Power-On Reset
 	} else if (i == 0x02) {
-		serialWriteString(getString(21));
+		serialWriteString(getString(21)); // External Reset
 	} else if (i == 0x04) {
-		serialWriteString(getString(22));
+		serialWriteString(getString(22)); // Brown-Out Reset
 	} else if (i == 0x08) {
-		serialWriteString(getString(23));
+		serialWriteString(getString(23)); // Watchdog Reset
 	} else if (i == 0x10) {
-		serialWriteString(getString(24));
+		serialWriteString(getString(24)); // JTAG Reset
 	} else {
 		serialWriteString(hexToString(i));
 	}
 	serialWrite('\n');
+
+	wdt_enable(WDTO_2S);
 
 	if (!macLinkIsUp()) {
 		serialWriteString(getString(2)); // Link is down
@@ -94,19 +97,16 @@ int main(void) {
 	}
 	serialWriteString(getString(3)); // Link is up
 
-	wdt_enable(WDTO_2S);
-
 	PORTA &= ~((1 << PA7) | (1 << PA6)); // LEDs off
 
 	addTimedTask(heartbeat, 500); // Toggle LED every 500ms
 	addConditionalTask(serialHandler, serialHasChar); // Execute Serial Handler if char received
 
-	while(1) {
-		// Run the tasks
+	// Run Task Manager and Scheduler
+	serialWriteString("Looping...\n");
+	while (1) {
 		wdt_reset();
-		scheduler();
-		wdt_reset();
-		tasks();
+		networkLoop();
 	}
 
 	return 0;
@@ -155,8 +155,10 @@ void pingInterrupt(Packet *p) {
 
 	pingState--;
 	if (pingState == 0) {
+		// Finished pinging
 		registerEchoReplyHandler(NULL);
 	} else {
+		// Ping again
 		if (pingMode) {
 			sendEchoRequest(pingIpB);
 		} else {
@@ -170,7 +172,7 @@ void pingTool(void) {
 	uint8_t c;
 	if (pingState) {
 		// Check if we got a timeout
-		if (diffTime(getSystemTime(), pingTime) > 1000) {
+		if (diffTime(getSystemTime(), pingTime) > 2000) {
 			serialWriteString(getString(31)); // "Timed out :(\n"
 			pingState = 0;
 			registerEchoReplyHandler(NULL);
@@ -178,16 +180,17 @@ void pingTool(void) {
 			serialWriteString(getString(32)); // "Hasn't timed out yet!\n"
 		}
 	} else {
-		// Send an Echo Request to pingIp
+		// Send an Echo Request
 		serialWriteString(getString(30)); // "(1)Internal or (2)External?\n"
 		while (!serialHasChar()) { wdt_reset(); }
 		c = serialGet();
-		if ((c == '1') || (c == 'a')) {
-			sendEchoRequest(pingIpA);
+		if (c == '1') {
 			pingMode = 0;
-		} else {
-			sendEchoRequest(pingIpB);
+		} else if (c == '2') {
 			pingMode = 1;
+		} else {
+			serialWriteString(getString(34)); // "Invalid!\n"
+			return;
 		}
 		serialWriteString(getString(33)); // "How many times? (0 - 9)\n"
 		while (!serialHasChar()) { wdt_reset(); }
@@ -195,10 +198,16 @@ void pingTool(void) {
 		if ((c >= '0') && (c <= '9')) {
 			pingState = c - '0';
 			registerEchoReplyHandler(pingInterrupt);
+			if (pingMode) {
+				sendEchoRequest(pingIpB);
+			} else {
+				sendEchoRequest(pingIpA);
+			}
 			pingTime = getSystemTime();
 			responseTime = 0;
 		} else {
 			serialWriteString(getString(34)); // "Invalid!\n"
+			return;
 		}
 	}
 }
@@ -279,12 +288,14 @@ void serialHandler(void) {
 			printArpTable();
 			break;
 
+#ifndef DISABLE_NTP
 		case 'n': // Send NTP Request
 			i = ntpIssueRequest();
 			serialWriteString(getString(8));
 			serialWriteString(timeToString(i));
 			serialWrite('\n');
 			break;
+#endif
 
 		case 'd': // Send DHCP Request
 			i = dhcpIssueRequest();

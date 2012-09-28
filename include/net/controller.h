@@ -83,9 +83,7 @@ char *hexToString(uint64_t s);
 char *hex2ToString(uint64_t s);
 
 void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway);
-uint8_t networkHandler(void); // 0xFF if nothing to do, 1 on low mem, 2 on invalid
-// 42 if unhandled protocol --> networkLastProtocol()
-uint16_t networkLastProtocol(void);
+void networkLoop(void);
 
 #define IPV4 0x0800
 #define ARP 0x0806

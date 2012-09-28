@@ -24,7 +24,7 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 2 // 0 to receive no debug serial output
 // 1 -> Init & Error Messages
 // 2 -> Message for each received packet and it's type
 
@@ -32,6 +32,8 @@
 #include <time.h>
 #include <serial.h>
 #include <tasks.h>
+#include <scheduler.h>
+
 #include <net/mac.h>
 #include <net/arp.h>
 #include <net/icmp.h>
@@ -40,6 +42,8 @@
 #include <net/dns.h>
 #include <net/ntp.h>
 #include <net/controller.h>
+
+uint8_t networkHandler(void);
 
 char buff[BUFFSIZE];
 uint16_t tl = 0;
@@ -90,7 +94,6 @@ uint8_t debugUdpHandler(Packet *p) {
 #endif
 
 void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
-	initSystemTimer();
 	macInitialize(mac);
 	debugPrint("Hardware Driver initialized...\n");
 	arpInit();
@@ -115,12 +118,18 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 #endif
 #ifndef DISABLE_NTP
 	udpRegisterHandler(&ntpHandler, 123);
-	ntpIssueRequest();
 #endif
-#endif
+#endif // DISABLE_UDP
 
 	addConditionalTask((Task)networkHandler, macHasInterrupt); // Enable polling
 	addConditionalTask(ipv4SendQueue, ipv4PacketsToSend); // Enable transmission
+}
+
+void networkLoop(void) {
+	// Run the tasks
+	scheduler();
+	wdt_reset();
+	tasks();
 }
 
 uint8_t networkHandler(void) {
@@ -136,7 +145,9 @@ uint8_t networkHandler(void) {
 			return 1;
 		}
 		if ((p->dLength == 0) || (p->dLength > 1600)) {
-			debugPrint("ENC gives invalid data. Resetting...\n");
+			debugPrint("ENC gives invalid data (");
+			debugPrint(timeToString(p->dLength));
+			debugPrint("). Resetting...\n");
 			// This is not enough, so we reset the entire CPU!
 			// macInitialize(NULL); // already initialized
 			// mfree(p->d, p->dLength);

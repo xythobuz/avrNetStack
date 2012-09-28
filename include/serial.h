@@ -22,13 +22,15 @@
 #ifndef _serial_h
 #define _serial_h
 
+#include <avr/io.h> // RAMEND definition
+
 // If you don't define this, no buffers will be created and all
 // serial actions will wait until they are completed...
 #define SERIALNONBLOCK
 
-// RX & TX buffer size in bytes
+// RX & TX buffer size in bytes, power of 2
 #define RX_BUFFER_SIZE 16
-#define TX_BUFFER_SIZE 128
+#define TX_BUFFER_SIZE 32
 
 // Select Baudrate with this macro
 #define BAUD(baudRate,xtalCpu) ((xtalCpu)/((baudRate)*16l)-1)
@@ -90,4 +92,4 @@ void serialClose(void);
 
 uint8_t transmitBufferEmpty(void);
 
-#endif
+#endif // _serial_h

@@ -25,7 +25,7 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 
-#define DEBUG 1
+#define DEBUG 2
 // 1 --> ENC28J60 Revision
 // 2 --> 1 + Received and Sent Packets
 // 3 --> 1 + 2 + Raw Sent Packet Dump
@@ -52,8 +52,12 @@
 
 uint8_t currentBank = 0;
 uint16_t nextPacketPointer = 0x05FF; // Start of receive buffer
+uint8_t macInitialized = 0;
 
 MacAddress ownMacAddress;
+
+#define A_BLOCK() ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+// #define A_BLOCK() if(1)
 
 // ----------------------------------
 // |      ENC28J60 Command Set      |
@@ -63,7 +67,7 @@ uint8_t readControlRegister(uint8_t a) {
 	uint8_t r;
 	// Opcode: 000
 	// Argument: aaaaa
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+	A_BLOCK() {
 		ACTIVATE();
 		spiSendByte(a & 0x1F);
 		// Dummy byte if MAC or MII Register
@@ -80,7 +84,7 @@ uint8_t readControlRegister(uint8_t a) {
 
 uint8_t *readBufferMemory(uint8_t *d, uint8_t length) {
 	uint8_t i;
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+	A_BLOCK() {
 		ACTIVATE();
 		spiSendByte(0x3A);
 		for (i = 0; i < length; i++) {
@@ -95,7 +99,7 @@ void writeControlRegister(uint8_t a, uint8_t d) {
 	// Opcode: 010
 	// Argument: aaaaa
 	// Following: dddddddd
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+	A_BLOCK() {
 		ACTIVATE();
 		spiSendByte(0x40 | (a & 0x1F));
 		spiSendByte(d);
@@ -108,7 +112,7 @@ void writeBufferMemory(uint8_t *d, uint8_t length) {
 	// Opcode: 011
 	// Argument: 11010
 	// Following: dddddddd
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+	A_BLOCK() {
 		ACTIVATE();
 		spiSendByte(0x7A);
 		for (i = 0; i < length; i++) {
@@ -122,7 +126,7 @@ void bitFieldSet(uint8_t a, uint8_t d) {
 	// Opcode: 100
 	// Argument: aaaaa
 	// Following: dddddddd
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+	A_BLOCK() {
 		ACTIVATE();
 		spiSendByte(0x80 | (a & 0x1F));
 		spiSendByte(d);
@@ -134,7 +138,7 @@ void bitFieldClear(uint8_t a, uint8_t d) {
 	// Opcode: 101
 	// Argument: aaaaa
 	// Following: dddddddd
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+	A_BLOCK() {
 		ACTIVATE();
 		spiSendByte(0xA0 | (a & 0x1F));
 		spiSendByte(d);
@@ -145,7 +149,7 @@ void bitFieldClear(uint8_t a, uint8_t d) {
 void systemResetCommand(void) {
 	// Opcode 111
 	// Argument: 11111
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+	A_BLOCK() {
 		ACTIVATE();
 		spiSendByte(0xFF);
 		DEACTIVATE();
@@ -173,7 +177,9 @@ uint16_t readPhyRegister(uint8_t a) {
 	bitFieldSet(0x12, 0x01); // Set MICMD.MIIRD, read operation begins
 
 	selectBank(3);
+	debugPrint("ReadPHY: Waiting for Busy Flag!\n");
 	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY to go 0
+	debugPrint("Done!\n");
 
 	selectBank(2);
 	bitFieldClear(0x12, 0x01); // Clear MICMD.MIIRD
@@ -190,7 +196,9 @@ void writePhyRegister(uint8_t a, uint16_t d) {
 	writeControlRegister(0x17, (uint8_t)((d & 0xFF00) >> 8)); // Set MIWRH
 
 	selectBank(3);
+	debugPrint("WritePHY: Waiting for Busy Flag!\n");
 	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY
+	debugPrint("Done!\n");
 
 	selectBank(0);
 }
@@ -207,6 +215,7 @@ void discardPacket(void) {
 
 void macReset(void) {
 	systemResetCommand();
+	macInitialized = 0;
 }
 
 uint8_t macHasInterrupt(void) {
@@ -223,10 +232,11 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 	CSDDR |= (1 << CSPIN); // Chip Select as Output
 	CSPORT |= (1 << CSPIN); // Deselect
+	INTDDR &= ~(1 << INTPIN); // Interrupt PIN
 
 	spiInit();
 
-	systemResetCommand();
+	macReset();
 
 	if ((address != NULL) && (address != ownMacAddress)) {
 		for (i = 0; i < 6; i++) {
@@ -247,9 +257,13 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 	// Default Receive Filters are acceptable.
 	// We get unicast and broadcast packets as long as the crc is correct.
-	
+
+	debugPrint("Waiting for OSC...");
+
 	// Wait for OST
 	while(!(readControlRegister(0x1D) & 0x01)); // Wait until ESTAT.CLKRDY == 1
+
+	debugPrint(" Ready!\nPreparing MAC...\n");
 
 	// Initialize MAC Settings
 	// 1) Set MARXEN to recieve frames. Don't configure full-duplex mode
@@ -280,15 +294,19 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	// Always reset bank selection to zero!!
 	selectBank(0);
 
+	debugPrint("Done!\nPreparing PHY...\n");
+
 	// Initialize PHY Settings
 	// Duplex should be configured by LEDB polarity.
 	// We force half-duplex anyways!
-	phy = readPhyRegister(0x00); // Read PHCON1
-	phy &= ~(1 << 8); // Clear PDPXMD --> Half duplex mode!
-	writePhyRegister(0x00, phy);
 	phy = readPhyRegister(0x10); // Read PHCON2
 	phy |= (1 << 8); // Set HDLDIS to prevent auto loopback in half-duplex mode
 	writePhyRegister(0x10, phy);
+	phy = readPhyRegister(0x00); // Read PHCON1
+	phy &= ~(1 << 8); // Clear PDPXMD --> Half duplex mode!
+	writePhyRegister(0x00, phy);
+
+	debugPrint("Done!\n");
 
 	// Enable Auto Increment for Buffer Writes
 	bitFieldSet(0x1E, (1 << 7)); // Set ECON2.AUTOINC
@@ -319,16 +337,19 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	debugPrint("!\n");
 #endif
 
-	INTDDR &= ~(1 << INTPIN);
-
 	// Enable packet reception
 	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
+
+	macInitialized = 1;
 
 	return 0;
 }
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
 	uint16_t p = readPhyRegister(0x11); // Read PHSTAT2
+	if (!macInitialized) {
+		return 0;
+	}
 #if DEBUG >= 5
 	debugPrint("PHSTAT1: ");
 	debugPrint(hexToString(readPhyRegister(0x01)));
@@ -351,6 +372,10 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	uint16_t a;
 	uint8_t *po;
 #endif
+
+	if (!macInitialized) {
+		return 1;
+	}
 
 	selectBank(0);
 	writeControlRegister(0x04, 0x00); // set ETXSTL
@@ -406,6 +431,9 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 
 uint8_t macPacketsReceived(void) { // Returns number of packets ready
 	uint8_t r;
+	if (!macInitialized) {
+		return 0;
+	}
 	selectBank(1);
 	r = readControlRegister(0x19); // EPKTCNT
 	selectBank(0);
@@ -419,7 +447,13 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	uint8_t d;
 	uint8_t header[6];
 	uint16_t fullLength;
-	Packet *p = (Packet *)mmalloc(sizeof(Packet));
+	Packet *p;
+	
+	if (!macInitialized) {
+		return NULL;
+	}
+	
+	p = (Packet *)mmalloc(sizeof(Packet));
 	if (p == NULL) {
 		return NULL;
 	}

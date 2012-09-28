@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 2 // 0 to receive no debug serial output
+#define DEBUG 0 // 0 to receive no debug serial output
 // 2 to also get a message for every received ARP Request.
 
 #include <std.h>
