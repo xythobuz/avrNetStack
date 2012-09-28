@@ -50,8 +50,15 @@
 #define ACTIVATE() (CSPORT &= ~(1 << CSPIN))
 #define DEACTIVATE() (CSPORT |= (1 << CSPIN))
 
+#define RXSTART 0x0000
+#define RXEND 0x17FF
+#define TXSTART 0x1800
+//#define RXSTART 0x05FF
+//#define RXEND 0x1FFF
+//#define TXSTART 0x0000
+
 uint8_t currentBank = 0;
-uint16_t nextPacketPointer = 0x05FF; // Start of receive buffer
+uint16_t nextPacketPointer = RXSTART; // Start of receive buffer
 uint8_t macInitialized = 0;
 
 MacAddress ownMacAddress;
@@ -177,9 +184,7 @@ uint16_t readPhyRegister(uint8_t a) {
 	bitFieldSet(0x12, 0x01); // Set MICMD.MIIRD, read operation begins
 
 	selectBank(3);
-	debugPrint("ReadPHY: Waiting for Busy Flag!\n");
 	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY to go 0
-	debugPrint("Done!\n");
 
 	selectBank(2);
 	bitFieldClear(0x12, 0x01); // Clear MICMD.MIIRD
@@ -196,9 +201,7 @@ void writePhyRegister(uint8_t a, uint16_t d) {
 	writeControlRegister(0x17, (uint8_t)((d & 0xFF00) >> 8)); // Set MIWRH
 
 	selectBank(3);
-	debugPrint("WritePHY: Waiting for Busy Flag!\n");
 	while(readControlRegister(0x0A) & 0x01); // Wait for MISTAT.BUSY
-	debugPrint("Done!\n");
 
 	selectBank(0);
 }
@@ -248,22 +251,18 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 
 	// Initialization as described in the datasheet, p. 35ff
 	// Set Receive Buffer Size
-	writeControlRegister(0x08, 0xFF); // set ERXSTL
-	writeControlRegister(0x09, 0x05); // set ERXSTH --> 0x05FF
-	writeControlRegister(0x0A, 0xFF); // set ERXNDL
-	writeControlRegister(0x0B, 0x1F); // set ERXNDH --> 0x1FFF
-	writeControlRegister(0x0C, 0xFF); // set ERXRDPTL
-	writeControlRegister(0x0D, 0x05); // set ERXRDPTH --> 0x05FF
+	writeControlRegister(0x08, (RXSTART & 0xFF)); // set ERXSTL
+	writeControlRegister(0x09, (RXSTART & 0xFF00) >> 8); // set ERXSTH --> RXSTART
+	writeControlRegister(0x0A, (RXEND & 0xFF)); // set ERXNDL
+	writeControlRegister(0x0B, (RXEND & 0xFF00) >> 8); // set ERXNDH --> RXEND
+	writeControlRegister(0x08, (RXSTART & 0xFF)); // set ERXRDPTH
+	writeControlRegister(0x09, (RXSTART & 0xFF00) >> 8); // set ERXRDPTH --> RXSTART
 
 	// Default Receive Filters are acceptable.
 	// We get unicast and broadcast packets as long as the crc is correct.
 
-	debugPrint("Waiting for OSC...");
-
 	// Wait for OST
 	while(!(readControlRegister(0x1D) & 0x01)); // Wait until ESTAT.CLKRDY == 1
-
-	debugPrint(" Ready!\nPreparing MAC...\n");
 
 	// Initialize MAC Settings
 	// 1) Set MARXEN to recieve frames. Don't configure full-duplex mode
@@ -294,8 +293,7 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	// Always reset bank selection to zero!!
 	selectBank(0);
 
-	debugPrint("Done!\nPreparing PHY...\n");
-
+	debugPrint("Preparing PHY...");
 	// Initialize PHY Settings
 	// Duplex should be configured by LEDB polarity.
 	// We force half-duplex anyways!
@@ -305,8 +303,7 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	phy = readPhyRegister(0x00); // Read PHCON1
 	phy &= ~(1 << 8); // Clear PDPXMD --> Half duplex mode!
 	writePhyRegister(0x00, phy);
-
-	debugPrint("Done!\n");
+	debugPrint(" Done!\n");
 
 	// Enable Auto Increment for Buffer Writes
 	bitFieldSet(0x1E, (1 << 7)); // Set ECON2.AUTOINC
@@ -378,12 +375,12 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	}
 
 	selectBank(0);
-	writeControlRegister(0x04, 0x00); // set ETXSTL
-	writeControlRegister(0x05, 0x00); // set ETXSTH --> 0x0000
+	writeControlRegister(0x04, (TXSTART & 0xFF)); // set ETXSTL
+	writeControlRegister(0x05, (TXSTART & 0xFF00) >> 8); // set ETXSTH --> TXSTART
 
 	// Write packet data into buffer
-	writeControlRegister(0x02, 0x00); // EWRPTL
-	writeControlRegister(0x03, 0x00); // EWRPTH --> 0x0000
+	writeControlRegister(0x02, (TXSTART & 0xFF)); // EWRPTL
+	writeControlRegister(0x03, (TXSTART & 0xFF00) >> 8); // EWRPTH --> TXSTART
 	writeBufferMemory(&i, 1); // Write 0x00 as control byte
 	writeBufferMemory(p->d, p->dLength); // Write data payload
 
@@ -408,7 +405,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	// Print status vector
 	po = (uint8_t *)mmalloc(7 * sizeof(uint8_t));
 	if (po != NULL) {
-		a = 1 + p->dLength;
+		a = TXSTART + 1 + p->dLength;
 		writeControlRegister(0x00, (uint8_t)(a & 0xFF)); // Set ERDPTL
 		writeControlRegister(0x01, (uint8_t)((a & 0xFF00) >> 8)); // Set ERDPTH
 		readBufferMemory(po, 7); // Read status vector
