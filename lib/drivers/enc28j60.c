@@ -21,11 +21,11 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <avr/wdt.h>
 #include <avr/interrupt.h>
 #include <util/atomic.h>
+#include <util/delay.h>
 
-#define DEBUG 2
+#define DEBUG 3
 // 1 --> ENC28J60 Revision
 // 2 --> 1 + Received and Sent Packets
 // 3 --> 1 + 2 + Raw Sent Packet Dump
@@ -53,9 +53,7 @@
 #define RXSTART 0x0000
 #define RXEND 0x17FF
 #define TXSTART 0x1800
-//#define RXSTART 0x05FF
-//#define RXEND 0x1FFF
-//#define TXSTART 0x0000
+#define TXEND 0x1FFF
 
 uint8_t currentBank = 0;
 uint16_t nextPacketPointer = RXSTART; // Start of receive buffer
@@ -238,8 +236,9 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	INTDDR &= ~(1 << INTPIN); // Interrupt PIN
 
 	spiInit();
-
 	macReset();
+
+	_delay_ms(1); // See Silicon Errata Page 2
 
 	if ((address != NULL) && (address != ownMacAddress)) {
 		for (i = 0; i < 6; i++) {
@@ -374,9 +373,16 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 		return 1;
 	}
 
+	assert(p->dLength > 0);
+	assert(p->dLength < 1500);
+
 	selectBank(0);
 	writeControlRegister(0x04, (TXSTART & 0xFF)); // set ETXSTL
 	writeControlRegister(0x05, (TXSTART & 0xFF00) >> 8); // set ETXSTH --> TXSTART
+
+	if ((TXSTART + p->dLength) >= TXEND) {
+		return 1;
+	}
 
 	// Write packet data into buffer
 	writeControlRegister(0x02, (TXSTART & 0xFF)); // EWRPTL
@@ -420,6 +426,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	}
 #endif
 	if (readControlRegister(0x1D) & (1 << 1)) { // If ESTAT.TXABRT is set
+		debugPrint("Error while sending Packet!\n");
 		return 1; // error
 	} else {
 		return 0;
@@ -442,7 +449,7 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	// check receive status vector for errors, if they exist, throw packet away
 	// else read packet, build MacPacket, return it
 	uint8_t d;
-	uint8_t header[6];
+	uint8_t header[4];
 	uint16_t fullLength;
 	Packet *p;
 	
@@ -473,7 +480,10 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	readBufferMemory(header, 4); // Read status vector
 	fullLength = (uint16_t)header[0];
 	fullLength |= (((uint16_t)header[1]) << 8);
-	
+
+	assert(fullLength > 0);
+	assert(fullLength < 1500);
+
 	if (header[2] & (1 << 7)) {
 		// Received OK
 #if DEBUG >= 2

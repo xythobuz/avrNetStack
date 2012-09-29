@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 0 // 0 to receive no debug serial output
+#define DEBUG 1 // 0 to receive no debug serial output
 // 2 to also get a message for every received ARP Request.
 
 #include <std.h>
@@ -229,15 +229,11 @@ uint8_t arpProcessPacket(Packet *p) {
 				}
 			}
 			debugPrint(" Sending Response...");
-			if (macSendPacket(p)) { // If it doesn't work, we can't do anything...
-				// ...except trying again.
-				debugPrint(" Again...");
-				if (macSendPacket(p)) {
-					mfree(p->d, p->dLength);
-					mfree(p, sizeof(Packet));
-					debugPrint(" Error!\n");
-					return 1;
-				}
+			if (macSendPacket(p)) {
+				mfree(p->d, p->dLength);
+				mfree(p, sizeof(Packet));
+				debugPrint(" Error!\n");
+				return 1;
 			}
 			mfree(p->d, p->dLength);
 			mfree(p, sizeof(Packet));
@@ -379,7 +375,7 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
 		mfree(p->d, p->dLength);
 		mfree(p, sizeof(Packet));
 		if (i) {
-			debugPrint(" Couldn't send!\n");
+			debugPrint(" Error!\n");
 			return NULL;
 		} else {
 			debugPrint(" Done!\n");

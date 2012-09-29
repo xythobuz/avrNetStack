@@ -23,7 +23,6 @@
 
 #include <time.h>
 #include <serial.h>
-#include <avr/wdt.h>
 
 #include <debug.h>
 

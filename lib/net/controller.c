@@ -130,6 +130,7 @@ void networkLoop(void) {
 	scheduler();
 	wdt_reset();
 	tasks();
+	wdt_reset();
 }
 
 uint8_t networkHandler(void) {

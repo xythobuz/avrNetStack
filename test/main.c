@@ -52,6 +52,11 @@ IPv4Address defGateway = {192, 168, 0, 1};
 IPv4Address testIp = { 192, 168, 0, 103 };
 #define TESTPORT 6600
 
+uint8_t pingState = 0, pingMode = 0;
+time_t pingTime, responseTime;
+IPv4Address pingIpA = { 192, 168, 0, 103 };
+IPv4Address pingIpB = { 80, 150, 6, 143 };
+
 int main(void) {
 	uint8_t i;
 
@@ -101,12 +106,8 @@ int main(void) {
 	addTimedTask(heartbeat, 500); // Toggle LED every 500ms
 	addConditionalTask(serialHandler, serialHasChar); // Execute Serial Handler if char received
 
-	// Run Task Manager and Scheduler
-	serialWriteString("Looping...\n");
-	while (1) {
-		wdt_reset();
-		networkLoop();
-	}
+	while (1)
+		networkLoop(); // Runs task manager and scheduler, resets watchdog timer for us
 
 	return 0;
 }
@@ -135,11 +136,6 @@ void printArpTable(void) {
 void heartbeat(void) {
 	PORTA ^= (1 << PA6); // Toggle LED
 }
-
-uint8_t pingState = 0, pingMode = 0;
-time_t pingTime, responseTime;
-IPv4Address pingIpA = { 192, 168, 0, 103 };
-IPv4Address pingIpB = { 80, 150, 6, 143 };
 
 void pingInterrupt(Packet *p) {
 	responseTime = getSystemTime();

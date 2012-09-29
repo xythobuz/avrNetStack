@@ -21,6 +21,8 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
+#include <avr/wdt.h>
+
 // #define DISABLE_HEAP_LOG // Uncomment to disable counting allocated bytes
 
 #define DEBUGOUT(x) serialWriteString(x) // Debug Output Function
@@ -36,7 +38,8 @@
 		DEBUGOUT(__func__);					\
 		DEBUGOUT(": Assertion '");			\
 		DEBUGOUT(#x);						\
-		DEBUGOUT("' failed.\nResetting\n");	\
+		DEBUGOUT("' failed.\n");			\
+		DEBUGOUT("Reset in 2 Seconds.\n");	\
 		wdt_enable(WDTO_2S);				\
 		while(1);							\
 	}										\
