@@ -28,21 +28,30 @@
 #define DEBUGOUT(x) serialWriteString(x) // Debug Output Function
 
 // assert Implementation
-#define ASSERTFUNC(x) ({ 					\
-	if (!(x)) {								\
-		DEBUGOUT("Error: ");				\
-		DEBUGOUT(__FILE__);					\
-		DEBUGOUT(":");						\
-		DEBUGOUT(timeToString(__LINE__));	\
-		DEBUGOUT(" ");						\
-		DEBUGOUT(__func__);					\
-		DEBUGOUT(": Assertion '");			\
-		DEBUGOUT(#x);						\
-		DEBUGOUT("' failed.\n");			\
-		DEBUGOUT("Reset in 2 Seconds.\n");	\
-		wdt_enable(WDTO_2S);				\
-		while(1);							\
-	}										\
+#define ASSERTFUNC(x) ({ 							\
+	time_t s = getSystemTime();						\
+	if (!(x)) {										\
+		if (DEBUG != 0) {							\
+			debugPrint("Error: ");					\
+			debugPrint(__FILE__);					\
+			debugPrint(":");						\
+			debugPrint(timeToString(__LINE__));		\
+			debugPrint(" ");						\
+			debugPrint(__func__);					\
+			debugPrint(": Assertion '");			\
+			debugPrint(#x);							\
+			debugPrint("' failed.\n");				\
+			debugPrint("Reset in 5 Seconds.\n");	\
+			wdt_enable(WDTO_2S);					\
+			while(1) {								\
+				if ((s + 3000) > getSystemTime()) {	\
+					wdt_reset();					\
+				}									\
+			}										\
+		} else {									\
+			wdt_enable(WDTO_15MS);					\
+		}											\
+	}												\
 })
 
 // Macro Magic

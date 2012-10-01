@@ -30,10 +30,12 @@ typedef uint8_t MacAddress[6];
 
 #include <net/controller.h>
 
-#define MACPreambleSize 0x0E
+#define MACPreambleSize 14
 #define MACDestinationOffset 0
 #define MACSourceOffset 6
 #define MACTypeOffset 12
+
+#define MaxPacketSize 1518 // Max EthernetII Packet Size
 
 extern MacAddress ownMacAddress;
 

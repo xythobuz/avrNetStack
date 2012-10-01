@@ -136,6 +136,10 @@ void udpInit(void) {}
 uint8_t udpHandlePacket(Packet *p) {
 	uint8_t i;
 	uint16_t ocs = 0x0000, cs = 0x0000;
+
+	assert(p->dLength > (UDPOffset + UDPDataOffset));
+	assert(p->dLength < MaxPacketSize);
+
 #ifndef DISABLE_UDP_CHECKSUM
 	ocs = get16Bit(p->d, UDPOffset + UDPChecksumOffset);
 	cs = udpChecksum(p);

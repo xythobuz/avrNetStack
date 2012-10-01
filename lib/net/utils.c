@@ -51,13 +51,13 @@ uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l) {
 void dumpPacketRaw(Packet *p) {
 #if DEBUG >= 1
 	uint16_t i;
-	debugPrint("\nRaw Packet Dump:\n");
+	debugPrint("Raw Packet Dump: ");
 	for (i = 0; i < p->dLength; i++) {
 		debugPrint(hex2ToString(p->d[i]));
 		if (i < (p->dLength - 1)) {
 			debugPrint(" ");
 		}
 	}
-	debugPrint("\n\n");
+	debugPrint("\n");
 #endif
 }

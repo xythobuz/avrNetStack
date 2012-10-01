@@ -177,6 +177,10 @@ uint8_t ipv4ProcessPacket(Packet *p) {
 #if DEBUG >= 2
 	uint8_t i;
 #endif
+
+	assert(p->dLength > (MACPreambleSize + IPv4PacketHeaderLength)); // Big enough
+	assert(p->dLength < MaxPacketSize); // Not too big
+
 #ifndef DISABLE_IPV4_CHECKSUM
 	cs = checksum(p->d + MACPreambleSize, IPv4PacketHeaderLength);
 #endif

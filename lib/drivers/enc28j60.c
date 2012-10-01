@@ -25,7 +25,7 @@
 #include <util/atomic.h>
 #include <util/delay.h>
 
-#define DEBUG 3
+#define DEBUG 4
 // 1 --> ENC28J60 Revision
 // 2 --> 1 + Received and Sent Packets
 // 3 --> 1 + 2 + Raw Sent Packet Dump
@@ -58,6 +58,7 @@
 uint8_t currentBank = 0;
 uint16_t nextPacketPointer = RXSTART; // Start of receive buffer
 uint8_t macInitialized = 0;
+uint8_t statusVector[7];
 
 MacAddress ownMacAddress;
 
@@ -264,18 +265,19 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	while(!(readControlRegister(0x1D) & 0x01)); // Wait until ESTAT.CLKRDY == 1
 
 	// Initialize MAC Settings
-	// 1) Set MARXEN to recieve frames. Don't configure full-duplex mode
+	// 1) Set MARXEN to recieve frames. Configure full-duplex mode.
 	selectBank(2);
-	bitFieldSet(0x00, 0x01);
-	// 2) Configure PADCFG, TXCRCEN.
-	bitFieldSet(0x02, 0xF2); // Pad to 64bytes, auto CRC, check Framelength
+	bitFieldSet(0x00, 0x0D); // Set MACON1.MARXEN, RXPAUS, TXPAUS
+
+	// 2) Configure PADCFG, TXCRCEN, FULDPX.
+	bitFieldSet(0x02, 0xF3); // Pad to 64bytes, auto CRC, check Framelength, Full Duplex
 	// 3) Configure MACON4, for conformance set DEFER
 	bitFieldSet(0x03, 0x40);
-	// 4) Program MAMXFL to 0x5ee --> max frame length 
+	// 4) Program MAMXFL to 0x5EE --> max frame length 
 	writeControlRegister(0x0A, 0xEE); // MAMXFLL -> 0xEE
 	writeControlRegister(0x0B, 0x05); // MAMXFLH -> 0x05
 	// 5) Configure MABBIPG with 0x15 (full duplex) or 0x12 (half duplex)
-	writeControlRegister(0x04, 0x12);
+	writeControlRegister(0x04, 0x15);
 	// 6) Set MAIPGL to 0x12
 	writeControlRegister(0x06, 0x12);
 	// 7) If half duplex, set MAIPGH to 0x0C
@@ -300,16 +302,15 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	phy |= (1 << 8); // Set HDLDIS to prevent auto loopback in half-duplex mode
 	writePhyRegister(0x10, phy);
 	phy = readPhyRegister(0x00); // Read PHCON1
-	phy &= ~(1 << 8); // Clear PDPXMD --> Half duplex mode!
+	phy |= (1 << 8); // Set PDPXMD --> Full duplex mode!
 	writePhyRegister(0x00, phy);
 	debugPrint(" Done!\n");
 
 	// Enable Auto Increment for Buffer Writes
 	bitFieldSet(0x1E, (1 << 7)); // Set ECON2.AUTOINC
 
-	// Enable Packet Receive Interrupt on falling edge
-	// Set EIE.PKTIE and EIE.INTIE
-	bitFieldSet(0x1B, ((1 << 7) | (1 << 6)));
+	// Set EIE.PKTIE and EIE.INTIE and EIE.TXIE and EIE.TXERIE
+	bitFieldSet(0x1B, ((1 << 7) | (1 << 6) | (1 << 3) | (1 << 1)));
 
 	// Set LED Mode. LEDA Receive and Link, LEDB Transmit --> PHLCON = 0x3C12
 	writePhyRegister(0x14, 0x3C12);
@@ -364,17 +365,14 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	// Place Frame data in buffer, with a preceding control byte
 	// This control byte can be 0x00, as we set everything needed in MACON3
 	uint8_t i = 0x00;
-#if DEBUG >= 4
 	uint16_t a;
-	uint8_t *po;
-#endif
 
 	if (!macInitialized) {
 		return 1;
 	}
 
 	assert(p->dLength > 0);
-	assert(p->dLength < 1500);
+	assert(p->dLength < MaxPacketSize);
 
 	selectBank(0);
 	writeControlRegister(0x04, (TXSTART & 0xFF)); // set ETXSTL
@@ -393,38 +391,67 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	writeControlRegister(0x06, (uint8_t)(p->dLength & 0x00FF)); // ETXNDL
 	writeControlRegister(0x07, (uint8_t)((p->dLength & 0xFF00) >> 8)); // ETXNDH --> dLength
 
+	// Silicon Errata Issue 12: Reset Transmit Logic before starting transmission
+	bitFieldSet(0x1F, 0x80); // Set ECON1.TXRST
+	bitFieldClear(0x1F, 0x80); // Clear ECON1.TXRST
+
+	// Silicon Errata Issue 13
+	bitFieldClear(0x1C, 0x0A); // Clear EIR.TXERIF & TXIF
+
 	bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
 
 #if DEBUG >= 3
 	dumpPacketRaw(p);
 #endif
 
-	while(readControlRegister(0x1F) & 0x08); // Wait for finish or abort, ECON1.TXRTS
+	while((readControlRegister(0x1C) & 0x0A) == 0); // Wait for TXIF & TXERIF
+
+	bitFieldClear(0x1F, 0x08); // Clear ECON1.TXRTS, Silicon Errata Issue 13
 
 #if DEBUG >= 2
-	debugPrint("Sent Packet with ");
+	debugPrint("Sending Packet with ");
 	debugPrint(timeToString(p->dLength));
 	debugPrint(" bytes...\n");
 #endif
 
+	// Get status vector
+	a = TXSTART + 1 + p->dLength; // 1 Control byte in front
+	writeControlRegister(0x00, (uint8_t)(a & 0xFF)); // Set ERDPTL
+	writeControlRegister(0x01, (uint8_t)((a & 0xFF00) >> 8)); // Set ERDPTH
+	readBufferMemory(statusVector, 7); // Read status vector
+
 #if DEBUG >= 4
 	// Print status vector
-	po = (uint8_t *)mmalloc(7 * sizeof(uint8_t));
-	if (po != NULL) {
-		a = TXSTART + 1 + p->dLength;
-		writeControlRegister(0x00, (uint8_t)(a & 0xFF)); // Set ERDPTL
-		writeControlRegister(0x01, (uint8_t)((a & 0xFF00) >> 8)); // Set ERDPTH
-		readBufferMemory(po, 7); // Read status vector
-		debugPrint("Status Vector:\n");
-		for (i = 0; i < 7; i++) {
-			debugPrint(timeToString(i));
-			debugPrint(": ");
-			debugPrint(hexToString(po[i]));
+	debugPrint("Status Vector:\n");
+	for (i = 0; i < 7; i++) {
+		debugPrint(hex2ToString(statusVector[i]));
+		if (i < 6)
+			debugPrint(" ");
+		else
 			debugPrint("\n");
-		}
-		mfree(po, 7 * sizeof(uint8_t));
 	}
 #endif
+
+	// Retransmit logic as described in silicon errata issue 13
+	for (i = 0; i < 15; i++) {
+		// if TXERIF and late collision
+		if ((readControlRegister(0x1C) & 0x02) && (statusVector[3] & 0x20)) {
+			debugPrint("Retransmitting packet...\n");
+			bitFieldSet(0x1F, 0x80); // Set ECON1.TXRST
+			bitFieldClear(0x1F, 0x80); // Clear ECON1.TXRST
+			bitFieldClear(0x1C, 0x0A); // Clear EIR.TXERIF & TXIF
+			bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
+			while((readControlRegister(0x1C) & 0x0A) == 0); // Wait for TXIF & TXERIF
+			bitFieldClear(0x1F, 0x08); // Clear ECON1.TXRTS
+			a = TXSTART + 1 + p->dLength; // 1 Control byte in front
+			writeControlRegister(0x00, (uint8_t)(a & 0xFF)); // Set ERDPTL
+			writeControlRegister(0x01, (uint8_t)((a & 0xFF00) >> 8)); // Set ERDPTH
+			readBufferMemory(statusVector, 7); // Read status vector
+		} else {
+			break;
+		}
+	}
+
 	if (readControlRegister(0x1D) & (1 << 1)) { // If ESTAT.TXABRT is set
 		debugPrint("Error while sending Packet!\n");
 		return 1; // error
@@ -482,7 +509,7 @@ Packet *macGetPacket(void) { // Returns NULL on error
 	fullLength |= (((uint16_t)header[1]) << 8);
 
 	assert(fullLength > 0);
-	assert(fullLength < 1500);
+	assert(fullLength < MaxPacketSize);
 
 	if (header[2] & (1 << 7)) {
 		// Received OK

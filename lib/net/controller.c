@@ -24,7 +24,7 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
-#define DEBUG 2 // 0 to receive no debug serial output
+#define DEBUG 1 // 0 to receive no debug serial output
 // 1 -> Init & Error Messages
 // 2 -> Message for each received packet and it's type
 
@@ -145,17 +145,10 @@ uint8_t networkHandler(void) {
 			debugPrint(" bytes should be allocated...\n");
 			return 1;
 		}
-		if ((p->dLength == 0) || (p->dLength > 1600)) {
-			debugPrint("ENC gives invalid data (");
-			debugPrint(timeToString(p->dLength));
-			debugPrint("). Resetting...\n");
-			// This is not enough, so we reset the entire CPU!
-			// macInitialize(NULL); // already initialized
-			// mfree(p->d, p->dLength);
-			// mfree(p, sizeof(Packet));
-			wdt_enable(WDTO_15MS);
-			while(1);
-		}
+
+		assert(p->dLength != 0);
+		assert(p->dLength <= MaxPacketSize);
+
 		if (p->d == NULL) {
 			debugPrint("Not enough memory to receive packet with ");
 			debugPrint(timeToString(p->dLength));

@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 0 // 0 to receive no debug serial output
 // 2 to also get a message for every received ARP Request.
 
 #include <std.h>
@@ -196,6 +196,7 @@ uint8_t arpProcessPacket(Packet *p) {
 	uint8_t i;
 
 	assert(arpTableSize > 0); // At least the broadcast MAC should be there
+	assert(p->dLength >= (ARPOffset + ARPPacketSize)); // Has correct length?
 
 	if (!(isEqualFlash(p->d + MACPreambleSize, ArpPacketHeader, HEADERLENGTH) && (p->dLength >= (HEADERLENGTH + 22 + MACPreambleSize)))) {
 		// Packet invalid
