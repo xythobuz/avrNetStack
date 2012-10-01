@@ -361,5 +361,5 @@ if (isset($_GET['v'])) {
 	}
 }
 ?>
-<p>2012, <a href="http://www.xythobuz.org">Thomas Buck</a>&lt;xythobuz@xythobuz.org&gt;. Part of <a href="https://github.com/xythobuz/avrNetStack">avrNetStack</a>. Licensed under <a href="http://www.gnu.org/licenses/gpl-3.0.html">GPLv3</a>.
+<p>2012, <a href="http://www.xythobuz.org">Thomas Buck</a>&lt;xythobuz@xythobuz.org&gt;. Part of <a href="https://github.com/xythobuz/avrNetStack">avrNetStack</a>. Licensed under <a href="http://www.gnu.org/licenses/lgpl-3.0.html">LGPLv3</a>.
 </body></html>
