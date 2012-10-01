@@ -12,10 +12,155 @@ if (isset($_GET['v'])) {
 	$v = str_replace("0x", "", $_GET['v']);
 	$v = str_replace(" ", "", $v);
 
-	if (strlen($v) != 14) {
-		echo "<h2>No valid Status Vector!</h2>\n";
-	} else {
-		echo "<h3>Valid Status Vector!</h3>\n";
+	if (strlen($v) == 8) {
+		echo "<h3>Valid Receive Status Vector!</h3>\n";
+		echo "<table border=\"1\"><tr><th>Field</th><th>Value</th><th>Description</th></tr>";
+
+		// Bit 0-15: Received Byte Count
+		echo "<tr><td>Received Byte Count</td><td";
+		if (hexdec(substr($v, 2, 2).substr($v, 0, 2)) > 1518) {
+			echo " bgcolor=\"#FF0000\"";
+		} else {
+			echo " bgcolor=\"#00FF00\"";
+		}
+		echo ">";
+		echo hexdec(substr($v, 2, 2).substr($v, 0, 2));
+		echo "</td><td>Indicates length of the received frame. This includes the destination address, source address, type/length, data, padding and CRC fields. This field is stored in little-endian format.</td></tr>\n";
+
+		// Bit 16: Long Event/Drop Event
+		echo "<tr><td>Long Event/Drop Event</td><td";
+		if ((hexdec(substr($v, 5, 1)) & 0x01) != 0) {
+			echo " bgcolor=\"#FF0000\">Yes";
+		} else {
+			echo " bgcolor=\"#00FF00\">No";
+		}
+		echo "</td><td>Indicates a packet over 50,000 bit times occurred or that a packet was dropped since the last receive.</td></tr>\n";
+
+		// Bit 17: Reserved
+
+		// Bit 18: Carrier Event Previously Seen
+		echo "<tr><td>Carrier Event Previously Seen</td><td>";
+		if ((hexdec(substr($v, 5, 1)) & 0x04) != 0) {
+			echo "Yes";
+		} else {
+			echo "No";
+		}
+		echo "</td><td>Indicates that at some time since the last receive, a carrier event was detected. The carrier event is not associated with this packet. A carrier event is activity on the receive channel that does not result in a packet receive attempt being made.</td></tr>\n";
+
+		// Bit 19: Reserved
+
+		// Bit 20: CRC Error
+		echo "<tr><td>CRC Error</td><td";
+		if ((hexdec(substr($v, 4, 1)) & 0x01) != 0) {
+			echo " bgcolor=\"#FF0000\">Yes";
+		} else {
+			echo " bgcolor=\"#00FF00\">No";
+		}
+		echo "</td><td>Indicates that frame CRC field value does not match the CRC calculated by the MAC.</td></tr>\n";
+
+		// Bit 21: Length Check Error
+		echo "<tr><td>Length Check Error</td><td";
+		if ((hexdec(substr($v, 4, 1)) & 0x02) != 0) {
+			echo " bgcolor=\"#FF0000\">Yes";
+		} else {
+			echo " bgcolor=\"#00FF00\">No";
+		}
+		echo "</td><td>Indicates that frame length field value in the packet does not match the actual data byte length and specifies a valid length.</td></tr>\n";
+
+		// Bit 22: Length Out of Range
+		echo "<tr><td>Length Out of Range</td><td";
+		if ((hexdec(substr($v, 4, 1)) & 0x04) != 0) {
+			echo " bgcolor=\"#FF0000\">Yes";
+		} else {
+			echo " bgcolor=\"#00FF00\">No";
+		}
+		echo "</td><td>Indicates that frame type/length field was larger than 1500 bytes (type field).</td></tr>\n";
+
+		// Bit 23: Received OK
+		echo "<tr><td>Received OK</td><td";
+		if ((hexdec(substr($v, 4, 1)) & 0x08) != 0) {
+			echo " bgcolor=\"#00FF00\">Yes";
+		} else {
+			echo " bgcolor=\"#FF0000\">No";
+		}
+		echo "</td><td>Indicates that at the packet had a valid CRC and no symbol errors.</td></tr>\n";
+
+		// Bit 24: Receive Multicast Packet
+		echo "<tr><td>Receive Multicast Packet</td><td>";
+		if ((hexdec(substr($v, 7, 1)) & 0x01) != 0) {
+			echo "Yes";
+		} else {
+			echo "No";
+		}
+		echo "</td><td>Indicates packet received had a valid Multicast address.</td></tr>\n";
+
+		// Bit 25: Receive Broadcast Packet
+		echo "<tr><td>Receive Broadcast Packet</td><td>";
+		if ((hexdec(substr($v, 7, 1)) & 0x02) != 0) {
+			echo "Yes";
+		} else {
+			echo "No";
+		}
+		echo "</td><td>Indicates packet received had a valid Broadcast address.</td></tr>\n";
+
+		// Bit 26: Dribble Nibble
+		echo "<tr><td>Dribble Nibble</td><td";
+		if ((hexdec(substr($v, 7, 1)) & 0x04) != 0) {
+			echo " bgcolor=\"#FF0000\">Yes";
+		} else {
+			echo " bgcolor=\"#00FF00\">No";
+		}
+		echo "</td><td>Indicates that after the end of this packet, an additional 1 to 7 bits were received. The extra bits were thrown away.</td></tr>\n";
+
+		// Bit 27: Receive Control Frame
+		echo "<tr><td>Receive Control Frame</td><td>";
+		if ((hexdec(substr($v, 7, 1)) & 0x08) != 0) {
+			echo "Yes";
+		} else {
+			echo "No";
+		}
+		echo "</td><td>Current frame was recognized as a control frame for having a valid type/length designating it as a control frame.</td></tr>\n";
+
+		// Bit 28: Receive Pause Control Frame
+		echo "<tr><td>Receive Pause Control Frame</td><td>";
+		if ((hexdec(substr($v, 6, 1)) & 0x01) != 0) {
+			echo "Yes";
+		} else {
+			echo "No";
+		}
+		echo "</td><td>Current frame was recognized as a control frame containing a valid pause frame opcode and a valid destination address.</td></tr>\n";
+
+		// Bit 29: Receive Unknown Opcode
+		echo "<tr><td>Receive Unknown Opcode</td><td>";
+		if ((hexdec(substr($v, 6, 1)) & 0x02) != 0) {
+			echo "Yes";
+		} else {
+			echo "No";
+		}
+		echo "</td><td>Current frame was recognized as a control frame but it contained an unknown opcode.</td></tr>\n";
+
+		// Bit 30: Receive VLAN Type Detected
+		echo "<tr><td>Receive VLAN Type Detected</td><td>";
+		if ((hexdec(substr($v, 6, 1)) & 0x04) != 0) {
+			echo "Yes";
+		} else {
+			echo "No";
+		}
+		echo "</td><td>Current frame was recognized as a VLAN tagged frame.</td></tr>\n";
+
+		// Bit 31: Zero
+		echo "<tr><td>Always &quot;No&quot;</td><td";
+		if ((hexdec(substr($v, 6, 1)) & 0x08) != 0) {
+			echo " bgcolor=\"#FF0000\">Yes";
+		} else {
+			echo " bgcolor=\"#00FF00\">No";
+		}
+		echo "</td><td>0</td></tr>\n";
+?>
+</table>
+<?
+	} else if (strlen($v) == 14) {
+		echo "<h3>Valid Transmit Status Vector!</h3>\n";
 		echo "<table border=\"1\"><tr><th>Field</th><th>Value</th><th>Description</th></tr>";
 
 		// Bit 0-15: Transmit Byte Count
@@ -210,6 +355,9 @@ if (isset($_GET['v'])) {
 ?>
 </table>
 <?
+	} else {
+		echo "<h3>Not a Valid Status Vector!</h3>\n";
+		echo "<p>If there are single-digit hex numbers, add a leading zero...</p>\n";
 	}
 }
 ?>

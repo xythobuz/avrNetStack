@@ -72,6 +72,8 @@ int main(void) {
 
 	sei(); // Enable Interrupts so we get UART data before entering networkInit
 
+	wdt_enable(WDTO_2S);
+
 	networkInit(mac, defIp, defSubnet, defGateway);
 
 	serialWriteString(getString(0)); // avrNetStack-Debug
@@ -98,8 +100,6 @@ int main(void) {
 		while(!macLinkIsUp());
 	}
 	serialWriteString(getString(3)); // Link is up
-
-	wdt_enable(WDTO_2S);
 
 	PORTA &= ~((1 << PA7) | (1 << PA6)); // LEDs off
 

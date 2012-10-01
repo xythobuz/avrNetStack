@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
+#include <string.h>
 
 #define DEBUG 1 // 0 to receive no debug serial output
 // 1 -> Init & Error Messages
@@ -56,11 +57,19 @@ char *hexToString(uint64_t s) {
 	buff[0] = '0';
 	buff[1] = 'x';
 	ultoa(s, (buff + 2), 16);
+	if ((strlen(buff + 2) % 2) != 0) {
+		memmove(buff + 3, buff + 2, strlen(buff + 2)); // Make room for...
+		buff[2] = '0'; // ...trailing zero
+	}
 	return buff;
 }
 
 char *hex2ToString(uint64_t s) {
 	ultoa(s, buff, 16);
+	if ((strlen(buff) % 2) != 0) {
+		memmove(buff + 1, buff, strlen(buff)); // Make room for...
+		buff[0] = '0'; // ...trailing zero
+	}
 	return buff;
 }
 
