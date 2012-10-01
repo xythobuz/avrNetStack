@@ -25,7 +25,7 @@
 #include <util/atomic.h>
 #include <util/delay.h>
 
-#define DEBUG 4
+#define DEBUG 1
 // 1 --> ENC28J60 Revision
 // 2 --> 1 + Received and Sent Packets
 // 3 --> 1 + 2 + Raw Sent Packet Dump
@@ -56,7 +56,10 @@
 #define TXEND 0x1FFF
 
 #if RXSTART > RXEND
-#error "Receive Buffer Overlap not suppoerted!"
+#error "ENC28J60 Receive Buffer Overlap not suppoerted!"
+#endif
+#if TXSTART > TXEND
+#error "ENC28J60 Transmit Buffer Overlap not suppoerted!"
 #endif
 
 uint8_t currentBank = 0;
@@ -405,8 +408,8 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	writeBufferMemory(&i, 1); // Write 0x00 as control byte
 	writeBufferMemory(p->d, p->dLength); // Write data payload
 
-	writeControlRegister(0x06, (uint8_t)(p->dLength & 0x00FF)); // ETXNDL
-	writeControlRegister(0x07, (uint8_t)((p->dLength & 0xFF00) >> 8)); // ETXNDH --> dLength
+	writeControlRegister(0x06, (uint8_t)((TXSTART + p->dLength) & 0x00FF)); // ETXNDL
+	writeControlRegister(0x07, (uint8_t)(((TXSTART + p->dLength) & 0xFF00) >> 8)); // ETXNDH --> dLength + TXSTART
 
 	// Silicon Errata Issue 12: Reset Transmit Logic before starting transmission
 	bitFieldSet(0x1F, 0x80); // Set ECON1.TXRST
