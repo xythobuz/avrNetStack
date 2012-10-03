@@ -29,10 +29,9 @@
 
 // assert Implementation
 #define ASSERTFUNC(x) ({ 							\
-	time_t s = getSystemTime();						\
 	if (!(x)) {										\
 		if (DEBUG != 0) {							\
-			debugPrint("Error: ");					\
+			debugPrint("\nError: ");				\
 			debugPrint(__FILE__);					\
 			debugPrint(":");						\
 			debugPrint(timeToString(__LINE__));		\
@@ -41,15 +40,12 @@
 			debugPrint(": Assertion '");			\
 			debugPrint(#x);							\
 			debugPrint("' failed.\n");				\
-			debugPrint("Reset in 5 Seconds.\n");	\
+			debugPrint("Reset in 2 Seconds.\n\n");	\
 			wdt_enable(WDTO_2S);					\
-			while(1) {								\
-				if ((s + 3000) > getSystemTime()) {	\
-					wdt_reset();					\
-				}									\
-			}										\
+			while(1);								\
 		} else {									\
 			wdt_enable(WDTO_15MS);					\
+			while(1);								\
 		}											\
 	}												\
 })
@@ -58,6 +54,10 @@
 // Controls Debug Output with DEBUG definition.
 // Define DEBUG before including this file!
 // Disables all debug output if NDEBUG is defined
+
+#ifdef NODEBUG
+#define NDEBUG NODEBUG
+#endif
 
 #if (!(defined(NDEBUG)))
 #define assert(x) ASSERTFUNC(x)

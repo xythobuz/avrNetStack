@@ -58,7 +58,7 @@ char *hexToString(uint64_t s) {
 	buff[1] = 'x';
 	ultoa(s, (buff + 2), 16);
 	if ((strlen(buff + 2) % 2) != 0) {
-		memmove(buff + 3, buff + 2, strlen(buff + 2)); // Make room for...
+		memmove(buff + 3, buff + 2, strlen(buff + 2) + 1); // Make room for...
 		buff[2] = '0'; // ...trailing zero
 	}
 	return buff;
@@ -67,7 +67,7 @@ char *hexToString(uint64_t s) {
 char *hex2ToString(uint64_t s) {
 	ultoa(s, buff, 16);
 	if ((strlen(buff) % 2) != 0) {
-		memmove(buff + 1, buff, strlen(buff)); // Make room for...
+		memmove(buff + 1, buff, strlen(buff) + 1); // Make room for...
 		buff[0] = '0'; // ...trailing zero
 	}
 	return buff;

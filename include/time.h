@@ -33,8 +33,12 @@ time_t getSystemTimeSeconds(void); // System uptime in seconds
 time_t diffTime(time_t a, time_t b);
 
 uint8_t daysInMonth(uint8_t month, uint16_t year);
+uint8_t isLeapYear(uint16_t year);
 
 void setTimestamp(time_t unix);
 void setNtpTimestamp(time_t ntp);
+
+void convertTimestamp(time_t stamp, uint16_t *y, uint8_t *m, uint8_t *d,
+						uint8_t *h, uint8_t *min, uint8_t *sec);
 
 #endif

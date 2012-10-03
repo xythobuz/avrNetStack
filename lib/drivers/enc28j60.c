@@ -493,10 +493,10 @@ uint8_t macPacketsReceived(void) { // Returns number of packets ready
 	return r;
 }
 
-Packet *macGetPacket(void) { // Returns NULL on error
+Packet *macGetPacket(void) { // Returns NULL or Packet with d == NULL on error
 	// Read and store next packet pointer,
 	// check receive status vector for errors, if they exist, throw packet away
-	// else read packet, build MacPacket, return it
+	// else read packet, return it
 	uint8_t d;
 	uint8_t header[4];
 	uint16_t fullLength;

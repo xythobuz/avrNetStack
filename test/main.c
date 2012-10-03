@@ -208,7 +208,8 @@ void pingTool(void) {
 }
 
 void serialHandler(void) {
-	uint8_t i;
+	uint8_t i, j, k, l, m;
+	uint16_t n;
 	Packet *p;
 	
 	char c = serialGet();
@@ -218,7 +219,18 @@ void serialHandler(void) {
 	serialWriteString(getString(7)); // ": "
 	switch(c) {
 		case 't': // Time
-			serialWriteString(timeToString(getSystemTimeSeconds()));
+			convertTimestamp(getSystemTimeSeconds(), &n, &m, &l, &k, &j, &i);
+			serialWriteString(timeToString(l)); // day
+			serialWrite('.');
+			serialWriteString(timeToString(m)); // month
+			serialWrite('.');
+			serialWriteString(timeToString(n)); // year
+			serialWrite(' ');
+			serialWriteString(timeToString(k)); // hour
+			serialWrite(':');
+			serialWriteString(timeToString(j)); // minutes
+			serialWrite(':');
+			serialWriteString(timeToString(i)); // seconds
 			serialWriteString(getString(15)); // "\n"
 			break;
 		case 'p': // Ping Internet
