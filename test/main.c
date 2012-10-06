@@ -214,8 +214,6 @@ void serialHandler(void) {
 	
 	char c = serialGet();
 	serialWrite(c - 32); // to uppercase
-	serialWriteString(getString(28)); // " - "
-	serialWriteString(timeToString(getSystemTimeSeconds()));
 	serialWriteString(getString(7)); // ": "
 	switch(c) {
 		case 't': // Time

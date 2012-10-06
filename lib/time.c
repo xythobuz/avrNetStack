@@ -174,6 +174,11 @@ void convertTimestamp(time_t stamp, uint16_t *y, uint8_t *m, uint8_t *d,
 						uint8_t *h, uint8_t *min, uint8_t *sec) {
 	uint8_t c;
 	uint32_t max;
+
+	if ((y == NULL) || (m == NULL) || (d == NULL) || (h == NULL) || (min == NULL) || (sec == NULL)) {
+		return;
+	}
+
 	*y = 1970;
 	*m = 1;
 	*d = 1;

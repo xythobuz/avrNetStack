@@ -50,6 +50,7 @@
 #define ACTIVATE() (CSPORT &= ~(1 << CSPIN))
 #define DEACTIVATE() (CSPORT |= (1 << CSPIN))
 
+// Silicon Errata Issue 5
 #define RXSTART 0x0000
 #define RXEND 0x17FF
 #define TXSTART 0x1800
@@ -61,6 +62,12 @@
 #if TXSTART > TXEND
 #error "ENC28J60 Transmit Buffer Overlap not suppoerted!"
 #endif
+#if (RXEND-RXSTART) < 1500
+#warning "ENC28J60 Receive Buffer may be too small..."
+#endif
+#if (TXEND-TXSTART) < 1500
+#warning "ENC28J60 Transmit Buffer may be too small..."
+#endif
 
 uint8_t currentBank = 0;
 uint16_t nextPacketPointer = RXSTART; // Start of receive buffer
@@ -69,105 +76,13 @@ uint8_t statusVector[7];
 
 MacAddress ownMacAddress;
 
-#define A_BLOCK() ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-// #define A_BLOCK() if(1)
-
-// ----------------------------------
-// |      ENC28J60 Command Set      |
-// ----------------------------------
-
-uint8_t readControlRegister(uint8_t a) {
-	uint8_t r;
-	// Opcode: 000
-	// Argument: aaaaa
-	A_BLOCK() {
-		ACTIVATE();
-		spiSendByte(a & 0x1F);
-		// Dummy byte if MAC or MII Register
-		if (((currentBank == 2) && (a < 0x1B))
-			|| ((currentBank == 3) && ((a <= 0x05) || (a == 0x0A)))) {
-			spiReadByte();
-		}
-
-		r = spiReadByte();
-		DEACTIVATE();
-	}
-	return r;
-}
-
-uint8_t *readBufferMemory(uint8_t *d, uint8_t length) {
-	uint8_t i;
-	A_BLOCK() {
-		ACTIVATE();
-		spiSendByte(0x3A);
-		for (i = 0; i < length; i++) {
-			d[i] = spiReadByte();
-		}
-		DEACTIVATE();
-	}
-	return d;
-}
-
-void writeControlRegister(uint8_t a, uint8_t d) {
-	// Opcode: 010
-	// Argument: aaaaa
-	// Following: dddddddd
-	A_BLOCK() {
-		ACTIVATE();
-		spiSendByte(0x40 | (a & 0x1F));
-		spiSendByte(d);
-		DEACTIVATE();
-	}
-}
-
-void writeBufferMemory(uint8_t *d, uint8_t length) {
-	uint8_t i;
-	// Opcode: 011
-	// Argument: 11010
-	// Following: dddddddd
-	A_BLOCK() {
-		ACTIVATE();
-		spiSendByte(0x7A);
-		for (i = 0; i < length; i++) {
-			spiSendByte(d[i]);
-		}
-		DEACTIVATE();
-	}
-}
-
-void bitFieldSet(uint8_t a, uint8_t d) {
-	// Opcode: 100
-	// Argument: aaaaa
-	// Following: dddddddd
-	A_BLOCK() {
-		ACTIVATE();
-		spiSendByte(0x80 | (a & 0x1F));
-		spiSendByte(d);
-		DEACTIVATE();
-	}
-}
-
-void bitFieldClear(uint8_t a, uint8_t d) {
-	// Opcode: 101
-	// Argument: aaaaa
-	// Following: dddddddd
-	A_BLOCK() {
-		ACTIVATE();
-		spiSendByte(0xA0 | (a & 0x1F));
-		spiSendByte(d);
-		DEACTIVATE();
-	}
-}
-
-void systemResetCommand(void) {
-	// Opcode 111
-	// Argument: 11111
-	A_BLOCK() {
-		ACTIVATE();
-		spiSendByte(0xFF);
-		DEACTIVATE();
-	}
-}
+uint8_t readControlRegister(uint8_t a);
+uint8_t *readBufferMemory(uint8_t *d, uint8_t length);
+void writeControlRegister(uint8_t a, uint8_t d);
+void writeBufferMemory(uint8_t *d, uint8_t length);
+void bitFieldSet(uint8_t a, uint8_t d);
+void bitFieldClear(uint8_t a, uint8_t d);
+void systemResetCommand(void);
 
 // ----------------------------------
 // |       Internal Functions       |
@@ -252,7 +167,7 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	spiInit();
 	macReset();
 
-	_delay_ms(1); // See Silicon Errata Page 2
+	_delay_ms(1); // See Silicon Errata Issue 2
 
 	if ((address != NULL) && (address != ownMacAddress)) {
 		for (i = 0; i < 6; i++) {
@@ -353,6 +268,12 @@ uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
 	}
 	debugPrint("!\n");
 #endif
+
+	// Clear Packet Counter
+	writeControlRegister(0x19, 0); // EPKTCNT
+
+	// Clear Interrupt Flags
+	bitFieldClear(0x1C, 0x7B); // Clear Flags in EIR
 
 	// Enable packet reception
 	bitFieldSet(0x1F, (1 << 2)); // Set ECON1.RXEN
@@ -565,5 +486,104 @@ Packet *macGetPacket(void) { // Returns NULL or Packet with d == NULL on error
 	} else {
 		discardPacket();
 		return p; // p->d is NULL
+	}
+}
+
+// ----------------------------------
+// |      ENC28J60 Command Set      |
+// ----------------------------------
+
+#define A_BLOCK() ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+
+uint8_t readControlRegister(uint8_t a) {
+	uint8_t r;
+	// Opcode: 000
+	// Argument: aaaaa
+	A_BLOCK() {
+		ACTIVATE();
+		spiSendByte(a & 0x1F);
+		// Dummy byte if MAC or MII Register
+		if (((currentBank == 2) && (a < 0x1B))
+			|| ((currentBank == 3) && ((a <= 0x05) || (a == 0x0A)))) {
+			spiReadByte();
+		}
+
+		r = spiReadByte();
+		DEACTIVATE();
+	}
+	return r;
+}
+
+uint8_t *readBufferMemory(uint8_t *d, uint8_t length) {
+	uint8_t i;
+	A_BLOCK() {
+		ACTIVATE();
+		spiSendByte(0x3A);
+		for (i = 0; i < length; i++) {
+			d[i] = spiReadByte();
+		}
+		DEACTIVATE();
+	}
+	return d;
+}
+
+void writeControlRegister(uint8_t a, uint8_t d) {
+	// Opcode: 010
+	// Argument: aaaaa
+	// Following: dddddddd
+	A_BLOCK() {
+		ACTIVATE();
+		spiSendByte(0x40 | (a & 0x1F));
+		spiSendByte(d);
+		DEACTIVATE();
+	}
+}
+
+void writeBufferMemory(uint8_t *d, uint8_t length) {
+	uint8_t i;
+	// Opcode: 011
+	// Argument: 11010
+	// Following: dddddddd
+	A_BLOCK() {
+		ACTIVATE();
+		spiSendByte(0x7A);
+		for (i = 0; i < length; i++) {
+			spiSendByte(d[i]);
+		}
+		DEACTIVATE();
+	}
+}
+
+void bitFieldSet(uint8_t a, uint8_t d) {
+	// Opcode: 100
+	// Argument: aaaaa
+	// Following: dddddddd
+	A_BLOCK() {
+		ACTIVATE();
+		spiSendByte(0x80 | (a & 0x1F));
+		spiSendByte(d);
+		DEACTIVATE();
+	}
+}
+
+void bitFieldClear(uint8_t a, uint8_t d) {
+	// Opcode: 101
+	// Argument: aaaaa
+	// Following: dddddddd
+	A_BLOCK() {
+		ACTIVATE();
+		spiSendByte(0xA0 | (a & 0x1F));
+		spiSendByte(d);
+		DEACTIVATE();
+	}
+}
+
+void systemResetCommand(void) {
+	// Opcode 111
+	// Argument: 11111
+	A_BLOCK() {
+		ACTIVATE();
+		spiSendByte(0xFF);
+		DEACTIVATE();
 	}
 }

@@ -38,6 +38,7 @@ uint8_t isLeapYear(uint16_t year);
 void setTimestamp(time_t unix);
 void setNtpTimestamp(time_t ntp);
 
+// Fills y, m, d, h, min & sec with stamps values
 void convertTimestamp(time_t stamp, uint16_t *y, uint8_t *m, uint8_t *d,
 						uint8_t *h, uint8_t *min, uint8_t *sec);
 

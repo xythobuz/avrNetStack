@@ -25,7 +25,7 @@
 #include <avr/wdt.h>
 #include <string.h>
 
-#define DEBUG 1 // 0 to receive no debug serial output
+#define DEBUG 2 // 0 to receive no debug serial output
 // 1 -> Init & Error Messages
 // 2 -> Message for each received packet and it's type
 
