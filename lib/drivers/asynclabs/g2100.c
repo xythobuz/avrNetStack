@@ -36,9 +36,11 @@
 #include <string.h>
 #include "witypes.h"
 #include "config.h"
-#include "global-conf.h"
 #include "g2100.h"
 #include "spi.h"
+
+#define UIP_BUFSIZE 400
+U8 uip_buf[UIP_BUFSIZE];
 
 static U8 mac[6];
 static U8 zg_conn_status;
@@ -55,6 +57,9 @@ static U16 zg_buf_len;
 static U16 lastRssi;
 static U8 scan_cnt;
 static U8 wpa_psk_key[32];
+
+U8 ssid_len;
+U8 security_passphrase_len;
 
 void zg_init()
 {
@@ -378,8 +383,8 @@ void zg_write_wep_key(U8* cmd_buf)
 	zg_wep_key_req_t* cmd = (zg_wep_key_req_t*)cmd_buf;
 
 	cmd->slot = 3;                    // WEP key slot
-	cmd->keyLen = UIP_WEP_KEY_LEN;    // Key length: 5 bytes (64-bit WEP); 13 bytes (128-bit WEP)
-	cmd->defID = UIP_WEP_KEY_DEFAULT; // Default key ID: Key 0, 1, 2, 3
+	cmd->keyLen = 13;    // Key length: 5 bytes (64-bit WEP); 13 bytes (128-bit WEP)
+	cmd->defID = 0; // Default key ID: Key 0, 1, 2, 3
 	cmd->ssidLen = ssid_len;
 	memset(cmd->ssid, 0x00, 32);
 	memcpy(cmd->ssid, ssid, ssid_len);

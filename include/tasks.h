@@ -31,4 +31,6 @@ void tasks(void); // Call in your main loop!
 
 uint8_t tasksRegistered(void);
 
+uint8_t taskTestAlways(void); // Use this as testFunc if you always want to execute a Task
+
 #endif

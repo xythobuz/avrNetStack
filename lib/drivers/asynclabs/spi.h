@@ -38,9 +38,11 @@
 
 #include <spi.h>
 
+extern uint8_t zg2100IsrEnabled;
+
 // Not using interrupts anyway
-#define ZG2100_ISR_DISABLE()
-#define ZG2100_ISR_ENABLE()
+#define ZG2100_ISR_DISABLE() (zg2100IsrEnabled = 0)
+#define ZG2100_ISR_ENABLE() (zg2100IsrEnabled = 1)
 
 // Partially uses own spi.h
 #define ZG2100_SpiInit() spiInit()

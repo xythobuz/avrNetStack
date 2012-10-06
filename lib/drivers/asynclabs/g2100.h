@@ -280,27 +280,29 @@ typedef struct
 
 #define ZG_CONNECT_REQ_SIZE			(38)
 
-void zg_init();
-void zg_reset();
-void spi_transfer(volatile U8* buf, U16 len, U8 toggle_cs);
-void zg_chip_reset();
-void zg_interrupt2_reg();
-void zg_interrupt_reg(U8 mask, U8 state);
-void zg_isr();
-void zg_process_isr();
-void zg_send(U8* buf, U16 len);
-void zg_recv(U8* buf, U16* len);
-U16 zg_get_rx_status();
-void zg_clear_rx_status();
+// Things we need to call
+void zg_init(void);
+void zg_chip_reset(void);
+void zg_isr(void);
+U16 zg_get_rx_status(void);
+void zg_clear_rx_status(void);
 void zg_set_tx_status(U8 status);
-U8 zg_get_conn_state();
+U8 zg_get_conn_state(void);
 void zg_set_buf(U8* buf, U16 buf_len);
-U8* zg_get_mac();
+U8* zg_get_mac(void);
 void zg_set_ssid(U8* ssid, U8 ssid_len);
 void zg_set_sec(U8 sec_type, U8* sec_key, U8 sec_key_len);
-void zg_drv_process();
+void zg_drv_process(void);
 
-// User Contributed ================================================================================ 
-U16 zg_get_rssi();
+// Things we probably don't need to call
+void spi_transfer(volatile U8* buf, U16 len, U8 toggle_cs);
+void zg_interrupt2_reg(void);
+void zg_interrupt_reg(U8 mask, U8 state);
+void zg_process_isr(void);
+void zg_send(U8* buf, U16 len); // called by zg_drv_process, if zg_set_tx_status != 0
+void zg_recv(U8* buf, U16* len);
+
+// User Contributed ===========================================================
+U16 zg_get_rssi(void);
 
 #endif /* G2100_H_ */

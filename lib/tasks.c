@@ -67,6 +67,10 @@ uint8_t extendTaskCheckList(void) {
 // |    External API    |
 // ----------------------
 
+uint8_t taskTestAlways(void) {
+	return 1;
+}
+
 uint8_t tasksRegistered(void) {
 	return tasksWithCheckRegistered;
 }

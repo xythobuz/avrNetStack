@@ -38,23 +38,20 @@
 
 #include "witypes.h"
 
-extern U8 local_ip[];
-extern U8 gateway_ip[];
-extern U8 subnet_mask[];
-extern char ssid[];
-extern U8 ssid_len;
-extern const prog_char security_passphrase[];
-extern U8 security_passphrase_len;
-extern U8 security_type;
-extern U8 wireless_mode;
-
-extern prog_uchar wep_keys[];
-
-extern const prog_char webpage[];
-extern const prog_char twitter[];
-extern unsigned char mfg_id[4];
-
 #define WIRELESS_MODE_INFRA	1
 #define WIRELESS_MODE_ADHOC	2
+
+char ssid[] = {"xythobuz"}; // 32byte max
+U8 wireless_mode = WIRELESS_MODE_INFRA;
+U8 security_type = 0; // 0 Open, 1 WEP, 2 WPA, 3 WPA2
+
+const char security_passphrase[] PROGMEM = {"1234"}; // WPA, WPA2 Passphrase
+
+unsigned char wep_keys[] PROGMEM = { // WEP 128-bit keys
+	0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,	// Key 0
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	// Key 1
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	// Key 2
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00	// Key 3
+};
 
 #endif /* CONFIG_H_ */

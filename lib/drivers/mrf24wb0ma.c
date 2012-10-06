@@ -24,16 +24,38 @@
 
 #define DEBUG 0
 
+#include <tasks.h>
 #include <net/mac.h>
 #include <net/controller.h>
 
+#include "asynclabs/witypes.h"
+#include "asynclabs/spi.h"
+#include "asynclabs/g2100.h"
+
+#define INTPORT PORTD
+#define INTPORTPIN PIND
+#define INTPIN PD2
+#define INTDDR DDRD
+
 MacAddress ownMacAddress;
 
-uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
-	uint8_t i;
-	for (i = 0; i < 6; i++) {
-		ownMacAddress[i] = address[i];
+uint8_t zg2100IsrEnabled; // In asynclabs spi.h
+
+uint8_t zgInterruptCheck(void) {
+	if (zg2100IsrEnabled) {
+		if (INTPORTPIN & (1 << INTPIN)) {
+			return 1;
+		}
 	}
+	return 0;
+}
+
+uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
+	INTDDR &= ~(1 << INTPIN); // Interrupt PIN
+	
+	addConditionalTask(zg_isr, zgInterruptCheck);
+	addConditionalTask(zg_drv_process, taskTestAlways);
+	
 	return 1;
 }
 
@@ -55,4 +77,8 @@ uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
 
 Packet *macGetPacket(void) { // Returns NULL on error
 	return NULL;
+}
+
+uint8_t macHasInterrupt(void) {
+	return 0;
 }

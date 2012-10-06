@@ -1,6 +1,6 @@
 # ------------------------------
-IC = enc28j60
-#IC = mrf24wb0ma
+#IC = enc28j60
+IC = mrf24wb0ma
 # ------------------------------
 
 MCU = atmega32
@@ -26,6 +26,10 @@ SRC += lib/net/dhcp.c
 SRC += lib/net/utils.c
 SRC += lib/net/dns.c
 SRC += lib/net/ntp.c
+
+ifeq ($(IC),mrf24wb0ma)
+SRC += lib/drivers/asynclabs/g2100.c
+endif
 
 TESTSRC = test/main.c
 TESTSRC += test/strings.c
@@ -71,6 +75,7 @@ test.hex: test.elf
 clean:
 	$(RM) lib/*.o
 	$(RM) lib/drivers/*.o
+	$(RM) lib/drivers/asynclabs/*.o
 	$(RM) lib/net/*.o
 	$(RM) test/*.o
 	$(RM) *.a
