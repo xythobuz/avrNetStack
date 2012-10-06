@@ -74,7 +74,7 @@ uint16_t nextPacketPointer = RXSTART; // Start of receive buffer
 uint8_t macInitialized = 0;
 uint8_t statusVector[7];
 
-MacAddress ownMacAddress;
+uint8_t ownMacAddress[6];
 
 uint8_t readControlRegister(uint8_t a);
 uint8_t *readBufferMemory(uint8_t *d, uint8_t length);
@@ -156,7 +156,7 @@ uint8_t macHasInterrupt(void) {
 	}
 }
 
-uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
+uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
 	uint16_t phy = 0;
 	uint8_t i;
 

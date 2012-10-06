@@ -44,7 +44,7 @@ void printArpTable(void);
 void heartbeat(void);
 void serialHandler(void);
 
-MacAddress mac = {0x00, 0x04, 0xA3, 0x00, 0x00, 0x00};
+uint8_t mac[6] = {0x00, 0x04, 0xA3, 0x00, 0x00, 0x00};
 IPv4Address defIp = {192, 168, 0, 42};
 IPv4Address defSubnet = {255, 255, 255, 0};
 IPv4Address defGateway = {192, 168, 0, 1};

@@ -37,7 +37,7 @@
 #define INTPIN PD2
 #define INTDDR DDRD
 
-MacAddress ownMacAddress;
+uint8_t ownMacAddress[6];
 
 uint8_t zg2100IsrEnabled; // In asynclabs spi.h
 
@@ -50,28 +50,46 @@ uint8_t zgInterruptCheck(void) {
 	return 0;
 }
 
-uint8_t macInitialize(MacAddress address) { // 0 if success, 1 on error
+uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
+	uint8_t i;
+	uint8_t *p;
+
 	INTDDR &= ~(1 << INTPIN); // Interrupt PIN
-	
+
+	zg_init();
+
 	addConditionalTask(zg_isr, zgInterruptCheck);
 	addConditionalTask(zg_drv_process, taskTestAlways);
-	
-	return 1;
+
+	p = zg_get_mac(); // Global Var. in g2100.c
+	for (i = 0; i < 6; i++) {
+		ownMacAddress[i] = p[i];
+		address[i] = ownMacAddress[i];
+	}
+
+	return 0;
 }
 
 void macReset(void) {
-
+	zg_chip_reset();
 }
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
-	return 0;
+	return zg_get_conn_state();
 }
 
 uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 	return 1;
 }
 
+uint16_t packetReceivedSize = 0;
+
 uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
+	uint16_t i = zg_get_rx_status();
+	if (i != 0) {
+		packetReceivedSize = i;
+		return 1;
+	}
 	return 0;
 }
 

@@ -26,8 +26,6 @@
 #ifndef _mac_h
 #define _mac_h
 
-typedef uint8_t MacAddress[6];
-
 #include <net/controller.h>
 
 #define MACPreambleSize 14
@@ -37,9 +35,9 @@ typedef uint8_t MacAddress[6];
 
 #define MaxPacketSize 1518 // Max EthernetII Packet Size
 
-extern MacAddress ownMacAddress;
+extern uint8_t ownMacAddress[6];
 
-uint8_t macInitialize(MacAddress address); // 0 if success, 1 on error
+uint8_t macInitialize(uint8_t *address); // 0 if success, 1 on error
 void    macReset(void);
 uint8_t macLinkIsUp(void); // 0 if down, 1 if up
 

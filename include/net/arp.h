@@ -31,7 +31,7 @@
 
 typedef struct {
 	IPv4Address ip;
-	MacAddress  mac;
+	uint8_t     mac[6];
 	time_t      time;
 } ARPTableEntry;
 

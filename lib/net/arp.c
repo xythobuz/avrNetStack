@@ -120,7 +120,7 @@ int8_t getFirstFreeEntry(void) {
 	return oldestEntry();
 }
 
-int8_t findIpFromMac(MacAddress mac) {
+int8_t findIpFromMac(uint8_t *mac) {
 	uint8_t i;
 	for (i = 0; i < arpTableSize; i++) {
 		if (!isTableEntryFree(i)) {

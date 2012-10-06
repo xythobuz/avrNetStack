@@ -284,7 +284,7 @@ typedef struct
 void zg_init(void);
 void zg_chip_reset(void);
 void zg_isr(void);
-U16 zg_get_rx_status(void);
+U16 zg_get_rx_status(void); // returns zg_buf_len if there is a packet
 void zg_clear_rx_status(void);
 void zg_set_tx_status(U8 status);
 U8 zg_get_conn_state(void);
