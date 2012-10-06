@@ -6,16 +6,37 @@ Compile with "make lib" to create a static library.
 Compile with "make test" to create a test hex file to use with the hardware found in Hardware/avrNetStack.sch. You need Eagle 6, available for free from cadsoft.
 In the future, a PCB will be designed that can act as WLAN / LAN Module for your AVR Project, in addition to this software.
 
+## License
+
+All files in "lib/drivers/asynclabs" are released under the [GPLv2](http://www.gnu.org/licenses/gpl-2.0.html).
+> &copy;2009 Async Labs Inc.
+> &copy;2012 Thomas Buck
+
+Everything else, if not mentioned otherwise elsewhere, is released under the [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
+> &copy;2012 Thomas Buck
+
+Also see the accompanying COPYING file.
+
 ## Software Overview
+
+### ENC28J60 Driver
+
+This is a self-written driver for [Microchips ENC28J60](http://www.microchip.com/wwwproducts/Devices.aspx?dDocName=en022889), based on it's [datasheet](http://ww1.microchip.com/downloads/en/DeviceDoc/39662d.pdf) and the [silicon errata](http://ww1.microchip.com/downloads/en/DeviceDoc/80349c.pdf).
+The 8KB Buffer in the ENC28J60 is not really used, as all received Packets are placed in RAM before using their data. It will be used as FIFO for Packets that are received before the CPU is able to work on them.
+You can change the size and location of the Receive and Transmit Segments in the ENC28J60 SRAM.
+
+### MRF24WB0MA Driver
+
+This is based heavily on [Asynclabs G2100 Driver with user contributions](https://github.com/asynclabs/WiShield_user_contrib), modified to work with this Networking Stack.
 
 ### Hardware Libraries
 
 avrNetStack includes UART, SPI and Timer libs aswell as a basic task switcher and scheduler.
 The UART lib uses FIFO Buffers for receiving and transmitting interrupt driven. Change the Buffer size in 'include/serial.h', if you want. For debugging, you can run the serial library in a blocking mode.
 The Time lib supports 16MHz and 20MHz on a small selection of hardware devices. If you get compile errors after changing the target plattform in the makefile, you have to extend these libraries to support your target.
-If you want to use this library with your own software, don't include another UART library. Use the functions from serial.h!
+If you want to use the UART with your own software don't include another UART library. Use the functions from serial.h!
 You need to call scheduler() and tasks() in you main-loop and also enable interrupts to use the Networking Stack. Both are completely dynamic, so you can use them for your application logic, too.
-The std module is a wrapper for the libc memory allocation functions. It is used to keep track of memory allocations, for debugging purposes.
+The std module is a wrapper for the libc memory allocation functions. It is used to keep track of memory allocations for debugging purposes.
 
 ### Debug Output
 
@@ -32,15 +53,18 @@ These are the Network Hardware drivers. Different MAC implementations will exist
 
 ### ARP Module
 
-Handles received ARP Packets, maintains an ARP Cache and gives functions of higher layers a method to obtain a MAC Address from an IP Address. If the Cache has no hit, a ARP Packet is issued, so that the higher layer can try again later.
+Handles received ARP Packets, maintains an ARP Cache and gives functions of higher layers a method to obtain a MAC Address from an IP Address.
+If the Cache has no hit, an ARP Packet is issued, so that the higher layer can try again later.
 
 ### IPv4 Module
 
-Handles received IPv4 Packets. Received valid Datagrams are given to the appropriate next stack layer. Also, IPv4 Packets can be transmitted with this module. It buffers outgoing IPv4 Packets to get the target MAC from the ARP Module.
+Handles received IPv4 Packets. Received valid Datagrams are given to the appropriate next stack layer. Also, IPv4 Packets can be transmitted with this module.
+It buffers outgoing IPv4 Packets to get the target MAC from the ARP Module automatically.
 
 ### ICMP Module
 
-Handles received ICMP Packets. Can answer and send out echo requests. A single handler for echo replies can be registered.
+Handles received ICMP Packets. Can answer and send out echo requests.
+A single handler for echo replies can be registered. This is used to implement a simple Ping Utility in "test/main.c".
 
 ### UDP Module
 
@@ -48,4 +72,4 @@ Handles the really simple User Datagram Protocol. A handler for every port can b
 
 ### NTP Module
 
-Simple NTP (SNTP) Client. Will update systemTime automagically to1350074042 the current unix timestamp some time after networkInit.
+Simple NTP (SNTP) Client. Will update systemTime automagically to the current unix timestamp some time after calling ntpIssueRequest().
