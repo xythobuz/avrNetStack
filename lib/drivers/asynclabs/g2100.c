@@ -37,11 +37,15 @@
 #include <avr/io.h>
 #include <stdlib.h>
 
+#include <std.h>
+
 #include <string.h>
 #include "witypes.h"
 #include "config.h"
 #include "g2100.h"
 #include "spi.h"
+
+#define G21BUFSIZE 105
 
 static U8 mac[6];
 static U8 zg_conn_status;
@@ -57,7 +61,7 @@ static U8 *rx_buf;
 static U16 rx_buf_len;
 static U8 *tx_buf;
 static U16 tx_buf_len;
-static U8 zg_buf[105]; // Buffer for eg. PSK CALC REQs
+static U8 zg_buf[G21BUFSIZE]; // Buffer for eg. PSK CALC REQs
 static U16 zg_buf_len;
 static U16 lastRssi;
 static U8 scan_cnt;
@@ -88,6 +92,10 @@ void zg_init()
 	zg_interrupt2_reg();
 	zg_interrupt_reg(0xff, 0);
 	zg_interrupt_reg(0x80|0x40, 1);
+
+	rx_buf_len = 0;
+	tx_buf_len = 0;
+	zg_buf_len = G21BUFSIZE;
 
 	ssid_len = (U8)strlen(ssid);
 	security_passphrase_len = (U8)strlen_P(security_passphrase);
@@ -256,10 +264,10 @@ void zg_process_isr()
 
 				// Now dynamically allocating buffer
 				if (rx_buf != NULL) {
-					free(rx_buf);
+					mfree(rx_buf, rx_buf_len);
 				}
 
-				rx_buf = malloc(rx_byte_cnt + 1);
+				rx_buf = mmalloc(rx_byte_cnt + 1);
 				if (rx_buf == NULL) {
 					break;
 				}
@@ -343,7 +351,7 @@ U8 zg_get_conn_state()
 }
 
 Packet *zg_buffAsPacket(void) {
-	Packet *p = (Packet *)malloc(sizeof(Packet));
+	Packet *p = (Packet *)mmalloc(sizeof(Packet));
 	if (p != NULL) {
 		p->d = rx_buf;
 		p->dLength = rx_buf_len;
