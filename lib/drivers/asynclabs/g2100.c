@@ -9,6 +9,7 @@
   Driver for the WiShield 1.0 wireless devices
 
   Copyright(c) 2009 Async Labs Inc. All rights reserved.
+  Copyright(c) 2012 Thomas Buck.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2 of the GNU General Public License as
@@ -30,17 +31,17 @@
   ----------------------------------------------------------------------------
    AsyncLabs			02/25/2009	Initial port
    AsyncLabs			05/29/2009	Adding support for new library
+   Thomas Buck			10/06/2012	Modified to work with avrNetStack
 
  *****************************************************************************/
+#include <avr/io.h>
+#include <stdlib.h>
 
 #include <string.h>
 #include "witypes.h"
 #include "config.h"
 #include "g2100.h"
 #include "spi.h"
-
-#define UIP_BUFSIZE 400
-U8 uip_buf[UIP_BUFSIZE];
 
 static U8 mac[6];
 static U8 zg_conn_status;
@@ -52,7 +53,11 @@ static U8 zg_drv_state;
 static U8 tx_ready;
 static U8 rx_ready;
 static U8 cnf_pending;
-static U8* zg_buf;
+static U8 *rx_buf;
+static U16 rx_buf_len;
+static U8 *tx_buf;
+static U16 tx_buf_len;
+static U8 zg_buf[105]; // Buffer for eg. PSK CALC REQs
 static U16 zg_buf_len;
 static U16 lastRssi;
 static U8 scan_cnt;
@@ -78,8 +83,6 @@ void zg_init()
 	tx_ready = 0;
 	rx_ready = 0;
 	cnf_pending = 0;
-	zg_buf = uip_buf;
-	zg_buf_len = UIP_BUFSIZE;
 
 	zg_chip_reset();
 	zg_interrupt2_reg();
@@ -251,8 +254,19 @@ void zg_process_isr()
 			{
 				U16 rx_byte_cnt = (0x0000 | (hdr[1] << 8) | hdr[2]) & 0x0fff;
 
+				// Now dynamically allocating buffer
+				if (rx_buf != NULL) {
+					free(rx_buf);
+				}
+
+				rx_buf = malloc(rx_byte_cnt + 1);
+				if (rx_buf == NULL) {
+					break;
+				}
+				rx_buf_len = rx_byte_cnt + 1;
+
 				zg_buf[0] = ZG_CMD_RD_FIFO;
-				spi_transfer(zg_buf, rx_byte_cnt + 1, 1);
+				spi_transfer(rx_buf, rx_byte_cnt + 1, 1);
 
 				hdr[0] = ZG_CMD_RD_FIFO_DONE;
 				spi_transfer(hdr, 1, 1);
@@ -262,51 +276,10 @@ void zg_process_isr()
 				intr_state = 0;
 				break;
 			}
-			// Bad "packet too large" fix - killed WiServer WebServer
-			/*
-			case ZG_INTR_ST_RD_CTRL_REG:
-			{
-      			// Get the size of the incoming packet
-				U16 rx_byte_cnt = (0x0000 | (hdr[1] << 8) | hdr[2]) & 0x0fff;
-
-				// Check if our buffer is large enough for packet
-    	        if(rx_byte_cnt + 1 < (U16)UIP_BUFSIZE ) {
-					zg_buf[0] = ZG_CMD_RD_FIFO;
-					// Copy ZG2100 buffer contents into zg_buf (uip_buf)             
-					spi_transfer(zg_buf, rx_byte_cnt + 1, 1);
-					// interrupt from zg2100 was meaningful and requires further processing
-					intr_valid = 1;
-				}
-				else {
-					// Too Big, ignore it and continue
-					intr_valid = 0; 
-				}
-
-				// Tell ZG2100 we're done reading from its buffer
-				hdr[0] = ZG_CMD_RD_FIFO_DONE;
-				spi_transfer(hdr, 1, 1);
-            
-				// Done reading interrupt from ZG2100
-				intr_state = 0;
-				break;
-			}
-			*/
-			// *************************************************************************************
 		}
 	} while (intr_state);
-#ifdef USE_DIG8_INTR
-	// PCINT0 supports only edge triggered INT
-	if (PORTB & 0x01) {
-		intr_occured = 0;
-		ZG2100_ISR_ENABLE();
-	}
-	else {
-		intr_occured = 1;
-	}
-#else
 	intr_occured = 0;
 	ZG2100_ISR_ENABLE();
-#endif
 }
 
 void zg_send(U8* buf, U16 len)
@@ -330,21 +303,25 @@ void zg_send(U8* buf, U16 len)
 
 void zg_recv(U8* buf, U16* len)
 {
-	zg_rx_data_ind_t* ptr = (zg_rx_data_ind_t*)&(zg_buf[3]);
+	zg_rx_data_ind_t* ptr = (zg_rx_data_ind_t*)&(buf[3]);
 	*len = ZGSTOHS( ptr->dataLen );
 	lastRssi = ZGSTOHS( ptr->rssi );
 
-	memcpy(&zg_buf[0], &zg_buf[5], 6);
-	memcpy(&zg_buf[6], &zg_buf[11], 6);
-	memcpy(&zg_buf[12], &zg_buf[29], *len);
+	memcpy(&buf[0], &buf[5], 6);
+	memcpy(&buf[6], &buf[11], 6);
+	memcpy(&buf[12], &buf[29], *len);
 
 	*len += 12;
+}
+
+void zg_clear_rx_status() {
+	rx_ready = 0;
 }
 
 U16 zg_get_rx_status()
 {
 	if (rx_ready) {
-		rx_ready = 0;
+		// rx_ready = 0;
 		return zg_buf_len;
 	}
 	else {
@@ -352,14 +329,12 @@ U16 zg_get_rx_status()
 	}
 }
 
-void zg_clear_rx_status()
-{
-	rx_ready = 0;
-}
-
-void zg_set_tx_status(U8 status)
-{
-	tx_ready = status;
+void zg_sendPacket(Packet *p) {
+	tx_buf = p->d;
+	tx_buf_len = p->dLength;
+	if ((tx_buf != NULL) && (tx_buf_len > 0)) {
+		tx_ready = 1;
+	}
 }
 
 U8 zg_get_conn_state()
@@ -367,10 +342,17 @@ U8 zg_get_conn_state()
 	return zg_conn_status;
 }
 
-void zg_set_buf(U8* buf, U16 buf_len)
-{
-	zg_buf = buf;
-	zg_buf_len = buf_len;
+Packet *zg_buffAsPacket(void) {
+	Packet *p = (Packet *)malloc(sizeof(Packet));
+	if (p != NULL) {
+		p->d = rx_buf;
+		p->dLength = rx_buf_len;
+		rx_buf = NULL;
+		rx_buf_len = 0;
+		return p;
+	} else {
+		return NULL;
+	}
 }
 
 U8* zg_get_mac()
@@ -430,7 +412,7 @@ void zg_drv_process()
 {
 	// TX frame
 	if (tx_ready && !cnf_pending) {
-		zg_send(zg_buf, zg_buf_len);
+		zg_send(tx_buf, tx_buf_len);
 		tx_ready = 0;
 		cnf_pending = 1;
 	}
@@ -637,7 +619,7 @@ void zg_drv_process()
 		break;
 	}
 	case DRV_STATE_PROCESS_RX:
-		zg_recv(zg_buf, &zg_buf_len);
+		zg_recv(rx_buf, &rx_buf_len);
 		rx_ready = 1;
 
 		zg_drv_state = DRV_STATE_IDLE;

@@ -36,6 +36,9 @@
 #ifndef G2100_H_
 #define G2100_H_
 
+#include <net/mac.h>
+#include <net/controller.h>
+
 #define DRV_STATE_INIT					0
 #define DRV_STATE_GET_MAC				2
 #define DRV_STATE_START_CONN			3
@@ -286,13 +289,11 @@ void zg_chip_reset(void);
 void zg_isr(void);
 U16 zg_get_rx_status(void); // returns zg_buf_len if there is a packet
 void zg_clear_rx_status(void);
-void zg_set_tx_status(U8 status);
 U8 zg_get_conn_state(void);
-void zg_set_buf(U8* buf, U16 buf_len);
 U8* zg_get_mac(void);
-void zg_set_ssid(U8* ssid, U8 ssid_len);
-void zg_set_sec(U8 sec_type, U8* sec_key, U8 sec_key_len);
 void zg_drv_process(void);
+Packet *zg_buffAsPacket(void);
+void zg_sendPacket(Packet *p);
 
 // Things we probably don't need to call
 void spi_transfer(volatile U8* buf, U16 len, U8 toggle_cs);

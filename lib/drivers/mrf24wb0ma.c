@@ -79,24 +79,30 @@ uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
 }
 
 uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
-	return 1;
+	zg_sendPacket(p);
+	return 0; // no way to know this?
 }
 
-uint16_t packetReceivedSize = 0;
-
 uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
-	uint16_t i = zg_get_rx_status();
-	if (i != 0) {
-		packetReceivedSize = i;
+	if (zg_get_rx_status()) {
 		return 1;
 	}
 	return 0;
 }
 
 Packet *macGetPacket(void) { // Returns NULL on error
-	return NULL;
+	Packet *p = NULL;
+	if (zg_get_rx_status()) {
+		p = zg_buffAsPacket();
+		zg_clear_rx_status();
+	}
+	return p;
 }
 
 uint8_t macHasInterrupt(void) {
-	return 0;
+	if (INTPORTPIN & (1 << INTPIN)) {
+		return 0;
+	} else {
+		return 1;
+	}
 }
