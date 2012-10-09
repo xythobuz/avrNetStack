@@ -188,7 +188,7 @@ uint8_t serialHasChar() {
 #ifdef SERIALNONBLOCK
 	if (rxRead != rxWrite) { // True if char available
 #else
-	if (SERIALA & RXC) {
+	if (SERIALA & (1 << RXC)) {
 #endif
 		return 1;
 	} else {
