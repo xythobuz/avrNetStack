@@ -58,276 +58,276 @@ IPv4Address pingIpA = { 192, 168, 0, 103 };
 IPv4Address pingIpB = { 80, 150, 6, 143 };
 
 int main(void) {
-	uint8_t i;
+    uint8_t i;
 
-	i = MCUSR & 0x1F;
-	MCUSR = 0;
-	wdt_disable();
+    i = MCUSR & 0x1F;
+    MCUSR = 0;
+    wdt_disable();
 
-	serialInit(BAUD(39400, F_CPU), 8, NONE, 1);
-	initSystemTimer();
+    serialInit(BAUD(39400, F_CPU), 8, NONE, 1);
+    initSystemTimer();
 
-	DDRA |= (1 << PA7) | (1 << PA6);
-	PORTA |= (1 << PA7) | (1 << PA6); // LEDs on
+    DDRA |= (1 << PA7) | (1 << PA6);
+    PORTA |= (1 << PA7) | (1 << PA6); // LEDs on
 
-	sei(); // Enable Interrupts so we get UART data before entering networkInit
+    sei(); // Enable Interrupts so we get UART data before entering networkInit
 
-	wdt_enable(WDTO_2S);
+    wdt_enable(WDTO_2S);
 
-	networkInit(mac, defIp, defSubnet, defGateway);
+    networkInit(mac, defIp, defSubnet, defGateway);
 
-	serialWriteString(getString(0)); // avrNetStack-Debug
-	serialWriteString(getString(1)); //  initialized!\n
-	serialWriteString(getString(5)); // MCUCSR: 
-	if (i == 0x01) {
-		serialWriteString(getString(20)); // Power-On Reset
-	} else if (i == 0x02) {
-		serialWriteString(getString(21)); // External Reset
-	} else if (i == 0x04) {
-		serialWriteString(getString(22)); // Brown-Out Reset
-	} else if (i == 0x08) {
-		serialWriteString(getString(23)); // Watchdog Reset
-	} else if (i == 0x10) {
-		serialWriteString(getString(24)); // JTAG Reset
-	} else {
-		serialWriteString(hexToString(i));
-	}
-	serialWrite('\n');
+    serialWriteString(getString(0)); // avrNetStack-Debug
+    serialWriteString(getString(1)); //  initialized!\n
+    serialWriteString(getString(5)); // MCUCSR:
+    if (i == 0x01) {
+        serialWriteString(getString(20)); // Power-On Reset
+    } else if (i == 0x02) {
+        serialWriteString(getString(21)); // External Reset
+    } else if (i == 0x04) {
+        serialWriteString(getString(22)); // Brown-Out Reset
+    } else if (i == 0x08) {
+        serialWriteString(getString(23)); // Watchdog Reset
+    } else if (i == 0x10) {
+        serialWriteString(getString(24)); // JTAG Reset
+    } else {
+        serialWriteString(hexToString(i));
+    }
+    serialWrite('\n');
 
-	if (!macLinkIsUp()) {
-		serialWriteString(getString(2)); // Link is down
-		serialWriteString(getString(17)); // Waiting
-		while(!macLinkIsUp());
-	}
-	serialWriteString(getString(3)); // Link is up
+    if (!macLinkIsUp()) {
+        serialWriteString(getString(2)); // Link is down
+        serialWriteString(getString(17)); // Waiting
+        while(!macLinkIsUp());
+    }
+    serialWriteString(getString(3)); // Link is up
 
-	PORTA &= ~((1 << PA7) | (1 << PA6)); // LEDs off
+    PORTA &= ~((1 << PA7) | (1 << PA6)); // LEDs off
 
-	addTimedTask(heartbeat, 500); // Toggle LED every 500ms
-	addConditionalTask(serialHandler, serialHasChar); // Execute Serial Handler if char received
+    addTimedTask(heartbeat, 500); // Toggle LED every 500ms
+    addConditionalTask(serialHandler, serialHasChar); // Execute Serial Handler if char received
 
-	while (1)
-		networkLoop(); // Runs task manager and scheduler, resets watchdog timer for us
+    while (1)
+        networkLoop(); // Runs task manager and scheduler, resets watchdog timer for us
 
-	return 0;
+    return 0;
 }
 
 void printArpTable(void) {
-	uint8_t i, j;
-	serialWriteString(getString(12));
-	for (i = 0; i < arpTableSize; i++) {
-		for (j = 0; j < 6; j++) {
-			serialWriteString(hex2ToString(arpTable[i].mac[j]));
-			if (j < 5) {
-				serialWrite('-');
-			}
-		}
-		serialWriteString(getString(13));
-		for (j = 0; j < 4; j++) {
-			serialWriteString(timeToString(arpTable[i].ip[j]));
-			if (j < 3) {
-				serialWrite('.');
-			}
-		}
-		serialWrite('\n');
-	}
+    uint8_t i, j;
+    serialWriteString(getString(12));
+    for (i = 0; i < arpTableSize; i++) {
+        for (j = 0; j < 6; j++) {
+            serialWriteString(hex2ToString(arpTable[i].mac[j]));
+            if (j < 5) {
+                serialWrite('-');
+            }
+        }
+        serialWriteString(getString(13));
+        for (j = 0; j < 4; j++) {
+            serialWriteString(timeToString(arpTable[i].ip[j]));
+            if (j < 3) {
+                serialWrite('.');
+            }
+        }
+        serialWrite('\n');
+    }
 }
 
 void heartbeat(void) {
-	PORTA ^= (1 << PA6); // Toggle LED
+    PORTA ^= (1 << PA6); // Toggle LED
 }
 
 void pingInterrupt(Packet *p) {
-	responseTime = getSystemTime();
-	mfree(p->d, p->dLength);
-	mfree(p, sizeof(Packet));
+    responseTime = getSystemTime();
+    mfree(p->d, p->dLength);
+    mfree(p, sizeof(Packet));
 
-	serialWriteString(getString(19)); // "RoundTripTime"
-	serialWriteString(getString(7)); // ": "
-	serialWriteString(timeToString(diffTime(pingTime, responseTime)));
-	serialWriteString(getString(18)); // " ms"
-	serialWriteString(getString(15)); // "\n"
+    serialWriteString(getString(19)); // "RoundTripTime"
+    serialWriteString(getString(7)); // ": "
+    serialWriteString(timeToString(diffTime(pingTime, responseTime)));
+    serialWriteString(getString(18)); // " ms"
+    serialWriteString(getString(15)); // "\n"
 
-	pingState--;
-	if (pingState == 0) {
-		// Finished pinging
-		registerEchoReplyHandler(NULL);
-	} else {
-		// Ping again
-		if (pingMode) {
-			sendEchoRequest(pingIpB);
-		} else {
-			sendEchoRequest(pingIpA);
-		}
-		pingTime = getSystemTime();
-	}
+    pingState--;
+    if (pingState == 0) {
+        // Finished pinging
+        registerEchoReplyHandler(NULL);
+    } else {
+        // Ping again
+        if (pingMode) {
+            sendEchoRequest(pingIpB);
+        } else {
+            sendEchoRequest(pingIpA);
+        }
+        pingTime = getSystemTime();
+    }
 }
 
 void pingTool(void) {
-	uint8_t c;
-	if (pingState) {
-		// Check if we got a timeout
-		if (diffTime(getSystemTime(), pingTime) > 2000) {
-			serialWriteString(getString(31)); // "Timed out :(\n"
-			pingState = 0;
-			registerEchoReplyHandler(NULL);
-		} else {
-			serialWriteString(getString(32)); // "Hasn't timed out yet!\n"
-		}
-	} else {
-		// Send an Echo Request
-		serialWriteString(getString(30)); // "(1)Internal or (2)External?\n"
-		while (!serialHasChar()) { wdt_reset(); }
-		c = serialGet();
-		if (c == '1') {
-			pingMode = 0;
-		} else if (c == '2') {
-			pingMode = 1;
-		} else {
-			serialWriteString(getString(34)); // "Invalid!\n"
-			return;
-		}
-		serialWriteString(getString(33)); // "How many times? (0 - 9)\n"
-		while (!serialHasChar()) { wdt_reset(); }
-		c = serialGet();
-		if ((c >= '0') && (c <= '9')) {
-			pingState = c - '0';
-			registerEchoReplyHandler(pingInterrupt);
-			if (pingMode) {
-				sendEchoRequest(pingIpB);
-			} else {
-				sendEchoRequest(pingIpA);
-			}
-			pingTime = getSystemTime();
-			responseTime = 0;
-		} else {
-			serialWriteString(getString(34)); // "Invalid!\n"
-			return;
-		}
-	}
+    uint8_t c;
+    if (pingState) {
+        // Check if we got a timeout
+        if (diffTime(getSystemTime(), pingTime) > 2000) {
+            serialWriteString(getString(31)); // "Timed out :(\n"
+            pingState = 0;
+            registerEchoReplyHandler(NULL);
+        } else {
+            serialWriteString(getString(32)); // "Hasn't timed out yet!\n"
+        }
+    } else {
+        // Send an Echo Request
+        serialWriteString(getString(30)); // "(1)Internal or (2)External?\n"
+        while (!serialHasChar()) { wdt_reset(); }
+        c = serialGet();
+        if (c == '1') {
+            pingMode = 0;
+        } else if (c == '2') {
+            pingMode = 1;
+        } else {
+            serialWriteString(getString(34)); // "Invalid!\n"
+            return;
+        }
+        serialWriteString(getString(33)); // "How many times? (0 - 9)\n"
+        while (!serialHasChar()) { wdt_reset(); }
+        c = serialGet();
+        if ((c >= '0') && (c <= '9')) {
+            pingState = c - '0';
+            registerEchoReplyHandler(pingInterrupt);
+            if (pingMode) {
+                sendEchoRequest(pingIpB);
+            } else {
+                sendEchoRequest(pingIpA);
+            }
+            pingTime = getSystemTime();
+            responseTime = 0;
+        } else {
+            serialWriteString(getString(34)); // "Invalid!\n"
+            return;
+        }
+    }
 }
 
 void serialHandler(void) {
-	uint8_t i, j, k, l, m;
-	uint16_t n;
-	Packet *p;
-	
-	char c = serialGet();
-	serialWrite(c - 32); // to uppercase
-	serialWriteString(getString(7)); // ": "
-	switch(c) {
-		case 't': // Time
-			convertTimestamp(getSystemTimeSeconds(), &n, &m, &l, &k, &j, &i);
-			serialWriteString(timeToString(l)); // day
-			serialWrite('.');
-			serialWriteString(timeToString(m)); // month
-			serialWrite('.');
-			serialWriteString(timeToString(n)); // year
-			serialWrite(' ');
-			serialWriteString(timeToString(k)); // hour
-			serialWrite(':');
-			serialWriteString(timeToString(j)); // minutes
-			serialWrite(':');
-			serialWriteString(timeToString(i)); // seconds
-			serialWriteString(getString(15)); // "\n"
-			break;
-		case 'p': // Ping Internet
-			pingTool();
-			break;
-		case 's': // Status
-			serialWriteString(timeToString(tasksRegistered()));
-			serialWriteString(getString(14)); // " Tasks"
-			serialWriteString(getString(25)); // ", "
-			serialWriteString(timeToString(schedulerRegistered()));
-			serialWriteString(getString(16)); // " Scheduler"
-			serialWriteString(getString(15)); // "\n"
-			break;
+    uint8_t i, j, k, l, m;
+    uint16_t n;
+    Packet *p;
 
-		case 'm': // Number of bytes allocated
-			serialWriteString(timeToString(heapBytesAllocated));
-			serialWrite('/');
-			serialWriteString(timeToString(HEAPSIZE));
-			serialWriteString(getString(4)); // " bytes "
-			serialWriteString(getString(6)); // "allocated\n"
-			break;
+    char c = serialGet();
+    serialWrite(c - 32); // to uppercase
+    serialWriteString(getString(7)); // ": "
+    switch(c) {
+        case 't': // Time
+            convertTimestamp(getSystemTimeSeconds(), &n, &m, &l, &k, &j, &i);
+            serialWriteString(timeToString(l)); // day
+            serialWrite('.');
+            serialWriteString(timeToString(m)); // month
+            serialWrite('.');
+            serialWriteString(timeToString(n)); // year
+            serialWrite(' ');
+            serialWriteString(timeToString(k)); // hour
+            serialWrite(':');
+            serialWriteString(timeToString(j)); // minutes
+            serialWrite(':');
+            serialWriteString(timeToString(i)); // seconds
+            serialWriteString(getString(15)); // "\n"
+            break;
+        case 'p': // Ping Internet
+            pingTool();
+            break;
+        case 's': // Status
+            serialWriteString(timeToString(tasksRegistered()));
+            serialWriteString(getString(14)); // " Tasks"
+            serialWriteString(getString(25)); // ", "
+            serialWriteString(timeToString(schedulerRegistered()));
+            serialWriteString(getString(16)); // " Scheduler"
+            serialWriteString(getString(15)); // "\n"
+            break;
 
-		case 'u': // Send UDP Packet to testIp
-			if ((p = (Packet *)mmalloc(sizeof(Packet))) != NULL) {
-				p->dLength = UDPOffset + UDPDataOffset + 12; // "Hello World."
-				p->d = (uint8_t *)mmalloc(p->dLength);
-				if (p->d == NULL) {
-					serialWriteString(getString(26)); // "Not enough memory!\n"
-					mfree(p, sizeof(Packet));
-					break;
-				}
-				p->d[UDPOffset + UDPDataOffset + 0] = 'H';
-				p->d[UDPOffset + UDPDataOffset + 1] = 'e';
-				p->d[UDPOffset + UDPDataOffset + 2] = 'l';
-				p->d[UDPOffset + UDPDataOffset + 3] = 'l';
-				p->d[UDPOffset + UDPDataOffset + 4] = 'o';
-				p->d[UDPOffset + UDPDataOffset + 5] = ' ';
-				p->d[UDPOffset + UDPDataOffset + 6] = 'W';
-				p->d[UDPOffset + UDPDataOffset + 7] = 'o';
-				p->d[UDPOffset + UDPDataOffset + 8] = 'r';
-				p->d[UDPOffset + UDPDataOffset + 9] = 'l';
-				p->d[UDPOffset + UDPDataOffset + 10] = 'd';
-				p->d[UDPOffset + UDPDataOffset + 11] = '.';
-				serialWriteString(getString(27)); // "Packet sent"
-				serialWriteString(getString(7)); // ": "
-				serialWriteString(timeToString(udpSendPacket(p, testIp, TESTPORT, TESTPORT)));
-				serialWriteString(getString(15)); // "\n"
-			} else {
-				serialWriteString(getString(26)); // "Not enough memory!\n"
-			}
-			break;
+        case 'm': // Number of bytes allocated
+            serialWriteString(timeToString(heapBytesAllocated));
+            serialWrite('/');
+            serialWriteString(timeToString(HEAPSIZE));
+            serialWriteString(getString(4)); // " bytes "
+            serialWriteString(getString(6)); // "allocated\n"
+            break;
 
-		case 'l': // Link Status
-			if (macLinkIsUp()) {
-				serialWriteString(getString(3));
-			} else {
-				serialWriteString(getString(2));
-			}
-			break;
+        case 'u': // Send UDP Packet to testIp
+            if ((p = (Packet *)mmalloc(sizeof(Packet))) != NULL) {
+                p->dLength = UDPOffset + UDPDataOffset + 12; // "Hello World."
+                p->d = (uint8_t *)mmalloc(p->dLength);
+                if (p->d == NULL) {
+                    serialWriteString(getString(26)); // "Not enough memory!\n"
+                    mfree(p, sizeof(Packet));
+                    break;
+                }
+                p->d[UDPOffset + UDPDataOffset + 0] = 'H';
+                p->d[UDPOffset + UDPDataOffset + 1] = 'e';
+                p->d[UDPOffset + UDPDataOffset + 2] = 'l';
+                p->d[UDPOffset + UDPDataOffset + 3] = 'l';
+                p->d[UDPOffset + UDPDataOffset + 4] = 'o';
+                p->d[UDPOffset + UDPDataOffset + 5] = ' ';
+                p->d[UDPOffset + UDPDataOffset + 6] = 'W';
+                p->d[UDPOffset + UDPDataOffset + 7] = 'o';
+                p->d[UDPOffset + UDPDataOffset + 8] = 'r';
+                p->d[UDPOffset + UDPDataOffset + 9] = 'l';
+                p->d[UDPOffset + UDPDataOffset + 10] = 'd';
+                p->d[UDPOffset + UDPDataOffset + 11] = '.';
+                serialWriteString(getString(27)); // "Packet sent"
+                serialWriteString(getString(7)); // ": "
+                serialWriteString(timeToString(udpSendPacket(p, testIp, TESTPORT, TESTPORT)));
+                serialWriteString(getString(15)); // "\n"
+            } else {
+                serialWriteString(getString(26)); // "Not enough memory!\n"
+            }
+            break;
 
-		case 'a': // ARP Table
-			printArpTable();
-			break;
+        case 'l': // Link Status
+            if (macLinkIsUp()) {
+                serialWriteString(getString(3));
+            } else {
+                serialWriteString(getString(2));
+            }
+            break;
+
+        case 'a': // ARP Table
+            printArpTable();
+            break;
 
 #ifndef DISABLE_NTP
-		case 'n': // Send NTP Request
-			i = ntpIssueRequest();
-			serialWriteString(getString(8));
-			serialWriteString(timeToString(i));
-			serialWrite('\n');
-			break;
+        case 'n': // Send NTP Request
+            i = ntpIssueRequest();
+            serialWriteString(getString(8));
+            serialWriteString(timeToString(i));
+            serialWrite('\n');
+            break;
 #endif
 
-		case 'd': // Send DHCP Request
-			i = dhcpIssueRequest();
-			serialWriteString(getString(9));
-			serialWriteString(timeToString(i));
-			serialWrite('\n');
-			break;
+        case 'd': // Send DHCP Request
+            i = dhcpIssueRequest();
+            serialWriteString(getString(9));
+            serialWriteString(timeToString(i));
+            serialWrite('\n');
+            break;
 
-		case 'h': // Print Help String
-			serialWriteString(getString(10));
-			break;
+        case 'h': // Print Help String
+            serialWriteString(getString(10));
+            break;
 
-		case 'v': // Print Version String
-			serialWriteString(getString(0));
-			serialWrite('\n');
-			break;
+        case 'v': // Print Version String
+            serialWriteString(getString(0));
+            serialWrite('\n');
+            break;
 
-		case 'q': // Trigger Watchdog Reset
-			serialWriteString(getString(11));
-			while(!transmitBufferEmpty()) {
-				wdt_reset();
-			}
-			wdt_enable(WDTO_15MS);
-			while(1);
+        case 'q': // Trigger Watchdog Reset
+            serialWriteString(getString(11));
+            while(!transmitBufferEmpty()) {
+                wdt_reset();
+            }
+            wdt_enable(WDTO_15MS);
+            while(1);
 
-		default:
-			serialWriteString(getString(29));
-			break;
-	}
+        default:
+            serialWriteString(getString(29));
+            break;
+    }
 }

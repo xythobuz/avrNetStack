@@ -65,21 +65,23 @@ const char string34[] PROGMEM = "Invalid!\n";
 // Last index + 1
 #define STRINGNUM 35
 
-PGM_P stringTable[STRINGNUM] PROGMEM = { string0, string1, string2, string3, string4,
-									string5, string6, string7, string8, string9,
-									string10, string11, string12, string13, string14,
-									string15, string16, string17, string18, string19,
-									string20, string21, string22, string23, string24,
-									string25, string26, string27, string28, string29,
-									string30, string31, string32, string33, string34 };
+PGM_P stringTable[STRINGNUM] PROGMEM = {
+    string0, string1, string2, string3, string4,
+    string5, string6, string7, string8, string9,
+    string10, string11, string12, string13, string14,
+    string15, string16, string17, string18, string19,
+    string20, string21, string22, string23, string24,
+    string25, string26, string27, string28, string29,
+    string30, string31, string32, string33, string34
+};
 
 const char stringNotFoundError[] PROGMEM = "String not found!\n";
 
 char *getString(uint8_t id) {
-	if (id < STRINGNUM) {
-		strcpy_P(buff, (PGM_P)pgm_read_word(&(stringTable[id])));
-	} else {
-		strcpy_P(buff, stringNotFoundError);
-	}
-	return buff;
+    if (id < STRINGNUM) {
+        strcpy_P(buff, (PGM_P)pgm_read_word(&(stringTable[id])));
+    } else {
+        strcpy_P(buff, stringNotFoundError);
+    }
+    return buff;
 }
