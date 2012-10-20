@@ -50,7 +50,7 @@ CARGS += -DF_CPU=$(F_CPU)
 test: test.hex
 
 program: test.hex
-	uploader /dev/tty.usbserial-A100QOUE test.hex q
+	yasab /dev/tty.usbserial-A100QOUE test.hex q
 
 all: libavrNetStack.a
 
