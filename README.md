@@ -13,10 +13,7 @@ All files in "lib/drivers/asynclabs" are released under the [GPLv2](http://www.g
 > 
 > &copy; 2012 Thomas Buck
 
-Everything else, if not mentioned otherwise elsewhere, is released under the [LGPLv3](http://www.gnu.org/licenses/lgpl-3.0.html).
-> &copy; 2012 Thomas Buck
-
-Also see the accompanying COPYING file.
+Everything else, if not mentioned otherwise elsewhere, is released a BSD 2-Clause License. See the accompanying COPYING file.
 
 ## Software Overview
 
