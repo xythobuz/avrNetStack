@@ -37,30 +37,30 @@ uint8_t nextCheckTask = 0;
 // ----------------------
 
 uint8_t extendTaskCheckList(void) {
-	TestFunc *p;
-	Task *q;
+    TestFunc *p;
+    Task *q;
 
-	// Extend Check List
-	p = (TestFunc *)mrealloc(taskChecks, (tasksWithCheckRegistered + 1) * sizeof(TestFunc), tasksWithCheckRegistered * sizeof(TestFunc));
-	if (p == NULL) {
-		return 1;
-	}
-	taskChecks = p;
+    // Extend Check List
+    p = (TestFunc *)mrealloc(taskChecks, (tasksWithCheckRegistered + 1) * sizeof(TestFunc), tasksWithCheckRegistered * sizeof(TestFunc));
+    if (p == NULL) {
+        return 1;
+    }
+    taskChecks = p;
 
-	// Extend Task List
-	q = (Task *)mrealloc(tasksWithCheck, (tasksWithCheckRegistered + 1) * sizeof(Task), tasksWithCheckRegistered * sizeof(Task));
-	if (q == NULL) {
-		// Try to revert size of intervall list
-		p = (TestFunc *)mrealloc(taskChecks, tasksWithCheckRegistered * sizeof(TestFunc), (tasksWithCheckRegistered + 1) * sizeof(TestFunc));
-		if (p != NULL) {
-			taskChecks = p;
-		}
-		return 1;
-	}
-	tasksWithCheck = q;
+    // Extend Task List
+    q = (Task *)mrealloc(tasksWithCheck, (tasksWithCheckRegistered + 1) * sizeof(Task), tasksWithCheckRegistered * sizeof(Task));
+    if (q == NULL) {
+        // Try to revert size of intervall list
+        p = (TestFunc *)mrealloc(taskChecks, tasksWithCheckRegistered * sizeof(TestFunc), (tasksWithCheckRegistered + 1) * sizeof(TestFunc));
+        if (p != NULL) {
+            taskChecks = p;
+        }
+        return 1;
+    }
+    tasksWithCheck = q;
 
-	tasksWithCheckRegistered++; // Success!
-	return 0;
+    tasksWithCheckRegistered++; // Success!
+    return 0;
 }
 
 // ----------------------
@@ -68,38 +68,38 @@ uint8_t extendTaskCheckList(void) {
 // ----------------------
 
 uint8_t taskTestAlways(void) {
-	return 1;
+    return 1;
 }
 
 uint8_t tasksRegistered(void) {
-	return tasksWithCheckRegistered;
+    return tasksWithCheckRegistered;
 }
 
 uint8_t addConditionalTask(Task func, TestFunc testFunc) {
-	// func will be executed if testFunc returns a value other than zero!
-	if (extendTaskCheckList()) {
-		return 1;
-	}
-	tasksWithCheck[tasksWithCheckRegistered - 1] = func;
-	taskChecks[tasksWithCheckRegistered - 1] = testFunc;
-	return 0;
+    // func will be executed if testFunc returns a value other than zero!
+    if (extendTaskCheckList()) {
+        return 1;
+    }
+    tasksWithCheck[tasksWithCheckRegistered - 1] = func;
+    taskChecks[tasksWithCheckRegistered - 1] = testFunc;
+    return 0;
 }
 
 void tasks(void) {
-	// Check for Tasks that have a check function
-	if (tasksWithCheckRegistered > 0) {
-		if ((*taskChecks[nextCheckTask])() != 0) {
-			(*tasksWithCheck[nextCheckTask])();
-		}
+    // Check for Tasks that have a check function
+    if (tasksWithCheckRegistered > 0) {
+        if ((*taskChecks[nextCheckTask])() != 0) {
+            (*tasksWithCheck[nextCheckTask])();
+        }
 
-		debugPrint("Checked for Task ");
-		debugPrint(timeToString(nextCheckTask));
-		debugPrint("\n");
+        debugPrint("Checked for Task ");
+        debugPrint(timeToString(nextCheckTask));
+        debugPrint("\n");
 
-		if (nextCheckTask < (tasksWithCheckRegistered - 1)) {
-			nextCheckTask++;
-		} else {
-			nextCheckTask = 0;
-		}
-	}
+        if (nextCheckTask < (tasksWithCheckRegistered - 1)) {
+            nextCheckTask++;
+        } else {
+            nextCheckTask = 0;
+        }
+    }
 }

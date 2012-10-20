@@ -60,8 +60,8 @@
 // -----------------------------------
 
 typedef struct {
-	uint8_t *d;
-	uint16_t dLength;
+    uint8_t *d;
+    uint16_t dLength;
 } Packet;
 
 #include <net/mac.h>
@@ -71,9 +71,9 @@ typedef struct {
 // d = data, p = position, v = value
 #define is16BitEqual(d, p, v) (((d)[(p)] == (((v) & 0xFF00) >> 8)) && ((d)[(p)+1] == ((v) & 0x00FF)))
 #define get16Bit(d, p) (((d)[(p)] << 8) | (d)[(p)+1])
-#define set16Bit(d, p, v) ({	\
-	(d)[(p)] = ((v) & 0xFF00) >> 8;	\
-	(d)[(p) + 1] = ((v) & 0x00FF);	\
+#define set16Bit(d, p, v) ({        \
+    (d)[(p)] = ((v) & 0xFF00) >> 8; \
+    (d)[(p) + 1] = ((v) & 0x00FF);  \
 })
 
 extern char buff[BUFFSIZE];
@@ -90,25 +90,6 @@ void networkLoop(void);
 #define RARP 0x8035
 #define IPV6 0x86DD
 
-// -----------------------------------
-// |       Schematic Overview        |
-// -----------------------------------
-/*
- *   ---------------------------------------------
- *   | OSI |               Modules               |
- *   ---------------------------------------------
- *   ---------------------------------------------
- *   | 5-7 |   dhcp.h   |   dns.h   |   ntp.h    |
- *   ---------------------------------------------
- *   |  4  |      udp.h       |       tcp.h      |
- *   ---------------------------------------------
- *   |  3  |      ipv4.h      |      icmp.h      |
- *   ---------------------------------------------
- *   | 1+2 |   mac.h   |   arp.h   |   driver    |
- *   ---------------------------------------------
- *
- * controller.c/h is controling the operation of the IP Stack.
- */
 // -----------------------------------
 // |          Dependencies           |
 // -----------------------------------

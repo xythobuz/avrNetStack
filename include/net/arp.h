@@ -30,9 +30,9 @@
 #define ARPTableTimeout 10000 // Wait 10 seconds for ARP Replys
 
 typedef struct {
-	IPv4Address ip;
-	uint8_t     mac[6];
-	time_t      time;
+    IPv4Address ip;
+    uint8_t     mac[6];
+    time_t      time;
 } ARPTableEntry;
 
 #define ARPPacketSize 22 // Without header

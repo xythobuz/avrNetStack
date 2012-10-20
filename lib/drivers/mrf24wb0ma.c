@@ -42,67 +42,67 @@ uint8_t ownMacAddress[6];
 uint8_t zg2100IsrEnabled; // In asynclabs spi.h
 
 uint8_t zgInterruptCheck(void) {
-	if (zg2100IsrEnabled) {
-		if (INTPORTPIN & (1 << INTPIN)) {
-			return 1;
-		}
-	}
-	return 0;
+    if (zg2100IsrEnabled) {
+        if (INTPORTPIN & (1 << INTPIN)) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
-	uint8_t i;
-	uint8_t *p;
+    uint8_t i;
+    uint8_t *p;
 
-	INTDDR &= ~(1 << INTPIN); // Interrupt PIN
+    INTDDR &= ~(1 << INTPIN); // Interrupt PIN
 
-	zg_init();
+    zg_init();
 
-	addConditionalTask(zg_isr, zgInterruptCheck);
-	addConditionalTask(zg_drv_process, taskTestAlways);
+    addConditionalTask(zg_isr, zgInterruptCheck);
+    addConditionalTask(zg_drv_process, taskTestAlways);
 
-	p = zg_get_mac(); // Global Var. in g2100.c
-	for (i = 0; i < 6; i++) {
-		ownMacAddress[i] = p[i];
-		address[i] = ownMacAddress[i];
-	}
+    p = zg_get_mac(); // Global Var. in g2100.c
+    for (i = 0; i < 6; i++) {
+        ownMacAddress[i] = p[i];
+        address[i] = ownMacAddress[i];
+    }
 
-	return 0;
+    return 0;
 }
 
 void macReset(void) {
-	zg_chip_reset();
+    zg_chip_reset();
 }
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
-	return zg_get_conn_state();
+    return zg_get_conn_state();
 }
 
 uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
-	zg_sendPacket(p);
-	return 0; // no way to know this?
+    zg_sendPacket(p);
+    return 0; // no way to know this?
 }
 
 uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
-	if (zg_get_rx_status()) {
-		return 1;
-	}
-	return 0;
+    if (zg_get_rx_status()) {
+        return 1;
+    }
+    return 0;
 }
 
 Packet *macGetPacket(void) { // Returns NULL on error
-	Packet *p = NULL;
-	if (zg_get_rx_status()) {
-		p = zg_buffAsPacket();
-		zg_clear_rx_status();
-	}
-	return p;
+    Packet *p = NULL;
+    if (zg_get_rx_status()) {
+        p = zg_buffAsPacket();
+        zg_clear_rx_status();
+    }
+    return p;
 }
 
 uint8_t macHasInterrupt(void) {
-	if (INTPORTPIN & (1 << INTPIN)) {
-		return 0;
-	} else {
-		return 1;
-	}
+    if (INTPORTPIN & (1 << INTPIN)) {
+        return 0;
+    } else {
+        return 1;
+    }
 }

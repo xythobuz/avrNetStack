@@ -29,35 +29,35 @@
 #include <net/controller.h>
 
 uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint8_t l) {
-	uint8_t i;
-	for (i = 0; i < l; i++) {
-		if (d1[i] != pgm_read_byte(&(d2[i]))) {
-			return 0;
-		}
-	}
-	return 1;
+    uint8_t i;
+    for (i = 0; i < l; i++) {
+        if (d1[i] != pgm_read_byte(&(d2[i]))) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l) {
-	uint8_t i;
-	for (i = 0; i < l; i++) {
-		if (d1[i] != d2[i]) {
-			return 0;
-		}
-	}
-	return 1;
+    uint8_t i;
+    for (i = 0; i < l; i++) {
+        if (d1[i] != d2[i]) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 void dumpPacketRaw(Packet *p) {
 #if DEBUG >= 1
-	uint16_t i;
-	debugPrint("Raw Packet Dump: ");
-	for (i = 0; i < p->dLength; i++) {
-		debugPrint(hex2ToString(p->d[i]));
-		if (i < (p->dLength - 1)) {
-			debugPrint(" ");
-		}
-	}
-	debugPrint("\n");
+    uint16_t i;
+    debugPrint("Raw Packet Dump: ");
+    for (i = 0; i < p->dLength; i++) {
+        debugPrint(hex2ToString(p->d[i]));
+        if (i < (p->dLength - 1)) {
+            debugPrint(" ");
+        }
+    }
+    debugPrint("\n");
 #endif
 }

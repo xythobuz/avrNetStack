@@ -31,76 +31,76 @@ uint32_t heapBytesAllocated = 0;
 #ifndef DISABLE_HEAP_LOG
 
 void *mmalloc(size_t size) {
-	void *p = malloc(size);
-	if (p != NULL) {
-		heapBytesAllocated += (size);
+    void *p = malloc(size);
+    if (p != NULL) {
+        heapBytesAllocated += (size);
 #if DEBUG >= 1
-		debugPrint("  + ");
-		debugPrint(timeToString(size));
-		debugPrint("\n");
+        debugPrint("  + ");
+        debugPrint(timeToString(size));
+        debugPrint("\n");
 #endif
-	}
-	return p;
+    }
+    return p;
 }
 
 void *mrealloc(void *ptr, size_t newSize, size_t oldSize) {
-	void *p = realloc(ptr, newSize);
-	if (p != NULL) {
-		heapBytesAllocated += newSize;
-		heapBytesAllocated -= oldSize;
-	#if DEBUG >= 1
-		if (newSize > oldSize) {
-			debugPrint("  + ");
-			debugPrint(timeToString(newSize - oldSize));
-		} else {
-			debugPrint("  - ");
-			debugPrint(timeToString(oldSize - newSize));
-		}
-		debugPrint("\n");
+    void *p = realloc(ptr, newSize);
+    if (p != NULL) {
+        heapBytesAllocated += newSize;
+        heapBytesAllocated -= oldSize;
+#if DEBUG >= 1
+        if (newSize > oldSize) {
+            debugPrint("  + ");
+            debugPrint(timeToString(newSize - oldSize));
+        } else {
+            debugPrint("  - ");
+            debugPrint(timeToString(oldSize - newSize));
+        }
+        debugPrint("\n");
 #endif
-	}
-	return p;
+    }
+    return p;
 }
 
 void *mcalloc(size_t n, size_t s) {
-	void *p = calloc(n, s);
-	if (p != NULL) {
-		heapBytesAllocated += (n * s);
+    void *p = calloc(n, s);
+    if (p != NULL) {
+        heapBytesAllocated += (n * s);
 #if DEBUG >= 1
-		debugPrint("  + ");
-		debugPrint(timeToString(n * s));
-		debugPrint("\n");
+        debugPrint("  + ");
+        debugPrint(timeToString(n * s));
+        debugPrint("\n");
 #endif
-	}
-	return p;
+    }
+    return p;
 }
 
 void mfree(void *ptr, size_t size) {
-	free(ptr);
-	heapBytesAllocated -= size;
+    free(ptr);
+    heapBytesAllocated -= size;
 #if DEBUG >= 1
-	debugPrint("  - ");
-	debugPrint(timeToString(size));
-	debugPrint("\n");
+    debugPrint("  - ");
+    debugPrint(timeToString(size));
+    debugPrint("\n");
 #endif
 }
 
 #else // DISABLE_HEAP_LOG defined
 
 inline void *mmalloc(size_t size) {
-	return malloc(size);
+    return malloc(size);
 }
 
 inline void *mrealloc(void *ptr, size_t newSize, size_t oldSize) {
-	return realloc(ptr, newSize);
+    return realloc(ptr, newSize);
 }
 
 inline void *mcalloc(size_t n, size_t s) {
-	return calloc(n, s);
+    return calloc(n, s);
 }
 
 inline void mfree(void *ptr, size_t size) {
-	free(ptr);
+    free(ptr);
 }
 
 #endif // DISABLE_HEAP_LOG

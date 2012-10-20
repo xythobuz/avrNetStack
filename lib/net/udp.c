@@ -36,8 +36,8 @@
 uint8_t isBroadcastIp(uint8_t *d);
 
 typedef struct {
-	uint16_t port;
-	uint8_t (*func)(Packet *);
+    uint16_t port;
+    uint8_t (*func)(Packet *);
 } UdpHandler;
 
 UdpHandler *handlers = NULL;
@@ -51,78 +51,78 @@ IPv4Address target;
 uint16_t checksum(uint8_t *rawData, uint16_t l); // From ipv4.c
 
 int16_t findHandler(uint16_t port) {
-	uint16_t i;
-	if (handlers != NULL) {
-		for (i = 0; i < registeredHandlers; i++) {
-			if (handlers[i].port == port) {
-				return i;
-			}
-		}
-	}
-	return -1;
+    uint16_t i;
+    if (handlers != NULL) {
+        for (i = 0; i < registeredHandlers; i++) {
+            if (handlers[i].port == port) {
+                return i;
+            }
+        }
+    }
+    return -1;
 }
 
 #ifndef DISABLE_UDP_CHECKSUM
 uint16_t udpChecksum(Packet *p) {
-	uint8_t i;
-	uint16_t cs;
-	// We create the pseudo header in our already present buffer,
-	// calculate the checksum,
-	// then move the ip addresses back to their old places, so it can be used again...
-	// Required: UDP Length, Source and Target IP, UDP Data
+    uint8_t i;
+    uint16_t cs;
+    // We create the pseudo header in our already present buffer,
+    // calculate the checksum,
+    // then move the ip addresses back to their old places, so it can be used again...
+    // Required: UDP Length, Source and Target IP, UDP Data
 
-	// Move IPs (8 bytes) from IPv4PacketSourceOffset (12) to 8
-	for (i = 0; i < 8; i++) {
-		p->d[MACPreambleSize + 8 + i] = p->d[MACPreambleSize + IPv4PacketSourceOffset + i];
-	}
+    // Move IPs (8 bytes) from IPv4PacketSourceOffset (12) to 8
+    for (i = 0; i < 8; i++) {
+        p->d[MACPreambleSize + 8 + i] = p->d[MACPreambleSize + IPv4PacketSourceOffset + i];
+    }
 
-	// Insert data for Pseudo Header
-	p->d[MACPreambleSize + 16] = 0x00; // Zeros
-	p->d[MACPreambleSize + 17] = 0x11; // UDP Protocol
-	p->d[MACPreambleSize + 18] = p->d[UDPOffset + UDPLengthOffset];
-	p->d[MACPreambleSize + 19] = p->d[UDPOffset + UDPLengthOffset + 1]; // UDP Length
+    // Insert data for Pseudo Header
+    p->d[MACPreambleSize + 16] = 0x00; // Zeros
+    p->d[MACPreambleSize + 17] = 0x11; // UDP Protocol
+    p->d[MACPreambleSize + 18] = p->d[UDPOffset + UDPLengthOffset];
+    p->d[MACPreambleSize + 19] = p->d[UDPOffset + UDPLengthOffset + 1]; // UDP Length
 
-	// Clear UDP Checksum field
-	p->d[UDPOffset + UDPChecksumOffset] = 0;
-	p->d[UDPOffset + UDPChecksumOffset + 1] = 0;
+    // Clear UDP Checksum field
+    p->d[UDPOffset + UDPChecksumOffset] = 0;
+    p->d[UDPOffset + UDPChecksumOffset + 1] = 0;
 
 #if DEBUG >= 2
-	debugPrint("\nChecksum data size: ");
-	debugPrint(timeToString(12 + get16Bit(p->d, UDPOffset + UDPLengthOffset)));
-	debugPrint(" bytes.\nPseudo Header: ");
-	for (i = 0; i < 12; i++) {
-		if (i < 8) {
-			debugPrint(timeToString((p->d + MACPreambleSize + 8)[i]));
-		} else {
-			debugPrint(hex2ToString((p->d + MACPreambleSize + 8)[i]));
-		}
-		if (i < 11) {
-			debugPrint(" ");
-		}
-	}
-	debugPrint("\nUDP Header: ");
-	for (i = 0; i < 8; i++) {
-		debugPrint(hex2ToString((p->d + MACPreambleSize + 20)[i]));
-		if (i < 7) {
-			debugPrint(" ");
-		}
-	}
-	debugPrint("\n\n");
+    debugPrint("\nChecksum data size: ");
+    debugPrint(timeToString(12 + get16Bit(p->d, UDPOffset + UDPLengthOffset)));
+    debugPrint(" bytes.\nPseudo Header: ");
+    for (i = 0; i < 12; i++) {
+        if (i < 8) {
+            debugPrint(timeToString((p->d + MACPreambleSize + 8)[i]));
+        } else {
+            debugPrint(hex2ToString((p->d + MACPreambleSize + 8)[i]));
+        }
+        if (i < 11) {
+            debugPrint(" ");
+        }
+    }
+    debugPrint("\nUDP Header: ");
+    for (i = 0; i < 8; i++) {
+        debugPrint(hex2ToString((p->d + MACPreambleSize + 20)[i]));
+        if (i < 7) {
+            debugPrint(" ");
+        }
+    }
+    debugPrint("\n\n");
 #endif
 
-	// Calculate Checksum
-	cs = checksum(p->d + MACPreambleSize + 8, 12 + get16Bit(p->d, UDPOffset + UDPLengthOffset));
+    // Calculate Checksum
+    cs = checksum(p->d + MACPreambleSize + 8, 12 + get16Bit(p->d, UDPOffset + UDPLengthOffset));
 
-	// Move IPs back
-	for (i = 0; i < 8; i++) {
-		p->d[MACPreambleSize + 12 + i] = p->d[MACPreambleSize + 8 + i];
-	}
-	// Restore IPv4 Protocol and Checksum
-	p->d[MACPreambleSize + IPv4PacketProtocolOffset] = 0x11; // UDP
-	p->d[MACPreambleSize + IPv4PacketProtocolOffset + 1] = 0;
-	p->d[MACPreambleSize + IPv4PacketProtocolOffset + 2] = 0; // Checksum field
+    // Move IPs back
+    for (i = 0; i < 8; i++) {
+        p->d[MACPreambleSize + 12 + i] = p->d[MACPreambleSize + 8 + i];
+    }
+    // Restore IPv4 Protocol and Checksum
+    p->d[MACPreambleSize + IPv4PacketProtocolOffset] = 0x11; // UDP
+    p->d[MACPreambleSize + IPv4PacketProtocolOffset + 1] = 0;
+    p->d[MACPreambleSize + IPv4PacketProtocolOffset + 2] = 0; // Checksum field
 
-	return cs;
+    return cs;
 }
 #endif
 
@@ -134,90 +134,90 @@ void udpInit(void) {}
 
 // 0 on success, 1 not enough mem, 2 invalid
 uint8_t udpHandlePacket(Packet *p) {
-	uint8_t i;
-	uint16_t ocs = 0x0000, cs = 0x0000;
+    uint8_t i;
+    uint16_t ocs = 0x0000, cs = 0x0000;
 
-	assert(p->dLength > (UDPOffset + UDPDataOffset));
-	assert(p->dLength < MaxPacketSize);
+    assert(p->dLength > (UDPOffset + UDPDataOffset));
+    assert(p->dLength < MaxPacketSize);
 
 #ifndef DISABLE_UDP_CHECKSUM
-	ocs = get16Bit(p->d, UDPOffset + UDPChecksumOffset);
-	cs = udpChecksum(p);
+    ocs = get16Bit(p->d, UDPOffset + UDPChecksumOffset);
+    cs = udpChecksum(p);
 #endif
-	if (cs != ocs) {
+    if (cs != ocs) {
 #if DEBUG >= 1
-		debugPrint("UDP Checksum invalid: ");
-		debugPrint(hexToString(cs));
-		debugPrint(" != ");
-		debugPrint(hexToString(ocs));
-		debugPrint("\n");
+        debugPrint("UDP Checksum invalid: ");
+        debugPrint(hexToString(cs));
+        debugPrint(" != ");
+        debugPrint(hexToString(ocs));
+        debugPrint("\n");
 #endif
-		mfree(p->d, p->dLength);
-		mfree(p, sizeof(Packet));
-		return 2;
-	}
+        mfree(p->d, p->dLength);
+        mfree(p, sizeof(Packet));
+        return 2;
+    }
 
-	// Look for a handler
-	for (i = 0; i < registeredHandlers; i++) {
-		if (handlers[i].port == get16Bit(p->d, UDPOffset + UDPDestinationOffset)) {
-			// found handler
-			return handlers[i].func(p);
-		}
-	}
+    // Look for a handler
+    for (i = 0; i < registeredHandlers; i++) {
+        if (handlers[i].port == get16Bit(p->d, UDPOffset + UDPDestinationOffset)) {
+            // found handler
+            return handlers[i].func(p);
+        }
+    }
 
-	debugPrint("UDP: No handler for ");
-	debugPrint(timeToString(get16Bit(p->d, UDPOffset + UDPDestinationOffset)));
-	debugPrint("\n");
-	mfree(p->d, p->dLength);
-	mfree(p, sizeof(Packet));
-	return 0;
+    debugPrint("UDP: No handler for ");
+    debugPrint(timeToString(get16Bit(p->d, UDPOffset + UDPDestinationOffset)));
+    debugPrint("\n");
+    mfree(p->d, p->dLength);
+    mfree(p, sizeof(Packet));
+    return 0;
 }
 
 
 // Overwrites existing handler for this port
 // 0 on succes, 1 on not enough RAM
 uint8_t udpRegisterHandler(uint8_t (*handler)(Packet *), uint16_t port) {
-	uint16_t i;
+    uint16_t i;
 
-	// Check if port is already in list
-	for (i = 0; i < registeredHandlers; i++) {
-		if (handlers[i].port == port) {
-			handlers[i].func = handler;
-			return 0;
-		}
-	}
+    // Check if port is already in list
+    for (i = 0; i < registeredHandlers; i++) {
+        if (handlers[i].port == port) {
+            handlers[i].func = handler;
+            return 0;
+        }
+    }
 
-	// Extend list, add new handler.
-	UdpHandler *tmp = (UdpHandler *)mrealloc(handlers, (registeredHandlers + 1) * sizeof(UdpHandler), registeredHandlers * sizeof(UdpHandler));
-	if (tmp == NULL) {
-		return 1;
-	}
-	handlers = tmp;
-	handlers[registeredHandlers].port = port;
-	handlers[registeredHandlers].func = handler;
-	registeredHandlers++;
-	return 0;
+    // Extend list, add new handler.
+    UdpHandler *tmp = (UdpHandler *)mrealloc(handlers, (registeredHandlers + 1) * sizeof(UdpHandler), registeredHandlers * sizeof(UdpHandler));
+    if (tmp == NULL) {
+        return 1;
+    }
+    handlers = tmp;
+    handlers[registeredHandlers].port = port;
+    handlers[registeredHandlers].func = handler;
+    registeredHandlers++;
+    return 0;
 }
 
 uint8_t udpSendPacket(Packet *p, uint8_t *targetIp, uint16_t targetPort, uint16_t sourcePort) {
-	uint8_t i;
+    uint8_t i;
 #ifndef DISABLE_UDP_CHECKSUM
-	uint16_t cs;
+    uint16_t cs;
 #endif
 
-	// We have to write ip addresses before calculating the checksum...
-	for (i = 0; i < 4; i++) {
-		p->d[MACPreambleSize + IPv4PacketSourceOffset + i] = ownIpAddress[i];
-		p->d[MACPreambleSize + IPv4PacketDestinationOffset + i] = targetIp[i];
-	}
-	set16Bit(p->d, UDPOffset + UDPSourceOffset, sourcePort);
-	set16Bit(p->d, UDPOffset + UDPDestinationOffset, targetPort);
-	set16Bit(p->d, UDPOffset + UDPLengthOffset, p->dLength - UDPOffset);
+    // We have to write ip addresses before calculating the checksum...
+    for (i = 0; i < 4; i++) {
+        p->d[MACPreambleSize + IPv4PacketSourceOffset + i] = ownIpAddress[i];
+        p->d[MACPreambleSize + IPv4PacketDestinationOffset + i] = targetIp[i];
+    }
+    set16Bit(p->d, UDPOffset + UDPSourceOffset, sourcePort);
+    set16Bit(p->d, UDPOffset + UDPDestinationOffset, targetPort);
+    set16Bit(p->d, UDPOffset + UDPLengthOffset, p->dLength - UDPOffset);
 #ifndef DISABLE_UDP_CHECKSUM
-	cs = udpChecksum(p);
-	set16Bit(p->d, UDPOffset + UDPChecksumOffset, cs);
+    cs = udpChecksum(p);
+    set16Bit(p->d, UDPOffset + UDPChecksumOffset, cs);
 #endif
-	return ipv4SendPacket(p, targetIp, UDP);
+    return ipv4SendPacket(p, targetIp, UDP);
 }
 
 #endif // DISABLE_UDP

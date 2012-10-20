@@ -50,157 +50,157 @@ char buff[BUFFSIZE];
 uint16_t tl = 0;
 
 char *timeToString(time_t s) {
-	return ultoa(s, buff, 10);
+    return ultoa(s, buff, 10);
 }
 
 char *hexToString(uint64_t s) {
-	buff[0] = '0';
-	buff[1] = 'x';
-	ultoa(s, (buff + 2), 16);
-	if ((strlen(buff + 2) % 2) != 0) {
-		memmove(buff + 3, buff + 2, strlen(buff + 2) + 1); // Make room for...
-		buff[2] = '0'; // ...trailing zero
-	}
-	return buff;
+    buff[0] = '0';
+    buff[1] = 'x';
+    ultoa(s, (buff + 2), 16);
+    if ((strlen(buff + 2) % 2) != 0) {
+        memmove(buff + 3, buff + 2, strlen(buff + 2) + 1); // Make room for...
+        buff[2] = '0'; // ...trailing zero
+    }
+    return buff;
 }
 
 char *hex2ToString(uint64_t s) {
-	ultoa(s, buff, 16);
-	if ((strlen(buff) % 2) != 0) {
-		memmove(buff + 1, buff, strlen(buff) + 1); // Make room for...
-		buff[0] = '0'; // ...trailing zero
-	}
-	return buff;
+    ultoa(s, buff, 16);
+    if ((strlen(buff) % 2) != 0) {
+        memmove(buff + 1, buff, strlen(buff) + 1); // Make room for...
+        buff[0] = '0'; // ...trailing zero
+    }
+    return buff;
 }
 
 #if DEBUG >= 2
 char *typeString(uint16_t t) {
-	if (tl == IPV4) {
-		return "IPv4";
-	} else if (tl == ARP) {
-		return "ARP";
-	} else if (tl == IPV6) {
-		return "IPv6";
-	}
-	return "Unknown";
+    if (tl == IPV4) {
+        return "IPv4";
+    } else if (tl == ARP) {
+        return "ARP";
+    } else if (tl == IPV6) {
+        return "IPv6";
+    }
+    return "Unknown";
 }
 #endif
 
 #if DEBUG >= 1
 uint8_t debugUdpHandler(Packet *p) {
-	uint16_t i, max;
-	max = get16Bit(p->d, UDPOffset + UDPLengthOffset);
-	debugPrint("Data: ");
-	for (i = 0; i < max; i++) {
-		serialWrite(p->d[UDPOffset + UDPDataOffset + i]);
-		if (i < (max - 1)) {
-			debugPrint(" ");
-		}
-	}
-	debugPrint("\n");
-	return 0;
+    uint16_t i, max;
+    max = get16Bit(p->d, UDPOffset + UDPLengthOffset);
+    debugPrint("Data: ");
+    for (i = 0; i < max; i++) {
+        serialWrite(p->d[UDPOffset + UDPDataOffset + i]);
+        if (i < (max - 1)) {
+            debugPrint(" ");
+        }
+    }
+    debugPrint("\n");
+    return 0;
 }
 #endif
 
 void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
-	macInitialize(mac);
-	debugPrint("Hardware Driver initialized...\n");
-	arpInit();
-	ipv4Init(ip, subnet, gateway);
+    macInitialize(mac);
+    debugPrint("Hardware Driver initialized...\n");
+    arpInit();
+    ipv4Init(ip, subnet, gateway);
 
 #ifndef DISABLE_ICMP
-	icmpInit();
-	debugPrint("ICMP initialized...\n");
+    icmpInit();
+    debugPrint("ICMP initialized...\n");
 #endif
 
 #ifndef DISABLE_UDP
-	udpInit();
-	debugPrint("UDP initialized...\n");
+    udpInit();
+    debugPrint("UDP initialized...\n");
 #if DEBUG >= 1
-	udpRegisterHandler(&debugUdpHandler, 6600);
+    udpRegisterHandler(&debugUdpHandler, 6600);
 #endif
 #ifndef DISABLE_DHCP
-	// udpRegisterHandler(&dhcpHandler, 68);
+    // udpRegisterHandler(&dhcpHandler, 68);
 #endif
 #ifndef DISABLE_DNS
-	// udpRegisterHandler(&dnsHandler, 53);
+    // udpRegisterHandler(&dnsHandler, 53);
 #endif
 #ifndef DISABLE_NTP
-	udpRegisterHandler(&ntpHandler, 123);
+    udpRegisterHandler(&ntpHandler, 123);
 #endif
 #endif // DISABLE_UDP
 
-	addConditionalTask((Task)networkHandler, macHasInterrupt); // Enable polling
-	addConditionalTask(ipv4SendQueue, ipv4PacketsToSend); // Enable transmission
+    addConditionalTask((Task)networkHandler, macHasInterrupt); // Enable polling
+    addConditionalTask(ipv4SendQueue, ipv4PacketsToSend); // Enable transmission
 }
 
 void networkLoop(void) {
-	// Run the tasks
-	scheduler();
-	wdt_reset();
-	tasks();
-	wdt_reset();
+    // Run the tasks
+    scheduler();
+    wdt_reset();
+    tasks();
+    wdt_reset();
 }
 
 uint8_t networkHandler(void) {
-	Packet *p;
-	
-	while (macLinkIsUp() && (macPacketsReceived() > 0)) {
-		p = macGetPacket();
+    Packet *p;
 
-		if (p == NULL) {
-			debugPrint("Not enough memory to allocate Packet struct!\n");
-			debugPrint(timeToString(heapBytesAllocated));
-			debugPrint(" bytes should be allocated...\n");
-			return 1;
-		}
+    while (macLinkIsUp() && (macPacketsReceived() > 0)) {
+        p = macGetPacket();
 
-		assert(p->dLength != 0);
-		assert(p->dLength <= MaxPacketSize);
+        if (p == NULL) {
+            debugPrint("Not enough memory to allocate Packet struct!\n");
+            debugPrint(timeToString(heapBytesAllocated));
+            debugPrint(" bytes should be allocated...\n");
+            return 1;
+        }
 
-		if (p->d == NULL) {
-			debugPrint("Not enough memory to receive packet with ");
-			debugPrint(timeToString(p->dLength));
-			debugPrint(" bytes!\n");
-			mfree(p, sizeof(Packet));
-			return 1;
-		}
+        assert(p->dLength != 0);
+        assert(p->dLength <= MaxPacketSize);
 
-		tl = get16Bit(p->d, 12);
+        if (p->d == NULL) {
+            debugPrint("Not enough memory to receive packet with ");
+            debugPrint(timeToString(p->dLength));
+            debugPrint(" bytes!\n");
+            mfree(p, sizeof(Packet));
+            return 1;
+        }
+
+        tl = get16Bit(p->d, 12);
 
 #if DEBUG >= 2
-		debugPrint(timeToString(getSystemTimeSeconds()));
-		debugPrint(" - ");
-		debugPrint(typeString(tl));
-		debugPrint(" Packet with ");
-		debugPrint(timeToString(p->dLength));
-		debugPrint(" bytes Received!\n");
+        debugPrint(timeToString(getSystemTimeSeconds()));
+        debugPrint(" - ");
+        debugPrint(typeString(tl));
+        debugPrint(" Packet with ");
+        debugPrint(timeToString(p->dLength));
+        debugPrint(" bytes Received!\n");
 #endif
 
-		if (tl == IPV4) {
-			// IPv4 Packet
-			return ipv4ProcessPacket(p);
-		} else if (tl == ARP) {
-			// Address Resolution Protocol Packet
-			return arpProcessPacket(p);
-		} else if (tl == WOL) {
-			// Wake on Lan Packet
-		} else if (tl == RARP) {
-			// Reverse Address Resolution Protocol Packet
-		} else if (tl <= 0x0600) {
-			// Ethernet type I packet. typeLength = Real data length
-		} else if (tl == IPV6) {
-			// IPv6 Packet
-		}
+        if (tl == IPV4) {
+            // IPv4 Packet
+            return ipv4ProcessPacket(p);
+        } else if (tl == ARP) {
+            // Address Resolution Protocol Packet
+            return arpProcessPacket(p);
+        } else if (tl == WOL) {
+            // Wake on Lan Packet
+        } else if (tl == RARP) {
+            // Reverse Address Resolution Protocol Packet
+        } else if (tl <= 0x0600) {
+            // Ethernet type I packet. typeLength = Real data length
+        } else if (tl == IPV6) {
+            // IPv6 Packet
+        }
 
-		// Packet unhandled, free it
-		mfree(p->d, p->dLength);
-		mfree(p, sizeof(Packet));
-		return 42;
-	}
-	return 0xFF;
+        // Packet unhandled, free it
+        mfree(p->d, p->dLength);
+        mfree(p, sizeof(Packet));
+        return 42;
+    }
+    return 0xFF;
 }
 
 uint16_t networkLastProtocol(void) {
-	return tl;
+    return tl;
 }

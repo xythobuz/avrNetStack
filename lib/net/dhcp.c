@@ -39,9 +39,9 @@ uint8_t acked = 0;
 
 // 0 on success, 1 no mem, 2 invalid
 uint8_t dhcpHandler(Packet *p) {
-	return 0;
+    return 0;
 }
 
 uint8_t dhcpIssueRequest(void) {
-	return 0;
+    return 0;
 }

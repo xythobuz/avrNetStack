@@ -45,17 +45,17 @@ uint8_t ntpServerDomain[] = "0.de.pool.ntp.org";
 IPv4Address ntpServer = { 78, 46, 85, 230 };
 
 uint8_t ntpHandler(Packet *p) {
-	time_t stamp = 0;
-	debugPrint("Got NTP Response!\n");
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 16] << 24;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 17] << 16;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 18] << 8;
-	stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 19];
-	setNtpTimestamp(stamp);
-	mfree(p->d, p->dLength);
-	mfree(p, sizeof(Packet));
-	debugPrint("Injected new timestamp!\n");
-	return 0;
+    time_t stamp = 0;
+    debugPrint("Got NTP Response!\n");
+    stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 16] << 24;
+    stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 17] << 16;
+    stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 18] << 8;
+    stamp |= (time_t)p->d[UDPOffset + UDPDataOffset + 19];
+    setNtpTimestamp(stamp);
+    mfree(p->d, p->dLength);
+    mfree(p, sizeof(Packet));
+    debugPrint("Injected new timestamp!\n");
+    return 0;
 }
 
 // 0 on success, 1 if destination unknown, try again later.
@@ -64,30 +64,30 @@ uint8_t ntpHandler(Packet *p) {
 
 // 0 on success, 1 on no mem, 2 on error
 uint8_t ntpIssueRequest(void) {
-	uint8_t i;
-	Packet *p = (Packet *)mmalloc(sizeof(Packet));
-	if (p == NULL) {
-		return 1;
-	}
-	p->dLength = UDPOffset + UDPDataOffset + NTPMessageSize;
-	p->d = (uint8_t *)mmalloc(p->dLength);
-	if (p->d == NULL) {
-		mfree(p, sizeof(Packet));
-		return 1;
-	}
+    uint8_t i;
+    Packet *p = (Packet *)mmalloc(sizeof(Packet));
+    if (p == NULL) {
+        return 1;
+    }
+    p->dLength = UDPOffset + UDPDataOffset + NTPMessageSize;
+    p->d = (uint8_t *)mmalloc(p->dLength);
+    if (p->d == NULL) {
+        mfree(p, sizeof(Packet));
+        return 1;
+    }
 
 #ifndef DISABLE_DNS
-	dnsGetIp(ntpServerDomain, ntpServer); // If it doesn't work, we rely on the defaults
+    dnsGetIp(ntpServerDomain, ntpServer); // If it doesn't work, we rely on the defaults
 #endif
 
-	p->d[UDPOffset + UDPDataOffset] = NTPFirstByte;
-	for (i = 1; i < NTPMessageSize; i++) {
-		p->d[UDPOffset + UDPDataOffset + i] = 0x00; // Yes, SNTP is simple...
-	}
+    p->d[UDPOffset + UDPDataOffset] = NTPFirstByte;
+    for (i = 1; i < NTPMessageSize; i++) {
+        p->d[UDPOffset + UDPDataOffset + i] = 0x00; // Yes, SNTP is simple...
+    }
 
-	debugPrint("Sending NTP Request...\n");
+    debugPrint("Sending NTP Request...\n");
 
-	return udpSendPacket(p, ntpServer, 123, 123);
+    return udpSendPacket(p, ntpServer, 123, 123);
 }
 
 #endif // DISABLE_NTP

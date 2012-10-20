@@ -64,13 +64,16 @@ int main(void) {
     MCUSR = 0;
     wdt_disable();
 
-    serialInit(BAUD(39400, F_CPU), 8, NONE, 1);
+    serialInit(BAUD(38400, F_CPU));
     initSystemTimer();
 
     DDRA |= (1 << PA7) | (1 << PA6);
     PORTA |= (1 << PA7) | (1 << PA6); // LEDs on
 
     sei(); // Enable Interrupts so we get UART data before entering networkInit
+
+    serialWriteString("Alive!\n");
+    while (!serialTxBufferEmpty());
 
     wdt_enable(WDTO_2S);
 
@@ -93,13 +96,6 @@ int main(void) {
         serialWriteString(hexToString(i));
     }
     serialWrite('\n');
-
-    if (!macLinkIsUp()) {
-        serialWriteString(getString(2)); // Link is down
-        serialWriteString(getString(17)); // Waiting
-        while(!macLinkIsUp());
-    }
-    serialWriteString(getString(3)); // Link is up
 
     PORTA &= ~((1 << PA7) | (1 << PA6)); // LEDs off
 
@@ -320,7 +316,7 @@ void serialHandler(void) {
 
         case 'q': // Trigger Watchdog Reset
             serialWriteString(getString(11));
-            while(!transmitBufferEmpty()) {
+            while(!serialTxBufferEmpty()) {
                 wdt_reset();
             }
             wdt_enable(WDTO_15MS);
