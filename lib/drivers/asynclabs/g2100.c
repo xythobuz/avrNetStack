@@ -1,15 +1,14 @@
 
 /*****************************************************************************
 
-Filename:		g2100.c
-Description:	Driver for the ZeroG Wireless G2100 series devices
+ Filename:    g2100.c
+ Description: Driver for the ZeroG Wireless G2100 series devices
 
  *****************************************************************************
 
  Driver for the WiShield 1.0 wireless devices
 
  Copyright(c) 2009 Async Labs Inc. All rights reserved.
- Copyright(c) 2012 Thomas Buck.
 
  This program is free software; you can redistribute it and/or modify it
  under the terms of version 2 of the GNU General Public License as
@@ -25,85 +24,67 @@ Description:	Driver for the ZeroG Wireless G2100 series devices
  Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
  Contact Information:
- <asynclabs@asynclabs.com>
+ <asynclabs@asynclabs.com>      Asynclabs
+ <www.heesch.net>               Stefan Heesch
 
- Author               Date         Comment
+
+ Author               Date        Comment
  ----------------------------------------------------------------------------
- AsyncLabs            02/25/2009   Initial port
- AsyncLabs            05/29/2009   Adding support for new library
- Thomas Buck          10/06/2012   Modified to work with avrNetStack
+ AsyncLabs            02/25/2009  Initial port
+ AsyncLabs            05/29/2009  Adding support for new library
+ Stefan Heesch        11/21/2010  Added patch for avoiding rx buffer overrun
 
  *****************************************************************************/
-#include <avr/io.h>
-#include <stdlib.h>
-
-#include <std.h>
 
 #include <string.h>
-#include "witypes.h"
 #include "config.h"
 #include "g2100.h"
-#include "spi.h"
 
-#define G21BUFSIZE 105
+unsigned char  mac[6];
+unsigned char  zg_conn_status;
 
-static U8 mac[6];
-static U8 zg_conn_status;
+unsigned char  hdr[5];
+unsigned char  intr_occured;
+unsigned char  intr_valid;
+unsigned char  zg_drv_state;
+unsigned char  tx_ready;
+unsigned char  rx_ready;
+unsigned char  cnf_pending;
+unsigned char* zg_buf;
+unsigned int   zg_buf_len;
 
-static U8 hdr[5];
-static U8 intr_occured;
-static U8 intr_valid;
-static U8 zg_drv_state;
-static U8 tx_ready;
-static U8 rx_ready;
-static U8 cnf_pending;
-static U8 *rx_buf;
-static U16 rx_buf_len;
-static U8 *tx_buf;
-static U16 tx_buf_len;
-static U8 zg_buf[G21BUFSIZE]; // Buffer for eg. PSK CALC REQs
-static U16 zg_buf_len;
-static U16 lastRssi;
-static U8 scan_cnt;
-static U8 wpa_psk_key[32];
-
-U8 ssid_len;
-U8 security_passphrase_len;
+unsigned char  wpa_psk_key[32];
 
 void zg_init()
 {
-    U8 clr;
+    unsigned char clr;
 
-    LEDConn_Init();
     ZG2100_SpiInit();
     clr = SPSR;
     clr = SPDR;
 
     intr_occured = 0;
     intr_valid = 0;
-    lastRssi = 0;
     zg_drv_state = DRV_STATE_INIT;
     zg_conn_status = 0;
     tx_ready = 0;
     rx_ready = 0;
     cnf_pending = 0;
+    // zg_buf = MyNetworkBuffer;
+    // zg_buf_len = NETWORK_BUFSIZE;
 
     zg_chip_reset();
     zg_interrupt2_reg();
     zg_interrupt_reg(0xff, 0);
     zg_interrupt_reg(0x80|0x40, 1);
 
-    rx_buf_len = 0;
-    tx_buf_len = 0;
-    zg_buf_len = G21BUFSIZE;
-
-    ssid_len = (U8)strlen(ssid);
-    security_passphrase_len = (U8)strlen_P(security_passphrase);
+    ssid_len = (unsigned char)strlen(ssid);
+    security_passphrase_len = (unsigned char)strlen(security_passphrase);
 }
 
-void spi_transfer(volatile U8* buf, U16 len, U8 toggle_cs)
+void spi_transfer(volatile unsigned char* buf, unsigned int len, unsigned char toggle_cs)
 {
-    U16 i;
+    unsigned int i;
 
     ZG2100_CSoff();
 
@@ -120,7 +101,7 @@ void spi_transfer(volatile U8* buf, U16 len, U8 toggle_cs)
 
 void zg_chip_reset()
 {
-    U8 loop_cnt = 0;
+    unsigned char loop_cnt = 0;
 
     do {
         // write reset register addr
@@ -176,7 +157,7 @@ void zg_interrupt2_reg()
     return;
 }
 
-void zg_interrupt_reg(U8 mask, U8 state)
+void zg_interrupt_reg(unsigned char mask, unsigned char state)
 {
     // read the interrupt register
     hdr[0] = 0x40 | ZG_INTR_MASK_REG;
@@ -202,8 +183,8 @@ void zg_isr()
 
 void zg_process_isr()
 {
-    U8 intr_state = 0;
-    U8 next_cmd = 0;
+    unsigned char intr_state = 0;
+    unsigned char next_cmd = 0;
 
     hdr[0] = 0x40 | ZG_INTR_REG;
     hdr[1] = 0x00;
@@ -216,7 +197,7 @@ void zg_process_isr()
         switch(intr_state) {
             case ZG_INTR_ST_RD_INTR_REG:
                 {
-                    U8 intr_val = hdr[1] & hdr[2];
+                    unsigned char intr_val = hdr[1] & hdr[2];
 
                     if ( (intr_val & ZG_INTR_MASK_FIFO1) == ZG_INTR_MASK_FIFO1) {
                         hdr[0] = ZG_INTR_REG;
@@ -244,53 +225,43 @@ void zg_process_isr()
                     break;
                 }
             case ZG_INTR_ST_WT_INTR_REG:
-                {
-                    hdr[0] = 0x40 | next_cmd;
-                    hdr[1] = 0x00;
-                    hdr[2] = 0x00;
-                    spi_transfer(hdr, 3, 1);
+                hdr[0] = 0x40 | next_cmd;
+                hdr[1] = 0x00;
+                hdr[2] = 0x00;
+                spi_transfer(hdr, 3, 1);
 
-                    intr_state = ZG_INTR_ST_RD_CTRL_REG;
-                    break;
-                }
-                // *************************************************************************************
-                // Released version of WiShield library code (ZG_INTR_ST_RD_CTRL_REG)
-                // susceptible to "packet too large issue" but allows
-                // WiServer/WebServer to work.  Needs to be replaced with
-                // good fix.
+                intr_state = ZG_INTR_ST_RD_CTRL_REG;
+                break;
             case ZG_INTR_ST_RD_CTRL_REG:
                 {
-                    U16 rx_byte_cnt = (0x0000 | (hdr[1] << 8) | hdr[2]) & 0x0fff;
+                    unsigned int rx_byte_cnt = (0x0000 | (hdr[1] << 8) | hdr[2]) & 0x0fff;
 
-                    // Now dynamically allocating buffer
-                    if (rx_buf != NULL) {
-                        mfree(rx_buf, rx_buf_len);
+                    if (rx_byte_cnt < zg_buf_len )
+                    {
+                        zg_buf[0] = ZG_CMD_RD_FIFO;
+                        spi_transfer(zg_buf, rx_byte_cnt + 1, 1);
+
+                        hdr[0] = ZG_CMD_RD_FIFO_DONE;
+                        spi_transfer(hdr, 1, 1);
+
+                        intr_valid = 1;
+                        intr_state = 0;
                     }
-
-                    rx_buf = mmalloc(rx_byte_cnt + 1);
-                    if (rx_buf == NULL) {
-                        break;
+                    else
+                    {
+                        intr_valid = 0;
+                        intr_state = 0;
                     }
-                    rx_buf_len = rx_byte_cnt + 1;
-
-                    zg_buf[0] = ZG_CMD_RD_FIFO;
-                    spi_transfer(rx_buf, rx_byte_cnt + 1, 1);
-
-                    hdr[0] = ZG_CMD_RD_FIFO_DONE;
-                    spi_transfer(hdr, 1, 1);
-
-                    intr_valid = 1;
-
-                    intr_state = 0;
                     break;
                 }
         }
     } while (intr_state);
+
     intr_occured = 0;
     ZG2100_ISR_ENABLE();
 }
 
-void zg_send(U8* buf, U16 len)
+void zg_send(unsigned char* buf, unsigned int len)
 {
     hdr[0] = ZG_CMD_WT_FIFO_DATA;
     hdr[1] = ZG_MAC_TYPE_TXDATA_REQ;
@@ -309,27 +280,22 @@ void zg_send(U8* buf, U16 len)
     spi_transfer(hdr, 1, 1);
 }
 
-void zg_recv(U8* buf, U16* len)
+void zg_recv(unsigned char* buf, unsigned int* len)
 {
-    zg_rx_data_ind_t* ptr = (zg_rx_data_ind_t*)&(buf[3]);
+    zg_rx_data_ind_t* ptr = (zg_rx_data_ind_t*)&(zg_buf[3]);
     *len = ZGSTOHS( ptr->dataLen );
-    lastRssi = ZGSTOHS( ptr->rssi );
 
-    memcpy(&buf[0], &buf[5], 6);
-    memcpy(&buf[6], &buf[11], 6);
-    memcpy(&buf[12], &buf[29], *len);
+    memcpy(&zg_buf[0], &zg_buf[5], 6);
+    memcpy(&zg_buf[6], &zg_buf[11], 6);
+    memcpy(&zg_buf[12], &zg_buf[29], *len);
 
     *len += 12;
 }
 
-void zg_clear_rx_status() {
-    rx_ready = 0;
-}
-
-U16 zg_get_rx_status()
+unsigned int zg_get_rx_status()
 {
     if (rx_ready) {
-        // rx_ready = 0;
+        rx_ready = 0;
         return zg_buf_len;
     }
     else {
@@ -337,53 +303,48 @@ U16 zg_get_rx_status()
     }
 }
 
-void zg_sendPacket(Packet *p) {
-    tx_buf = p->d;
-    tx_buf_len = p->dLength;
-    if ((tx_buf != NULL) && (tx_buf_len > 0)) {
-        tx_ready = 1;
-    }
+void zg_clear_rx_status()
+{
+    rx_ready = 0;
 }
 
-U8 zg_get_conn_state()
+void zg_set_tx_status(unsigned char status)
+{
+    tx_ready = status;
+}
+
+unsigned char zg_get_conn_state()
 {
     return zg_conn_status;
 }
 
-Packet *zg_buffAsPacket(void) {
-    Packet *p = (Packet *)mmalloc(sizeof(Packet));
-    if (p != NULL) {
-        p->d = rx_buf;
-        p->dLength = rx_buf_len;
-        rx_buf = NULL;
-        rx_buf_len = 0;
-        return p;
-    } else {
-        return NULL;
-    }
+void zg_set_buf(unsigned char* buf, unsigned int buf_len)
+{
+    zg_buf = buf;
+    zg_buf_len = buf_len;
 }
 
-U8* zg_get_mac()
+unsigned char* zg_get_mac()
 {
     return mac;
 }
 
-void zg_write_wep_key(U8* cmd_buf)
+void zg_write_wep_key(unsigned char* cmd_buf)
 {
     zg_wep_key_req_t* cmd = (zg_wep_key_req_t*)cmd_buf;
 
-    cmd->slot = 3;                    // WEP key slot
-    cmd->keyLen = 13;    // Key length: 5 bytes (64-bit WEP); 13 bytes (128-bit WEP)
+    cmd->slot = 3; // WEP key slot
+    cmd->keyLen = 13; // Key length: 5 bytes (64-bit WEP); 13 bytes (128-bit WEP)
     cmd->defID = 0; // Default key ID: Key 0, 1, 2, 3
     cmd->ssidLen = ssid_len;
     memset(cmd->ssid, 0x00, 32);
     memcpy(cmd->ssid, ssid, ssid_len);
-    memcpy_P(cmd->key, wep_keys, ZG_MAX_ENCRYPTION_KEYS * ZG_MAX_ENCRYPTION_KEY_SIZE);
+    memcpy(cmd->key, wep_keys, ZG_MAX_ENCRYPTION_KEYS * ZG_MAX_ENCRYPTION_KEY_SIZE);
 
     return;
 }
 
-static void zg_calc_psk_key(U8* cmd_buf)
+static void zg_calc_psk_key(unsigned char* cmd_buf)
 {
     zg_psk_calc_req_t* cmd = (zg_psk_calc_req_t*)cmd_buf;
 
@@ -394,16 +355,16 @@ static void zg_calc_psk_key(U8* cmd_buf)
     memset(cmd->ssid, 0x00, 32);
     memcpy(cmd->ssid, ssid, ssid_len);
     memset(cmd->passPhrase, 0x00, 64);
-    memcpy_P(cmd->passPhrase, security_passphrase, security_passphrase_len);
+    memcpy(cmd->passPhrase, security_passphrase, security_passphrase_len);
 
     return;
 }
 
-static void zg_write_psk_key(U8* cmd_buf)
+static void zg_write_psk_key(unsigned char* cmd_buf)
 {
     zg_pmk_key_req_t* cmd = (zg_pmk_key_req_t*)cmd_buf;
 
-    cmd->slot = 0;	// WPA/WPA2 PSK slot
+    cmd->slot = 0; // WPA/WPA2 PSK slot
     cmd->ssidLen = ssid_len;
     memset(cmd->ssid, 0x00, 32);
     memcpy(cmd->ssid, ssid, cmd->ssidLen);
@@ -412,15 +373,11 @@ static void zg_write_psk_key(U8* cmd_buf)
     return;
 }
 
-U16 zg_get_rssi(){
-    return lastRssi;
-}
-
 void zg_drv_process()
 {
     // TX frame
     if (tx_ready && !cnf_pending) {
-        zg_send(tx_buf, tx_buf_len);
+        zg_send(zg_buf, zg_buf_len);
         tx_ready = 0;
         cnf_pending = 1;
     }
@@ -438,9 +395,6 @@ void zg_drv_process()
             case ZG_MAC_TYPE_MGMT_CONFIRM:
                 if (zg_buf[3] == ZG_RESULT_SUCCESS) {
                     switch (zg_buf[2]) {
-                        case ZG_MAC_SUBTYPE_MGMT_SCAN:
-                            scan_cnt = 1;
-                            break;
                         case ZG_MAC_SUBTYPE_MGMT_REQ_GET_PARAM:
                             mac[0] = zg_buf[7];
                             mac[1] = zg_buf[8];
@@ -465,7 +419,7 @@ void zg_drv_process()
                             break;
                         case ZG_MAC_SUBTYPE_MGMT_REQ_CONNECT:
                             LEDConn_on();
-                            zg_conn_status = 1;	// connected
+                            zg_conn_status = 1; // connected
                             break;
                         default:
                             break;
@@ -480,22 +434,22 @@ void zg_drv_process()
                     case ZG_MAC_SUBTYPE_MGMT_IND_DISASSOC:
                     case ZG_MAC_SUBTYPE_MGMT_IND_DEAUTH:
                         LEDConn_off();
-                        zg_conn_status = 0;	// lost connection
+                        zg_conn_status = 0; // lost connection
 
                         //try to reconnect
                         zg_drv_state = DRV_STATE_START_CONN;
                         break;
                     case ZG_MAC_SUBTYPE_MGMT_IND_CONN_STATUS:
                         {
-                            U16 status = (((U16)(zg_buf[3]))<<8)|zg_buf[4];
+                            unsigned int status = (((unsigned int)(zg_buf[3]))<<8)|zg_buf[4];
 
                             if (status == 1 || status == 5) {
                                 LEDConn_off();
-                                zg_conn_status = 0;	// not connected
+                                zg_conn_status = 0; // not connected
                             }
                             else if (status == 2 || status == 6) {
                                 LEDConn_on();
-                                zg_conn_status = 1;	// connected
+                                zg_conn_status = 1; // connected
                             }
                         }
                         break;
@@ -578,15 +532,16 @@ void zg_drv_process()
             zg_buf[0] = ZG_CMD_WT_FIFO_MGMT;
             zg_buf[1] = ZG_MAC_TYPE_MGMT_REQ;
             zg_buf[2] = ZG_MAC_SUBTYPE_MGMT_REQ_CONNECT_MANAGE;
-            zg_buf[3] = 0x01;	// 0x01 - enable; 0x00 - disable
-            zg_buf[4] = 10;		// num retries to reconnect
-            zg_buf[5] = 0x10 | 0x02 | 0x01;	// 0x10 -	enable start and stop indication messages
-            // 		 	from G2100 during reconnection
-            // 0x02 -	start reconnection on receiving a deauthentication
-            // 			message from the AP
-            // 0x01 -	start reconnection when the missed beacon count
-            // 			exceeds the threshold. uses default value of
-            //			100 missed beacons if not set during initialization
+            zg_buf[3] = 0x01; // 0x01 - enable; 0x00 - disable
+            zg_buf[4] = 10; // num retries to reconnect
+            zg_buf[5] = 0x10 | 0x02 | 0x01;
+            // 0x10 - enable start and stop indication messages
+            //        from G2100 during reconnection
+            // 0x02 - start reconnection on receiving a deauthentication
+            //        message from the AP
+            // 0x01 - start reconnection when the missed beacon count
+            //        exceeds the threshold. uses default value of
+            //        100 missed beacons if not set during initialization
             zg_buf[6] = 0;
             spi_transfer(zg_buf, 7, 1);
 
@@ -608,7 +563,7 @@ void zg_drv_process()
 
                 cmd->ssidLen = ssid_len;
                 memset(cmd->ssid, 0, 32);
-                memcpy(cmd->ssid, ssid, ssid_len);
+                memcpy_P(cmd->ssid, ssid, ssid_len);
 
                 // units of 100 milliseconds
                 cmd->sleepDuration = 0;
@@ -627,7 +582,7 @@ void zg_drv_process()
                 break;
             }
         case DRV_STATE_PROCESS_RX:
-            zg_recv(rx_buf, &rx_buf_len);
+            zg_recv(zg_buf, &zg_buf_len);
             rx_ready = 1;
 
             zg_drv_state = DRV_STATE_IDLE;

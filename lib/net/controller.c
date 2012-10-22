@@ -113,7 +113,16 @@ uint8_t debugUdpHandler(Packet *p) {
 
 void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
     macInitialize(mac);
-    debugPrint("Hardware Driver initialized...\n");
+#if DEBUG >= 1
+    debugPrint("Hardware Driver initialized: ");
+    for (uint8_t i = 0; i < 6; i++) {
+        debugPrint(hex2ToString(mac[i]));
+        if (i < 5) {
+            debugPrint("-");
+        }
+    }
+    debugPrint("\n");
+#endif
     arpInit();
     ipv4Init(ip, subnet, gateway);
 

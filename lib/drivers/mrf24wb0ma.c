@@ -31,14 +31,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <tasks.h>
 #include <net/mac.h>
 #include <net/controller.h>
 
-#include "asynclabs/witypes.h"
-#include "asynclabs/spi.h"
+#include "asynclabs/config.h"
 #include "asynclabs/g2100.h"
 
 #define INTPORT PORTD
@@ -48,16 +47,20 @@
 
 uint8_t ownMacAddress[6];
 
+// Definitions for prototypes in config.h and spi.h
+char ssid[32] = {"xythobuz"}; // 32byte max
+uint8_t ssid_len = 8;
+uint8_t wireless_mode = WIRELESS_MODE_INFRA;
+uint8_t security_type = 3; // 0 Open, 1 WEP, 2 WPA, 3 WPA2
+char security_passphrase[32]; // WPA, WPA2 Passphrase
+uint8_t security_passphrase_len;
+unsigned char wep_keys[52] PROGMEM = { // WEP 128-bit keys
+    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
 uint8_t zg2100IsrEnabled; // In asynclabs spi.h
-
-uint8_t zgInterruptCheck(void) {
-    if (zg2100IsrEnabled) {
-        if (INTPORTPIN & (1 << INTPIN)) {
-            return 1;
-        }
-    }
-    return 0;
-}
 
 uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
     uint8_t i;
@@ -65,16 +68,61 @@ uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
 
     INTDDR &= ~(1 << INTPIN); // Interrupt PIN
 
+    debugPrint("Initializing WiFi...");
+
+#if DEBUG >= 1
+    debugPrint("\nPassphrase for ");
+    debugPrint(ssid);
+    debugPrint("? ");
+    i = 0;
+    while (1) {
+        wdt_reset();
+        if (serialHasChar()) {
+            char c = serialGet();
+            if (c != '\r') {
+                serialWrite(c);
+                if (c != '\n') {
+                    security_passphrase[i] = c;
+                    if (i < 31) {
+                        i++;
+                    } else {
+                        debugPrint("Too long!\n");
+                        security_passphrase[31] = '\0';
+                        break;
+                    }
+                } else {
+                    // Finished
+                    security_passphrase[i] = '\0';
+                    break;
+                }
+            }
+        }
+    }
+    security_passphrase_len = i;
+    debugPrint("Passphrase: \"");
+    debugPrint(security_passphrase);
+    debugPrint("\"...");
+#endif
+
     zg_init();
 
-    addConditionalTask(zg_isr, zgInterruptCheck);
-    addConditionalTask(zg_drv_process, taskTestAlways);
+    debugPrint(" Done!\n");
+
+    addConditionalTask(zg_isr, macHasInterrupt);
 
     p = zg_get_mac(); // Global Var. in g2100.c
     for (i = 0; i < 6; i++) {
         ownMacAddress[i] = p[i];
         address[i] = ownMacAddress[i];
     }
+
+    debugPrint("Trying to connect...");
+
+    do {
+        zg_drv_process();
+    } while (!macLinkIsUp());
+
+    debugPrint(" Connected!\n");
 
     return 0;
 }
@@ -84,34 +132,39 @@ void macReset(void) {
 }
 
 uint8_t macLinkIsUp(void) { // 0 if down, 1 if up
-    return zg_get_conn_state();
+    if (zg_get_conn_state()) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
-    zg_sendPacket(p);
     return 0; // no way to know this?
 }
 
 uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
-    if (zg_get_rx_status()) {
+    if (rx_ready) {
         return 1;
+    } else {
+        zg_drv_process();
+        if (rx_ready) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
-    return 0;
 }
 
 Packet *macGetPacket(void) { // Returns NULL on error
-    Packet *p = NULL;
-    if (zg_get_rx_status()) {
-        p = zg_buffAsPacket();
-        zg_clear_rx_status();
-    }
-    return p;
+    return NULL;
 }
 
 uint8_t macHasInterrupt(void) {
-    if (INTPORTPIN & (1 << INTPIN)) {
-        return 0;
-    } else {
-        return 1;
+    if (zg2100IsrEnabled) {
+        if (INTPORTPIN & (1 << INTPIN)) {
+            return 1;
+        }
     }
+    return 0;
 }

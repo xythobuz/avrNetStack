@@ -81,9 +81,6 @@ int main(void) {
 
     sei(); // Enable Interrupts so we get UART data before entering networkInit
 
-    serialWriteString("Alive!\n");
-    while (!serialTxBufferEmpty());
-
     wdt_enable(WDTO_2S);
 
     networkInit(mac, defIp, defSubnet, defGateway);

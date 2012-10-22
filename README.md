@@ -18,13 +18,13 @@ Everything else, if not mentioned otherwise elsewhere, is released under a BSD 2
 
 ### ENC28J60 Driver
 
-This is a self-written driver for [Microchips ENC28J60](http://www.microchip.com/wwwproducts/Devices.aspx?dDocName=en022889), based on it's [datasheet](http://ww1.microchip.com/downloads/en/DeviceDoc/39662d.pdf) and the [silicon errata](http://ww1.microchip.com/downloads/en/DeviceDoc/80349c.pdf).
+This is a self-written driver for [Microchips ENC28J60](http://www.microchip.com/wwwproducts/Devices.aspx?dDocName=en022889), based on it's [datasheet](http://ww1.microchip.com/downloads/en/DeviceDoc/39662d.pdf) and the [silicon errata](http://ww1.microchip.com/downloads/en/DeviceDoc/80349c.pdf). It is operating (more or less) stable.
 The 8KB Buffer in the ENC28J60 is not really used, as all received Packets are placed in RAM before using their data. It will be used as FIFO for Packets that are received before the CPU is able to work on them.
 You can change the size and location of the Receive and Transmit Segments in the ENC28J60 SRAM.
 
 ### MRF24WB0MA Driver
 
-This is based heavily on [Asynclabs G2100 Driver with user contributions](https://github.com/asynclabs/WiShield_user_contrib), modified to work with this Networking Stack.
+This is based on Stefan Heeschs modified version of Asynclabs G2100 Driver, released in [this forum thread](http://www.mikrocontroller.net/topic/175463#1945568), modified to work with this Networking Stack. This is a heavy work in progress.
 
 ### Hardware Libraries
 

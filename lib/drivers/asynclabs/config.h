@@ -1,57 +1,74 @@
+#ifndef _CONFIG_H
+#define _CONFIG_H
 
-/******************************************************************************
+#include <avr/pgmspace.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
-  Filename:		config.h
-  Description:	Wireless configuration parameters for the WiShield 1.0
+extern char ssid[];
+extern unsigned char ssid_len;
 
- ******************************************************************************
+extern char security_passphrase[];
+extern unsigned char security_passphrase_len;
 
-  TCP/IP stack and driver for the WiShield 1.0 wireless devices
+extern unsigned char security_type;
+extern unsigned char wireless_mode;
+extern unsigned char wep_keys[];
 
-  Copyright(c) 2009 Async Labs Inc. All rights reserved.
+extern uint8_t zg2100IsrEnabled;
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2 of the GNU General Public License as
-  published by the Free Software Foundation.
+#define ZG2100_ISR_DISABLE() (zg2100IsrEnabled = 0);
+#define ZG2100_ISR_ENABLE()  (zg2100IsrEnabled = 1);
 
-  This program is distributed in the hope that it will be useful, but WITHOUT
-  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-  more details.
+#define SPI0_SS_BIT    (1 << PA1)
+#define SPI0_SS_DDR    DDRA
+#define SPI0_SS_PORT   PORTA
 
-  You should have received a copy of the GNU General Public License along with
-  this program; if not, write to the Free Software Foundation, Inc., 59
-  Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#define SPI0_SCLK_BIT  (1 << PB7)
+#define SPI0_SCLK_DDR  DDRB
+#define SPI0_SCLK_PORT PORTB
 
-  Contact Information:
-  <asynclabs@asynclabs.com>
+#define SPI0_MOSI_BIT  (1 << PB5)
+#define SPI0_MOSI_DDR  DDRB
+#define SPI0_MOSI_PORT PORTB
 
-   Author               Date        Comment
-  ---------------------------------------------------------------
-   AsyncLabs			05/01/2009	Initial version
-   AsyncLabs			05/29/2009	Adding support for new library
+#define SPI0_MISO_BIT  (1 << PB6)
+#define SPI0_MISO_DDR  DDRB
+#define SPI0_MISO_PORT PORTB
 
- *****************************************************************************/
 
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#define SPI0_WaitForReceive()
+#define SPI0_RxData() (SPDR)
 
-#include "witypes.h"
+#define SPI0_TxData(Data) (SPDR = Data)
+#define SPI0_WaitForSend() while((SPSR & 0x80) == 0x00)
 
-#define WIRELESS_MODE_INFRA	1
-#define WIRELESS_MODE_ADHOC	2
+#define SPI0_SendByte(Data) SPI0_TxData(Data);SPI0_WaitForSend()
+#define SPI0_RecvBute() SPI0_RxData()
 
-char ssid[] = {"xythobuz"}; // 32byte max
-U8 wireless_mode = WIRELESS_MODE_INFRA;
-U8 security_type = 0; // 0 Open, 1 WEP, 2 WPA, 3 WPA2
+#define SPI0_Init() DDRB |= SPI0_SS_BIT|SPI0_SCLK_BIT|SPI0_MOSI_BIT|LEDConn_BIT;\
+                    DDRB  &= ~(SPI0_MISO_BIT);\
+                    PORTB = SPI0_SS_BIT;\
+                    SPCR  = 0x50;\
+                    SPSR  = 0x01
 
-const char security_passphrase[] PROGMEM = {"1234"}; // WPA, WPA2 Passphrase
+#define ZG2100_SpiInit     SPI0_Init
+#define ZG2100_SpiSendData SPI0_SendByte
+#define ZG2100_SpiRecvData SPI0_RxData
 
-unsigned char wep_keys[] PROGMEM = { // WEP 128-bit keys
-	0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,	// Key 0
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	// Key 1
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	// Key 2
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00	// Key 3
-};
+#define ZG2100_CS_BIT   SPI0_SS_BIT
+#define ZG2100_CS_DDR   SPI0_SS_DDR
+#define ZG2100_CS_PORT  SPI0_SS_PORT
 
-#endif /* CONFIG_H_ */
+#define ZG2100_CSInit() (ZG2100_CS_DDR  |= ZG2100_CS_BIT)
+#define ZG2100_CSon()   (ZG2100_CS_PORT |= ZG2100_CS_BIT)
+#define ZG2100_CSoff()  (ZG2100_CS_PORT &= ~ZG2100_CS_BIT)
+
+#define LEDConn_BIT    (1 << PA7)
+#define LEDConn_DDR    DDRA
+#define LEDConn_PORT   PORTA
+
+#define LEDConn_on()   (LEDConn_PORT |= LEDConn_BIT)
+#define LEDConn_off()  (LEDConn_PORT &= ~LEDConn_BIT)
+
+#endif
