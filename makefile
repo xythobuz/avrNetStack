@@ -73,6 +73,10 @@ CARGS += -Iinclude
 CARGS += -std=$(CSTANDARD)
 CARGS += -DF_CPU=$(F_CPU)
 
+ifeq ($(IC),mrf24wb0ma)
+CARGS += -DWIFIMODE
+endif
+
 test: test.hex
 
 program: test.hex

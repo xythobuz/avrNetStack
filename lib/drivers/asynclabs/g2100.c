@@ -35,8 +35,15 @@
  Stefan Heesch        11/21/2010  Added patch for avoiding rx buffer overrun
 
  *****************************************************************************/
-
+#include <avr/io.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
+
+#include <net/controller.h>
+#include <std.h>
+#include <spi.h>
+
 #include "config.h"
 #include "g2100.h"
 
@@ -59,7 +66,7 @@ void zg_init()
 {
     unsigned char clr;
 
-    ZG2100_SpiInit();
+    spiInit();
     clr = SPSR;
     clr = SPDR;
 
@@ -72,6 +79,9 @@ void zg_init()
     cnf_pending = 0;
     // zg_buf = MyNetworkBuffer;
     // zg_buf_len = NETWORK_BUFSIZE;
+
+    zg_buf = mmalloc(150);
+    zg_buf_len = 150;
 
     zg_chip_reset();
     zg_interrupt2_reg();
@@ -89,8 +99,7 @@ void spi_transfer(volatile unsigned char* buf, unsigned int len, unsigned char t
     ZG2100_CSoff();
 
     for (i = 0; i < len; i++) {
-        ZG2100_SpiSendData(buf[i]); // Start the transmission
-        buf[i] = ZG2100_SpiRecvData();
+        buf[i] = spiSendByte(buf[i]);
     }
 
     if (toggle_cs)

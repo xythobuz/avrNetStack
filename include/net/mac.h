@@ -56,4 +56,8 @@ Packet *macGetPacket(void);
 
 uint8_t macHasInterrupt(void);
 
+#ifdef WIFIMODE
+uint8_t establishConnection(void); // Returns 1 if connection is established
+#endif
+
 #endif

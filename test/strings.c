@@ -52,7 +52,7 @@ const char string13[] PROGMEM = " --> ";
 const char string14[] PROGMEM = " Tasks";
 const char string15[] PROGMEM = "\n";
 const char string16[] PROGMEM = " Scheduler";
-const char string17[] PROGMEM = "";
+const char string17[] PROGMEM = "Trying to connect...\n";
 const char string18[] PROGMEM = " ms";
 const char string19[] PROGMEM = "RoundTripTime";
 const char string20[] PROGMEM = "Power-On Reset";
@@ -70,9 +70,10 @@ const char string31[] PROGMEM = "Timed out :(\n";
 const char string32[] PROGMEM = "Hasn't timed out yet!\n";
 const char string33[] PROGMEM = "How many times? (0 - 9)\n";
 const char string34[] PROGMEM = "Invalid!\n";
+const char string35[] PROGMEM = "Connected!\n";
 
 // Last index + 1
-#define STRINGNUM 35
+#define STRINGNUM 36
 
 PGM_P stringTable[STRINGNUM] PROGMEM = {
     string0, string1, string2, string3, string4,
@@ -81,7 +82,8 @@ PGM_P stringTable[STRINGNUM] PROGMEM = {
     string15, string16, string17, string18, string19,
     string20, string21, string22, string23, string24,
     string25, string26, string27, string28, string29,
-    string30, string31, string32, string33, string34
+    string30, string31, string32, string33, string34,
+    string35
 };
 
 const char stringNotFoundError[] PROGMEM = "String not found!\n";

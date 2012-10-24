@@ -53,7 +53,7 @@
 #error SERIAL BUFFER TOO LARGE!
 #endif
 
-#define FLOWMARK 5
+#define FLOWMARK 5 // Space remaining to trigger xoff/xon
 
 uint8_t volatile rxBuffer[RX_BUFFER_SIZE];
 uint8_t volatile txBuffer[TX_BUFFER_SIZE];
@@ -151,8 +151,8 @@ void serialClose(void) {
     SREG = sreg;
 }
 
-void setFlow(uint8_t on) {
 #ifdef FLOWCONTROL
+void setFlow(uint8_t on) {
     if (flow != on) {
         if (on == 1) {
             // Send XON
@@ -177,8 +177,8 @@ void setFlow(uint8_t on) {
         // Wait till it's transmitted
         while (SERIALB & (1 << SERIALUDRIE));
     }
-#endif
 }
+#endif
 
 // ---------------------
 // |     Reception     |
@@ -252,8 +252,6 @@ void serialWrite(uint8_t data) {
 #endif
     while (serialTxBufferFull());
 
-    uint8_t sreg = SREG;
-    cli();
     txBuffer[txWrite] = data;
     if (txWrite < (TX_BUFFER_SIZE - 1)) {
         txWrite++;
@@ -265,7 +263,6 @@ void serialWrite(uint8_t data) {
         SERIALB |= (1 << SERIALUDRIE); // Enable Interrupt
         SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
     }
-    SREG = sreg;
 }
 
 void serialWriteString(const char *data) {

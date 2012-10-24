@@ -31,7 +31,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DEBUG 1
+#define DEBUG 2
+// 1 --> Debug Output
+// 2 --> Interactive Passphrase Prompt
 
 #include <tasks.h>
 #include <net/mac.h>
@@ -49,10 +51,10 @@ uint8_t ownMacAddress[6];
 
 // Definitions for prototypes in config.h and spi.h
 char ssid[32] = {"xythobuz"}; // 32byte max
-uint8_t ssid_len = 8;
+uint8_t ssid_len;
 uint8_t wireless_mode = WIRELESS_MODE_INFRA;
 uint8_t security_type = 3; // 0 Open, 1 WEP, 2 WPA, 3 WPA2
-char security_passphrase[32]; // WPA, WPA2 Passphrase
+char security_passphrase[32] = {""}; // WPA, WPA2 Passphrase
 uint8_t security_passphrase_len;
 unsigned char wep_keys[52] PROGMEM = { // WEP 128-bit keys
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
@@ -70,40 +72,6 @@ uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
 
     debugPrint("Initializing WiFi...");
 
-#if DEBUG >= 1
-    debugPrint("\nPassphrase for ");
-    debugPrint(ssid);
-    debugPrint("? ");
-    i = 0;
-    while (1) {
-        wdt_reset();
-        if (serialHasChar()) {
-            char c = serialGet();
-            if (c != '\r') {
-                serialWrite(c);
-                if (c != '\n') {
-                    security_passphrase[i] = c;
-                    if (i < 31) {
-                        i++;
-                    } else {
-                        debugPrint("Too long!\n");
-                        security_passphrase[31] = '\0';
-                        break;
-                    }
-                } else {
-                    // Finished
-                    security_passphrase[i] = '\0';
-                    break;
-                }
-            }
-        }
-    }
-    security_passphrase_len = i;
-    debugPrint("Passphrase: \"");
-    debugPrint(security_passphrase);
-    debugPrint("\"...");
-#endif
-
     zg_init();
 
     debugPrint(" Done!\n");
@@ -116,15 +84,12 @@ uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
         address[i] = ownMacAddress[i];
     }
 
-    debugPrint("Trying to connect...");
-
-    do {
-        zg_drv_process();
-    } while (!macLinkIsUp());
-
-    debugPrint(" Connected!\n");
-
     return 0;
+}
+
+uint8_t establishConnection(void) {
+    zg_drv_process();
+    return macLinkIsUp();
 }
 
 void macReset(void) {
