@@ -35,6 +35,7 @@
 // 1 --> Debug Output
 // 2 --> Interactive Passphrase Prompt
 
+#include <std.h>
 #include <tasks.h>
 #include <net/mac.h>
 #include <net/controller.h>
@@ -135,14 +136,14 @@ uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
 
 Packet *macGetPacket(void) { // Returns NULL on error
     uint16_t l = zg_get_rx_status();
-    Packet *p = (Packet *)malloc(sizeof(Packet));
+    Packet *p = (Packet *)mmalloc(sizeof(Packet));
     if (p == NULL) {
         return NULL;
     }
 
     p->dLength = l;
     if (l > 0) {
-        p->d = (uint8_t *)malloc(l * sizeof(uint8_t));
+        p->d = (uint8_t *)mmalloc(l * sizeof(uint8_t));
         if (p->d != NULL) {
             for (uint16_t i = 0; i < l; i++) {
                 p->d[i] = zg_buf[i];

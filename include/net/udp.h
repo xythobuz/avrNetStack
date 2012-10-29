@@ -43,6 +43,8 @@
 
 #define UDPMaxPacketSize (IPv4MaxPacketSize - UDPDataOffset)
 
+extern uint16_t udpRegisteredHandlers;
+
 void udpInit(void);
 
 // 0 on success, 1 if not enough mem, 2 invalid

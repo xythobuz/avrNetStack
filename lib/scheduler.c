@@ -43,16 +43,16 @@
 #include <time.h>
 #include <scheduler.h>
 
-typedef struct TaskElement TaskElement;
-struct TaskElement {
+typedef struct SchedElement SchedElement;
+struct SchedElement {
     Task task;
     time_t intervall;
     time_t counter;
     uint8_t repeat;
-    TaskElement* next;
+    SchedElement* next;
 };
 
-TaskElement *taskList = NULL; // Single-linked-list
+SchedElement *schedulerList = NULL; // Single-linked-list
 
 // ----------------------
 // |    External API    |
@@ -61,7 +61,7 @@ TaskElement *taskList = NULL; // Single-linked-list
 // 0 on success
 uint8_t addTimedTask(Task func, time_t intervall, uint8_t repeat) {
     // Allocate new list element
-    TaskElement *t = (TaskElement *)malloc(sizeof(TaskElement));
+    SchedElement *t = (SchedElement *)mmalloc(sizeof(SchedElement));
     if (t == NULL) {
         return 1;
     }
@@ -72,13 +72,13 @@ uint8_t addTimedTask(Task func, time_t intervall, uint8_t repeat) {
     t->repeat = repeat;
 
     // Put in front of list
-    t->next = taskList;
-    taskList = t;
+    t->next = schedulerList;
+    schedulerList = t;
     return 0;
 }
 
 uint8_t schedulerRegistered(void) {
-    TaskElement *t = taskList;
+    SchedElement *t = schedulerList;
     uint8_t count = 0;
     while (t != NULL) {
         count++;
@@ -90,7 +90,7 @@ uint8_t schedulerRegistered(void) {
 void scheduler(void) {
     time_t t = schedulerTimeFunc(), d;
     static time_t lastTimeSchedulerWasCalled = 0;
-    TaskElement *p = taskList, *previous = NULL;
+    SchedElement *p = schedulerList, *previous = NULL;
 
     // Execute Timed Tasks
     d = diffTime(lastTimeSchedulerWasCalled, t);
@@ -101,13 +101,13 @@ void scheduler(void) {
                 p->counter = 0;
                 p->task();
                 if (p->repeat == 0) {
-                    if (p == taskList) {
-                        taskList = p->next;
-                        mfree(p, sizeof(TaskElement));
-                        p = taskList;
+                    if (p == schedulerList) {
+                        schedulerList = p->next;
+                        mfree(p, sizeof(SchedElement));
+                        p = schedulerList;
                     } else {
                         previous->next = p->next;
-                        mfree(p, sizeof(TaskElement));
+                        mfree(p, sizeof(SchedElement));
                         p = previous->next;
                     }
                 }

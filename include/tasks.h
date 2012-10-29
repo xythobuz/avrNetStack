@@ -33,13 +33,12 @@
 typedef void (*Task)(void);
 typedef uint8_t (*TestFunc)(void);
 
-// Adds another conditional task that will cause func() to be called
-// when testFunc() returns a value other than zero.
-uint8_t addConditionalTask(Task func, TestFunc testFunc); // 0 on success
+// Adds another task that will cause func() to be called
+// when testFunc() returns a value other than zero or always,
+// if testFunc == NULL
+uint8_t addTask(Task func, TestFunc testFunc, char *name); // 0 on success
 void tasks(void); // Call in your main loop!
 
 uint8_t tasksRegistered(void);
-
-uint8_t taskTestAlways(void); // Use this as testFunc if you always want to execute a Task
 
 #endif

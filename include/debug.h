@@ -50,8 +50,8 @@
             debugPrint(": Assertion '");            \
             debugPrint(#x);                         \
             debugPrint("' failed.\n");              \
-            debugPrint("Reset in 2 Seconds.\n\n");  \
-            wdt_enable(WDTO_2S);                    \
+            debugPrint("Reset in a Second.\n\n");   \
+            wdt_enable(WDTO_1S);                    \
             while(1);                               \
         } else {                                    \
             wdt_enable(WDTO_15MS);                  \
@@ -69,12 +69,16 @@
 #define NDEBUG NODEBUG
 #endif
 
-#if (!(defined(NDEBUG))) && (DEBUG >= 1)
+#ifndef NDEBUG
 #define assert(x) ASSERTFUNC(x)
+#else // NDEBUG defined
+#define assert(ignore)
+#endif
+
+#if (!(defined(NDEBUG))) && (DEBUG >= 1)
 #define debugPrint(x) DEBUGOUT(x)
 #else
-#define assert(ignore)
 #define debugPrint(ignore)
-#endif // ! defined NDEBUG
+#endif
 
 #endif // _DEBUG_H

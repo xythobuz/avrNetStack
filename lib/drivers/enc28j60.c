@@ -172,6 +172,7 @@ uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
     CSDDR |= (1 << CSPIN); // Chip Select as Output
     CSPORT |= (1 << CSPIN); // Deselect
     INTDDR &= ~(1 << INTPIN); // Interrupt PIN
+    INTPORT |= (1 << INTPIN); // Enable Pull-Up
 
     spiInit();
     macReset();
@@ -386,22 +387,22 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
     // Retransmit logic as described in silicon errata issue 13
     // Only needed for half duplex operation
     // for (i = 0; i < 15; i++) {
-    // 	// if TXERIF and late collision
-    // 	if ((readControlRegister(0x1C) & 0x02) && (statusVector[3] & 0x20)) {
-    // 		debugPrint("Retransmitting packet...\n");
-    // 		bitFieldSet(0x1F, 0x80); // Set ECON1.TXRST
-    // 		bitFieldClear(0x1F, 0x80); // Clear ECON1.TXRST
-    // 		bitFieldClear(0x1C, 0x0A); // Clear EIR.TXERIF & TXIF
-    // 		bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
-    // 		while((readControlRegister(0x1C) & 0x0A) == 0); // Wait for TXIF & TXERIF
-    // 		bitFieldClear(0x1F, 0x08); // Clear ECON1.TXRTS
-    // 		a = TXSTART + 1 + p->dLength; // 1 Control byte in front
-    // 		writeControlRegister(0x00, (uint8_t)(a & 0xFF)); // Set ERDPTL
-    // 		writeControlRegister(0x01, (uint8_t)((a & 0xFF00) >> 8)); // Set ERDPTH
-    // 		readBufferMemory(statusVector, 7); // Read status vector
-    // 	} else {
-    // 		break;
-    // 	}
+    //     // if TXERIF and late collision
+    //     if ((readControlRegister(0x1C) & 0x02) && (statusVector[3] & 0x20)) {
+    //         debugPrint("Retransmitting packet...\n");
+    //         bitFieldSet(0x1F, 0x80); // Set ECON1.TXRST
+    //         bitFieldClear(0x1F, 0x80); // Clear ECON1.TXRST
+    //         bitFieldClear(0x1C, 0x0A); // Clear EIR.TXERIF & TXIF
+    //         bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
+    //         while((readControlRegister(0x1C) & 0x0A) == 0); // Wait for TXIF & TXERIF
+    //         bitFieldClear(0x1F, 0x08); // Clear ECON1.TXRTS
+    //         a = TXSTART + 1 + p->dLength; // 1 Control byte in front
+    //         writeControlRegister(0x00, (uint8_t)(a & 0xFF)); // Set ERDPTL
+    //         writeControlRegister(0x01, (uint8_t)((a & 0xFF00) >> 8)); // Set ERDPTH
+    //         readBufferMemory(statusVector, 7); // Read status vector
+    //     } else {
+    //         break;
+    //     }
     // }
 
     if (readControlRegister(0x1D) & (1 << 1)) { // If ESTAT.TXABRT is set

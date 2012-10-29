@@ -30,85 +30,56 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <std.h>
 #include <tasks.h>
 #include <net/controller.h>
 
-Task *tasksWithCheck = NULL;
-TestFunc *taskChecks = NULL;
-uint8_t tasksWithCheckRegistered = 0;
-uint8_t nextCheckTask = 0;
+typedef struct TaskElement TaskElement;
+struct TaskElement {
+    Task task;
+    TestFunc test;
+    TaskElement *next;
+#if DEBUG >= 1
+    char *name;
+#endif
+};
 
-// ----------------------
-// |    Internal API    |
-// ----------------------
+TaskElement *taskList = NULL;
 
-uint8_t extendTaskCheckList(void) {
-    TestFunc *p;
-    Task *q;
+uint8_t tasksRegistered(void) {
+    uint8_t c = 0;
+    for (TaskElement *p = taskList; p != NULL; p = p->next) {
+        c++;
+    }
+    return c;
+}
 
-    // Extend Check List
-    p = (TestFunc *)mrealloc(taskChecks, (tasksWithCheckRegistered + 1) * sizeof(TestFunc), tasksWithCheckRegistered * sizeof(TestFunc));
+uint8_t addTask(Task func, TestFunc testFunc, char *name) {
+    TaskElement *p = (TaskElement *)mmalloc(sizeof(TaskElement));
     if (p == NULL) {
         return 1;
     }
-    taskChecks = p;
-
-    // Extend Task List
-    q = (Task *)mrealloc(tasksWithCheck, (tasksWithCheckRegistered + 1) * sizeof(Task), tasksWithCheckRegistered * sizeof(Task));
-    if (q == NULL) {
-        // Try to revert size of intervall list
-        p = (TestFunc *)mrealloc(taskChecks, tasksWithCheckRegistered * sizeof(TestFunc), (tasksWithCheckRegistered + 1) * sizeof(TestFunc));
-        if (p != NULL) {
-            taskChecks = p;
-        }
-        return 1;
-    }
-    tasksWithCheck = q;
-
-    tasksWithCheckRegistered++; // Success!
-    return 0;
-}
-
-// ----------------------
-// |    External API    |
-// ----------------------
-
-uint8_t taskTestAlways(void) {
-    return 1;
-}
-
-uint8_t tasksRegistered(void) {
-    return tasksWithCheckRegistered;
-}
-
-uint8_t addConditionalTask(Task func, TestFunc testFunc) {
-    // func will be executed if testFunc returns a value other than zero!
-    if (extendTaskCheckList()) {
-        return 1;
-    }
-    tasksWithCheck[tasksWithCheckRegistered - 1] = func;
-    taskChecks[tasksWithCheckRegistered - 1] = testFunc;
+    p->task = func;
+    p->test = testFunc;
+    p->next = taskList;
+#if DEBUG >= 1
+    p->name = name;
+#endif
+    taskList = p;
     return 0;
 }
 
 void tasks(void) {
-    // Check for Tasks that have a check function
-    if (tasksWithCheckRegistered > 0) {
-        if ((*taskChecks[nextCheckTask])() != 0) {
-            (*tasksWithCheck[nextCheckTask])();
-        }
-
-        debugPrint("Checked for Task ");
-        debugPrint(timeToString(nextCheckTask));
-        debugPrint("\n");
-
-        if (nextCheckTask < (tasksWithCheckRegistered - 1)) {
-            nextCheckTask++;
-        } else {
-            nextCheckTask = 0;
+    for (TaskElement *p = taskList; p != NULL; p = p->next) {
+        if ((p->test == NULL) || (p->test() != 0)) {
+            p->task();
+#if DEBUG >= 1
+            debugPrint("Executed ");
+            debugPrint(p->name);
+            debugPrint("\n");
+#endif
         }
     }
 }

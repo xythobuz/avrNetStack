@@ -149,8 +149,8 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 #endif
 #endif // DISABLE_UDP
 
-    addConditionalTask((Task)networkHandler, macHasInterrupt); // Enable polling
-    addConditionalTask(ipv4SendQueue, ipv4PacketsToSend); // Enable transmission
+    addTask((Task)networkHandler, macHasInterrupt, "Poll"); // Enable polling
+    addTask(ipv4SendQueue, ipv4PacketsToSend, "Send"); // Enable transmission
 
 #ifndef DISABLE_NTP
     // addTimedTask((Task)ntpIssueRequest, 1000, 0);

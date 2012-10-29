@@ -40,6 +40,7 @@
 #include <tasks.h>
 
 #include <net/mac.h>
+#include <net/ipv4.h>
 #include <net/icmp.h>
 #include <net/dhcp.h>
 #include <net/ntp.h>
@@ -86,7 +87,7 @@ int main(void) {
 
     sei(); // Enable Interrupts so we get UART data before entering networkInit
 
-    wdt_enable(WDTO_2S);
+    wdt_enable(WDTO_1S);
 
     networkInit(mac, defIp, defSubnet, defGateway);
 
@@ -111,7 +112,7 @@ int main(void) {
     PORTA &= ~((1 << PA7) | (1 << PA6)); // LEDs off
 
     addTimedTask(heartbeat, 500, 1); // Toggle LED every 500ms
-    addConditionalTask(serialHandler, serialHasChar); // Execute Serial Handler if char received
+    addTask(serialHandler, serialHasChar, "Serial"); // Execute Serial Handler if char received
 
     while (1)
         networkLoop(); // Runs task manager and scheduler, resets watchdog timer for us
@@ -153,7 +154,7 @@ void pingInterrupt(Packet *p) {
     serialWriteString(getString(7)); // ": "
     serialWriteString(timeToString(diffTime(pingTime, responseTime)));
     serialWriteString(getString(18)); // " ms"
-    serialWriteString(getString(15)); // "\n"
+    serialWrite('\n');
 
     pingState--;
     if (pingState == 0) {
@@ -236,7 +237,7 @@ void serialHandler(void) {
             serialWriteString(timeToString(j)); // minutes
             serialWrite(':');
             serialWriteString(timeToString(i)); // seconds
-            serialWriteString(getString(15)); // "\n"
+            serialWrite('\n');
             break;
         case 'p': // Ping Internet
             pingTool();
@@ -247,15 +248,19 @@ void serialHandler(void) {
             serialWriteString(getString(25)); // ", "
             serialWriteString(timeToString(schedulerRegistered()));
             serialWriteString(getString(16)); // " Scheduler"
-            serialWriteString(getString(15)); // "\n"
-            break;
-
-        case 'm': // Number of bytes allocated
+            serialWrite('\n');
             serialWriteString(timeToString(heapBytesAllocated));
             serialWrite('/');
             serialWriteString(timeToString(HEAPSIZE));
             serialWriteString(getString(4)); // " bytes "
             serialWriteString(getString(6)); // "allocated\n"
+            serialWriteString(timeToString(ipv4PacketsInQueue()));
+            serialWriteString(getString(36)); // " IPv4 Packets in Queue\n"
+            serialWriteString(timeToString(udpRegisteredHandlers));
+            serialWrite(' ');
+            serialWriteString(getString(38)); // "UDP"
+            serialWriteString(getString(39)); // " Handlers registered\n"
+            printArpTable();
             break;
 
         case 'u': // Send UDP Packet to testIp
@@ -282,7 +287,7 @@ void serialHandler(void) {
                 serialWriteString(getString(27)); // "Packet sent"
                 serialWriteString(getString(7)); // ": "
                 serialWriteString(timeToString(udpSendPacket(p, testIp, TESTPORT, TESTPORT)));
-                serialWriteString(getString(15)); // "\n"
+                serialWrite('\n');
             } else {
                 serialWriteString(getString(26)); // "Not enough memory!\n"
             }

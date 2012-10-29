@@ -50,7 +50,7 @@ typedef struct {
 } UdpHandler;
 
 UdpHandler *handlers = NULL;
-uint16_t registeredHandlers = 0;
+uint16_t udpRegisteredHandlers = 0;
 IPv4Address target;
 
 // --------------------------
@@ -62,7 +62,7 @@ uint16_t checksum(uint8_t *rawData, uint16_t l); // From ipv4.c
 int16_t findHandler(uint16_t port) {
     uint16_t i;
     if (handlers != NULL) {
-        for (i = 0; i < registeredHandlers; i++) {
+        for (i = 0; i < udpRegisteredHandlers; i++) {
             if (handlers[i].port == port) {
                 return i;
             }
@@ -167,7 +167,7 @@ uint8_t udpHandlePacket(Packet *p) {
     }
 
     // Look for a handler
-    for (i = 0; i < registeredHandlers; i++) {
+    for (i = 0; i < udpRegisteredHandlers; i++) {
         if (handlers[i].port == get16Bit(p->d, UDPOffset + UDPDestinationOffset)) {
             // found handler
             return handlers[i].func(p);
@@ -189,7 +189,7 @@ uint8_t udpRegisterHandler(uint8_t (*handler)(Packet *), uint16_t port) {
     uint16_t i;
 
     // Check if port is already in list
-    for (i = 0; i < registeredHandlers; i++) {
+    for (i = 0; i < udpRegisteredHandlers; i++) {
         if (handlers[i].port == port) {
             handlers[i].func = handler;
             return 0;
@@ -197,14 +197,14 @@ uint8_t udpRegisterHandler(uint8_t (*handler)(Packet *), uint16_t port) {
     }
 
     // Extend list, add new handler.
-    UdpHandler *tmp = (UdpHandler *)mrealloc(handlers, (registeredHandlers + 1) * sizeof(UdpHandler), registeredHandlers * sizeof(UdpHandler));
+    UdpHandler *tmp = (UdpHandler *)mrealloc(handlers, (udpRegisteredHandlers + 1) * sizeof(UdpHandler), udpRegisteredHandlers * sizeof(UdpHandler));
     if (tmp == NULL) {
         return 1;
     }
     handlers = tmp;
-    handlers[registeredHandlers].port = port;
-    handlers[registeredHandlers].func = handler;
-    registeredHandlers++;
+    handlers[udpRegisteredHandlers].port = port;
+    handlers[udpRegisteredHandlers].func = handler;
+    udpRegisteredHandlers++;
     return 0;
 }
 
