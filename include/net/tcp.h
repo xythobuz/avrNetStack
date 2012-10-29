@@ -47,6 +47,8 @@
 #define TCPUrgentOffset 18 // 16bit
 #define TCPDataOffset 20 // Data, or Options if Data Offset > 5
 
+#define TCPMaxPacketSize (IPv4MaxPacketSize - TCPDataOffset)
+
 void tcpInit(void);
 
 // 0 on success, 1 if not enough mem, 2 invalid

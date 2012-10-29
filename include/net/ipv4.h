@@ -41,6 +41,8 @@ typedef uint8_t IPv4Address[4];
 #define IPv4PacketDestinationOffset 16
 #define IPv4PacketHeaderLength 20
 
+#define IPv4MaxPacketSize (MaxPacketSize - IPv4PacketHeaderLength)
+
 #define ICMP 0x01
 #define IGMP 0x02
 #define TCP 0x06

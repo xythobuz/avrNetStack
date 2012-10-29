@@ -48,13 +48,16 @@
 #define INTDDR DDRD
 
 uint8_t ownMacAddress[6];
+uint8_t shouldGetPacket = 0;
+
+extern uint8_t *zg_buf;
 
 // Definitions for prototypes in config.h and spi.h
 char ssid[32] = {"xythobuz"}; // 32byte max
 uint8_t ssid_len;
 uint8_t wireless_mode = WIRELESS_MODE_INFRA;
 uint8_t security_type = 3; // 0 Open, 1 WEP, 2 WPA, 3 WPA2
-char security_passphrase[32] = {""}; // WPA, WPA2 Passphrase
+char security_passphrase[32] = {"lollipop123"}; // WPA, WPA2 Passphrase
 uint8_t security_passphrase_len;
 unsigned char wep_keys[52] PROGMEM = { // WEP 128-bit keys
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
@@ -63,6 +66,15 @@ unsigned char wep_keys[52] PROGMEM = { // WEP 128-bit keys
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 uint8_t zg2100IsrEnabled; // In asynclabs spi.h
+
+uint8_t zgInterruptOccured(void) {
+    if (zg2100IsrEnabled) {
+        if (INTPORTPIN & (1 << INTPIN)) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
     uint8_t i;
@@ -74,9 +86,14 @@ uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
 
     zg_init();
 
-    debugPrint(" Done!\n");
+    debugPrint(" Done!\nConnecting...");
 
-    addConditionalTask(zg_isr, macHasInterrupt);
+    addConditionalTask(zg_isr, zgInterruptOccured); // Emulate INT0
+    do {
+        zg_drv_process();
+    } while (!macLinkIsUp());
+
+    debugPrint(" Done!\n");
 
     p = zg_get_mac(); // Global Var. in g2100.c
     for (i = 0; i < 6; i++) {
@@ -85,11 +102,6 @@ uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
     }
 
     return 0;
-}
-
-uint8_t establishConnection(void) {
-    zg_drv_process();
-    return macLinkIsUp();
 }
 
 void macReset(void) {
@@ -122,14 +134,26 @@ uint8_t macPacketsReceived(void) { // 0 if no packet, 1 if packet ready
 }
 
 Packet *macGetPacket(void) { // Returns NULL on error
-    return NULL;
+    uint16_t l = zg_get_rx_status();
+    Packet *p = (Packet *)malloc(sizeof(Packet));
+    if (p == NULL) {
+        return NULL;
+    }
+
+    p->dLength = l;
+    if (l > 0) {
+        p->d = (uint8_t *)malloc(l * sizeof(uint8_t));
+        if (p->d != NULL) {
+            for (uint16_t i = 0; i < l; i++) {
+                p->d[i] = zg_buf[i];
+            }
+        }
+    } else {
+        p->d = NULL;
+    }
+    return p;
 }
 
 uint8_t macHasInterrupt(void) {
-    if (zg2100IsrEnabled) {
-        if (INTPORTPIN & (1 << INTPIN)) {
-            return 1;
-        }
-    }
-    return 0;
+    return macPacketsReceived();
 }

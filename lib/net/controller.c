@@ -37,6 +37,7 @@
 #define DEBUG 2 // 0 to receive no debug serial output
 // 1 -> Init & Error Messages
 // 2 -> Message for each received packet and it's type
+// 3 -> Enable UDP Debug Port
 
 #include <std.h>
 #include <time.h>
@@ -95,11 +96,11 @@ char *typeString(uint16_t t) {
 }
 #endif
 
-#if DEBUG >= 1
+#if DEBUG >= 3
 uint8_t debugUdpHandler(Packet *p) {
     uint16_t i, max;
     max = get16Bit(p->d, UDPOffset + UDPLengthOffset);
-    debugPrint("Data: ");
+    debugPrint("UDP Debug: ");
     for (i = 0; i < max; i++) {
         serialWrite(p->d[UDPOffset + UDPDataOffset + i]);
         if (i < (max - 1)) {
@@ -134,7 +135,7 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 #ifndef DISABLE_UDP
     udpInit();
     debugPrint("UDP initialized...\n");
-#if DEBUG >= 1
+#if DEBUG >= 3
     udpRegisterHandler(&debugUdpHandler, 6600);
 #endif
 #ifndef DISABLE_DHCP
@@ -150,6 +151,10 @@ void networkInit(uint8_t *mac, uint8_t *ip, uint8_t *subnet, uint8_t *gateway) {
 
     addConditionalTask((Task)networkHandler, macHasInterrupt); // Enable polling
     addConditionalTask(ipv4SendQueue, ipv4PacketsToSend); // Enable transmission
+
+#ifndef DISABLE_NTP
+    // addTimedTask((Task)ntpIssueRequest, 1000, 0);
+#endif
 }
 
 void networkLoop(void) {
@@ -173,7 +178,7 @@ uint8_t networkHandler(void) {
             return 1;
         }
 
-        assert(p->dLength != 0);
+        assert(p->dLength > 0);
         assert(p->dLength <= MaxPacketSize);
 
         if (p->d == NULL) {

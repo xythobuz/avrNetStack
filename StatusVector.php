@@ -2,7 +2,7 @@
 <title>ENC28J60 Transmit Status Vector Interpreter</title>
 </head><body>
 <h1>ENC28J60 Transmit Status Vector Interpreter</h1>
-<p>This small PHP Tool allows you to convert the ENC28J60 Transmit Status Vector into a human-readable format. Some field will be marked green if their value seems okay, red if it's value indicates an error.</p>
+<p>This small PHP Tool allows you to convert the ENC28J60 Status Vectors into a human-readable format. Some field will be marked green if their value seems okay, red if it's value indicates an error.</p>
 <form method="get">
 Status Vector Hexdump: <input type="text" name="v" value="<? echo $_GET['v']; ?>">
 <input type="submit" value="Go!">
@@ -68,11 +68,11 @@ if (isset($_GET['v'])) {
         echo "</td><td>Indicates that frame length field value in the packet does not match the actual data byte length and specifies a valid length.</td></tr>\n";
 
         // Bit 22: Length Out of Range
-        echo "<tr><td>Length Out of Range</td><td";
+        echo "<tr><td>Length Out of Range</td><td>";
         if ((hexdec(substr($v, 4, 1)) & 0x04) != 0) {
-            echo " bgcolor=\"#FF0000\">Yes";
+            echo "Yes";
         } else {
-            echo " bgcolor=\"#00FF00\">No";
+            echo "No";
         }
         echo "</td><td>Indicates that frame type/length field was larger than 1500 bytes (type field).</td></tr>\n";
 
@@ -204,11 +204,11 @@ if (isset($_GET['v'])) {
         echo "</td><td>Indicates that frame length field value in the packet does not match the actual data byte length and is not a type field. MACON3.FRMLNEN must be set to get this error.</td></tr>\n";
 
         // Bit 22: Length out of Range
-        echo "<tr><td>Length Out Of Range</td><td";
+        echo "<tr><td>Length Out Of Range</td><td>";
         if ((hexdec(substr($v, 4, 1)) & 0x04) != 0) {
-            echo " bgcolor=\"#FF0000\">Yes";
+            echo "Yes";
         } else {
-            echo " bgcolor=\"#00FF00\">No";
+            echo "No";
         }
         echo "</td><td>Indicates that frame type/length field was larger than 1500 bytes (type field).</td></tr>\n";
 
@@ -361,5 +361,5 @@ if (isset($_GET['v'])) {
     }
 }
 ?>
-<p>2012, <a href="http://www.xythobuz.org">Thomas Buck</a>&lt;xythobuz@xythobuz.org&gt;. Part of <a href="https://github.com/xythobuz/avrNetStack">avrNetStack</a>.
+<p>Copyright 2012, <a href="http://www.xythobuz.org">Thomas Buck</a>. Part of <a href="https://github.com/xythobuz/avrNetStack">avrNetStack</a>.
 </body></html>

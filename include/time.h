@@ -30,7 +30,7 @@
 #ifndef _time_h
 #define _time_h
 
-#define TIMEZONE 2 // If you're eg. GMT-5, enter -5 or -4 on DST
+#define TIMEZONE 1 // If you're eg. GMT-5, enter -5 or -4 on DST
 
 typedef uint64_t time_t; // For milliseconds since system start or UNIX timestamp
 
@@ -49,6 +49,6 @@ void setNtpTimestamp(time_t ntp);
 
 // Fills y, m, d, h, min & sec with stamps values
 void convertTimestamp(time_t stamp, uint16_t *y, uint8_t *m, uint8_t *d,
-						uint8_t *h, uint8_t *min, uint8_t *sec);
+                        uint8_t *h, uint8_t *min, uint8_t *sec);
 
 #endif

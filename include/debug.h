@@ -33,30 +33,31 @@
 #include <avr/wdt.h>
 
 // #define DISABLE_HEAP_LOG // Uncomment to disable counting allocated bytes
+// #define NDEBUG // Uncomment to disable debug and assert output
 
 #define DEBUGOUT(x) serialWriteString(x) // Debug Output Function
 
 // assert Implementation
-#define ASSERTFUNC(x) ({                                \
-        if (!(x)) {                                     \
-            if (DEBUG != 0) {                           \
-                debugPrint("\nError: ");                \
-                debugPrint(__FILE__);                   \
-                debugPrint(":");                        \
-                debugPrint(timeToString(__LINE__));     \
-                debugPrint(" ");                        \
-                debugPrint(__func__);                   \
-                debugPrint(": Assertion '");            \
-                debugPrint(#x);                         \
-                debugPrint("' failed.\n");              \
-                debugPrint("Reset in 2 Seconds.\n\n");  \
-                wdt_enable(WDTO_2S);                    \
-                while(1);                               \
-            } else {                                    \
-                wdt_enable(WDTO_15MS);                  \
-                while(1);                               \
-            }                                           \
-        }                                               \
+#define ASSERTFUNC(x) ({                            \
+    if (!(x)) {                                     \
+        if (DEBUG != 0) {                           \
+            debugPrint("\nError: ");                \
+            debugPrint(__FILE__);                   \
+            debugPrint(":");                        \
+            debugPrint(timeToString(__LINE__));     \
+            debugPrint(" ");                        \
+            debugPrint(__func__);                   \
+            debugPrint(": Assertion '");            \
+            debugPrint(#x);                         \
+            debugPrint("' failed.\n");              \
+            debugPrint("Reset in 2 Seconds.\n\n");  \
+            wdt_enable(WDTO_2S);                    \
+            while(1);                               \
+        } else {                                    \
+            wdt_enable(WDTO_15MS);                  \
+            while(1);                               \
+        }                                           \
+    }                                               \
 })
 
 // Macro Magic
@@ -64,18 +65,14 @@
 // Define DEBUG before including this file!
 // Disables all debug output if NDEBUG is defined
 
-#ifdef NODEBUG
+#ifdef NODEBUG // Allow NODEBUG and NDEBUG
 #define NDEBUG NODEBUG
 #endif
 
-#if (!(defined(NDEBUG)))
+#if (!(defined(NDEBUG))) && (DEBUG >= 1)
 #define assert(x) ASSERTFUNC(x)
-#if DEBUG >= 1
 #define debugPrint(x) DEBUGOUT(x)
 #else
-#define debugPrint(ignore)
-#endif // DEBUG >= 1
-#else // NDEBUG defined
 #define assert(ignore)
 #define debugPrint(ignore)
 #endif // ! defined NDEBUG

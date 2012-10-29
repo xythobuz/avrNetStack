@@ -25,8 +25,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # ------------------------------
-#IC = enc28j60
-IC = mrf24wb0ma
+IC = enc28j60
+#IC = mrf24wb0ma
 # ------------------------------
 
 MCU = atmega32
@@ -72,10 +72,6 @@ CARGS += -Wall -Wstrict-prototypes
 CARGS += -Iinclude
 CARGS += -std=$(CSTANDARD)
 CARGS += -DF_CPU=$(F_CPU)
-
-ifeq ($(IC),mrf24wb0ma)
-CARGS += -DWIFIMODE
-endif
 
 test: test.hex
 

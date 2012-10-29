@@ -34,11 +34,11 @@
 #include <util/atomic.h>
 #include <util/delay.h>
 
-#define DEBUG 1
+#define DEBUG 4
 // 1 --> ENC28J60 Revision
 // 2 --> 1 + Received and Sent Packets
 // 3 --> 1 + 2 + Raw Sent Packet Dump
-// 4 --> 1 + 2 + 3 + Sent Packets Status Vector
+// 4 --> 1 + 2 + 3 + Status Vectors
 // 5 --> 1 + 2 + 3 + 4 + PHSTAT Registers on LinkIsUp
 
 #include <std.h>
@@ -66,10 +66,10 @@
 #define TXEND 0x1FFF
 
 #if RXSTART > RXEND
-#error "ENC28J60 Receive Buffer Overlap not suppoerted!"
+#error "ENC28J60 Receive Buffer Overlap not supported!"
 #endif
 #if TXSTART > TXEND
-#error "ENC28J60 Transmit Buffer Overlap not suppoerted!"
+#error "ENC28J60 Transmit Buffer Overlap not supported!"
 #endif
 #if (RXEND-RXSTART) < 1500
 #warning "ENC28J60 Receive Buffer may be too small..."
@@ -478,11 +478,10 @@ Packet *macGetPacket(void) { // Returns NULL or Packet with d == NULL on error
     }
 #endif
 
-    assert(fullLength > 0);
-    assert(fullLength <= MaxPacketSize);
-
     if (header[2] & (1 << 7)) {
         // Received OK
+        assert(fullLength > 0);
+        assert(fullLength <= MaxPacketSize);
         p->dLength = fullLength;
         p->d = (uint8_t *)mmalloc(p->dLength * sizeof(uint8_t));
         if (p->d == NULL) {

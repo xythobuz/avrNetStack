@@ -40,6 +40,8 @@
 #define ICMPChecksumOffset 2
 #define ICMPDataOffset 4
 
+#define ICMPMaxPacketSize (IPv4MaxPacketSize - ICMPDataOffset)
+
 void icmpInit(void);
 
 // 0 success, 1 not enough mem, 2 invalid

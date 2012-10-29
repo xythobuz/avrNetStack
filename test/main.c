@@ -57,13 +57,13 @@ IPv4Address defIp = {192, 168, 0, 42};
 IPv4Address defSubnet = {255, 255, 255, 0};
 IPv4Address defGateway = {192, 168, 0, 1};
 
-IPv4Address testIp = { 192, 168, 0, 103 };
+IPv4Address testIp = {192, 168, 0, 103};
 #define TESTPORT 6600
 
 uint8_t pingState = 0, pingMode = 0;
 time_t pingTime, responseTime;
-IPv4Address pingIpA = { 192, 168, 0, 103 };
-IPv4Address pingIpB = { 80, 150, 6, 143 };
+IPv4Address pingIpA = {192, 168, 0, 103};
+IPv4Address pingIpB = {80, 150, 6, 143};
 
 uint8_t mcusr_mirror __attribute__ ((section(".noinit")));
 void mirrorWatchdog(void) __attribute__((naked)) __attribute__((section(".init3")));
@@ -110,19 +110,8 @@ int main(void) {
 
     PORTA &= ~((1 << PA7) | (1 << PA6)); // LEDs off
 
-    addTimedTask(heartbeat, 500); // Toggle LED every 500ms
+    addTimedTask(heartbeat, 500, 1); // Toggle LED every 500ms
     addConditionalTask(serialHandler, serialHasChar); // Execute Serial Handler if char received
-
-#ifdef WIFIMODE
-    serialWriteString(getString(17)); // "Trying to connect..."
-    while (!establishConnection()) {
-        wdt_reset();
-        if (serialHasChar()) {
-            serialHandler();
-        }
-    }
-    serialWriteString(getString(35)); // " Done!\n"
-#endif
 
     while (1)
         networkLoop(); // Runs task manager and scheduler, resets watchdog timer for us

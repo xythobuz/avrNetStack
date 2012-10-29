@@ -43,8 +43,9 @@
 #define schedulerTimeFunc(x) getSystemTime(x) // has to return system time in milliseconds
 
 // Add a new timed task. Calling scheduler() in your main-loop
-// will cause a call to func() every intervall milliseconds.
-uint8_t addTimedTask(Task func, time_t intervall); // 0 on success
+// will cause a call to func() every intervall milliseconds, if repeat != 0.
+// If repeat == 0, func will be called once after intervall milliseconds.
+uint8_t addTimedTask(Task func, time_t intervall, uint8_t repeat); // 0 on success
 void scheduler(void); // Call this in your main loop!
 
 uint8_t schedulerRegistered(void);

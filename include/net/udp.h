@@ -41,6 +41,8 @@
 #define UDPChecksumOffset 6
 #define UDPDataOffset 8
 
+#define UDPMaxPacketSize (IPv4MaxPacketSize - UDPDataOffset)
+
 void udpInit(void);
 
 // 0 on success, 1 if not enough mem, 2 invalid
