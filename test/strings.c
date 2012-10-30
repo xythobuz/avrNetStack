@@ -45,12 +45,12 @@ const char string6[] PROGMEM = "allocated\n";
 const char string7[] PROGMEM = ": ";
 const char string8[] PROGMEM = "NTP Request: ";
 const char string9[] PROGMEM = "DHCP Request: ";
-const char string10[] PROGMEM = "Commands: (h)elp, (q)uit, (l)ink,\n  (v)ersion, (s)tatus, (a)rp, (n)tp,  \n(d)hcp, (u)dp, (p)ing, (t)ime\n";
+const char string10[] PROGMEM = "Commands: (h)elp, (q)uit, (l)ink,\n  (v)ersion, (s)tatus, (a)rp, (n)tp,\n  (d)hcp, (u)dp, (p)ing, (t)ime\n  (r)eset, (i)nt\n";
 const char string11[] PROGMEM = "Good Bye...\n\n";
 const char string12[] PROGMEM = "ARP Table:\n";
 const char string13[] PROGMEM = " --> ";
 const char string14[] PROGMEM = " Tasks";
-const char string15[] PROGMEM = "";
+const char string15[] PROGMEM = "Pin is ";
 const char string16[] PROGMEM = " Scheduler";
 const char string17[] PROGMEM = "Trying to connect...\n";
 const char string18[] PROGMEM = " ms";
@@ -75,9 +75,12 @@ const char string36[] PROGMEM = " IPv4 Packets in Queue\n";
 const char string37[] PROGMEM = "TCP";
 const char string38[] PROGMEM = "UDP";
 const char string39[] PROGMEM = " Handlers registered\n";
+const char string40[] PROGMEM = "MAC reinitialized!\n";
+const char string41[] PROGMEM = "High";
+const char string42[] PROGMEM = "Low";
 
 // Last index + 1
-#define STRINGNUM 40
+#define STRINGNUM 43
 
 PGM_P stringTable[STRINGNUM] PROGMEM = {
     string0, string1, string2, string3, string4,
@@ -87,7 +90,8 @@ PGM_P stringTable[STRINGNUM] PROGMEM = {
     string20, string21, string22, string23, string24,
     string25, string26, string27, string28, string29,
     string30, string31, string32, string33, string34,
-    string35, string36, string37, string38, string39
+    string35, string36, string37, string38, string39,
+    string40, string41, string42
 };
 
 const char stringNotFoundError[] PROGMEM = "String not found!\n";

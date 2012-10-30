@@ -51,10 +51,10 @@
 #define CSPIN PA1
 #define CSDDR DDRA
 
-#define INTPORT PORTD
-#define INTPORTPIN PIND
-#define INTPIN PD2
-#define INTDDR DDRD
+#define INTPORT PORTC
+#define INTPORTPIN PINC
+#define INTPIN PC3
+#define INTDDR DDRC
 
 #define ACTIVATE() (CSPORT &= ~(1 << CSPIN))
 #define DEACTIVATE() (CSPORT |= (1 << CSPIN))

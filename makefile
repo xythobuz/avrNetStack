@@ -92,7 +92,7 @@ libavrNetStack.a: $(OBJ)
 	avr-gcc -c $< -o $@ $(CARGS)
 
 test.elf: libavrNetStack.a $(TESTOBJ)
-	avr-gcc $(CARGS) $(TESTOBJ) --output test.elf -Wl,-L.,-lm,-lavrNetStack
+	avr-gcc $(CARGS) $(TESTOBJ) --output test.elf -Wl,-L.,-lm,-lavrNetStack,--relax
 	avr-size --mcu=$(MCU) -C test.elf
 
 test.hex: test.elf

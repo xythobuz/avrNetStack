@@ -58,7 +58,7 @@ char ssid[32] = {"xythobuz"}; // 32byte max
 uint8_t ssid_len;
 uint8_t wireless_mode = WIRELESS_MODE_INFRA;
 uint8_t security_type = 3; // 0 Open, 1 WEP, 2 WPA, 3 WPA2
-char security_passphrase[32] = {"lollipop123"}; // WPA, WPA2 Passphrase
+char security_passphrase[32] = {""}; // WPA, WPA2 Passphrase
 uint8_t security_passphrase_len;
 unsigned char wep_keys[52] PROGMEM = { // WEP 128-bit keys
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,

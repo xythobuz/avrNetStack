@@ -266,8 +266,12 @@ void serialWrite(uint8_t data) {
 }
 
 void serialWriteString(const char *data) {
-    while (*data != '\0') {
-        serialWrite(*data++);
+    if (data == 0) {
+        serialWriteString("NULL");
+    } else {
+        while (*data != '\0') {
+            serialWrite(*data++);
+        }
     }
 }
 

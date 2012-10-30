@@ -92,7 +92,7 @@ int8_t tooOldEntry(void) {
             t = arpTable[i].time + ARPTableTimeToLive;
         } else {
             // Waiting for Reply
-            t = arpTable[i].time + ARPTableTimeout;
+            t = arpTable[i].time + ARPTableTimeToLiveWaiting;
         }
         if ((t <= time) && (arpTable[i].time != 0)) {
             return i;
@@ -180,6 +180,57 @@ uint8_t isIpInThisNetwork(uint8_t *d) {
         }
     }
     return 1;
+}
+
+uint8_t sendArpRequest(IPv4Address ip) {
+    uint8_t i;
+    Packet *p;
+#if DEBUG >= 1
+    debugPrint("Sending ARP Request for ");
+    for (i = 0; i < 4; i++) {
+        debugPrint(timeToString(ip[i]));
+        if (i < 3) {
+            debugPrint(".");
+        }
+    }
+    debugPrint("...");
+#endif
+    p = (Packet *)mmalloc(sizeof(Packet));
+    if (p == NULL) {
+        debugPrint("Not enough memory for Packet struct!\n");
+        return 0;
+    }
+    p->d = (uint8_t *)mmalloc(MACPreambleSize + HEADERLENGTH + ARPPacketSize);
+    if (p->d == NULL) {
+        mfree(p, sizeof(Packet));
+        return 0;
+    }
+    for (i = 0; i < 6; i++) {
+        p->d[i] = 0xFF; // Target MAC
+        p->d[6 + i] = ownMacAddress[i];
+        p->d[MACPreambleSize + i] = pgm_read_byte(&(ArpPacketHeader[i])); // ARP Header
+        p->d[MACPreambleSize + HEADERLENGTH + 2 + i] = ownMacAddress[i];
+        p->d[MACPreambleSize + HEADERLENGTH + 12 + i] = 0xFF;
+        if (i < 4) {
+            p->d[MACPreambleSize + HEADERLENGTH + 8 + i] = ownIpAddress[i];
+            p->d[MACPreambleSize + HEADERLENGTH + 18 + i] = ip[i]; // Target IP
+        }
+    }
+    p->d[12] = (ARP & 0xFF00) >> 8;
+    p->d[13] = (ARP & 0x00FF); // ARP Packet
+    p->d[MACPreambleSize + HEADERLENGTH] = 0;
+    p->d[MACPreambleSize + HEADERLENGTH + 1] = 1; // Request
+    p->dLength = MACPreambleSize + HEADERLENGTH + ARPPacketSize;
+    i = macSendPacket(p);
+    mfree(p->d, p->dLength);
+    mfree(p, sizeof(Packet));
+    if (i) {
+        debugPrint(" Error!\n");
+        return 0;
+    } else {
+        debugPrint(" Done!\n");
+        return 1;
+    }
 }
 
 // ------------------------
@@ -312,7 +363,6 @@ uint8_t macReturnBuffer[6];
 uint8_t *arpGetMacFromIp(IPv4Address ip) {
     uint8_t i, a;
     int8_t index = findMacFromIp(ip);
-    Packet *p;
 
     if (!isIpInThisNetwork(ip)) {
 #if DEBUG >= 1
@@ -339,58 +389,19 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
         if (a == 0) {
             // Not yet found but already requested. Return NULL!
             debugPrint("MAC already requested, waiting for response...\n");
+            if ((arpTable[index].time + ARPTableTimeToRetry) < getSystemTime()) {
+                // Try again...
+                sendArpRequest(ip);
+            }
             return NULL;
         }
         arpTable[index].time = getSystemTime();
         return macReturnBuffer;
     } else {
         // No entry found. Issue ARP Request
-#if DEBUG >= 1
-        debugPrint("Sending ARP Request for ");
-        for (i = 0; i < 4; i++) {
-            debugPrint(timeToString(ip[i]));
-            if (i < 3) {
-                debugPrint(".");
-            }
+        if (sendArpRequest(ip)) {
+            copyEntry(NULL, ip, getSystemTime(), getFirstFreeEntry());
         }
-        debugPrint("...");
-#endif
-        p = (Packet *)mmalloc(sizeof(Packet));
-        if (p == NULL) {
-            debugPrint("Not enough memory for Packet struct!\n");
-            return NULL;
-        }
-        p->d = (uint8_t *)mmalloc(MACPreambleSize + HEADERLENGTH + ARPPacketSize);
-        if (p->d == NULL) {
-            mfree(p, sizeof(Packet));
-            return NULL;
-        }
-        for (i = 0; i < 6; i++) {
-            p->d[i] = 0xFF; // Target MAC
-            p->d[6 + i] = ownMacAddress[i];
-            p->d[MACPreambleSize + i] = pgm_read_byte(&(ArpPacketHeader[i])); // ARP Header
-            p->d[MACPreambleSize + HEADERLENGTH + 2 + i] = ownMacAddress[i];
-            p->d[MACPreambleSize + HEADERLENGTH + 12 + i] = 0xFF;
-            if (i < 4) {
-                p->d[MACPreambleSize + HEADERLENGTH + 8 + i] = ownIpAddress[i];
-                p->d[MACPreambleSize + HEADERLENGTH + 18 + i] = ip[i]; // Target IP
-            }
-        }
-        p->d[12] = (ARP & 0xFF00) >> 8;
-        p->d[13] = (ARP & 0x00FF); // ARP Packet
-        p->d[MACPreambleSize + HEADERLENGTH] = 0;
-        p->d[MACPreambleSize + HEADERLENGTH + 1] = 1; // Request
-        p->dLength = MACPreambleSize + HEADERLENGTH + ARPPacketSize;
-        i = macSendPacket(p);
-        mfree(p->d, p->dLength);
-        mfree(p, sizeof(Packet));
-        if (i) {
-            debugPrint(" Error!\n");
-            return NULL;
-        } else {
-            debugPrint(" Done!\n");
-        }
-        copyEntry(NULL, ip, getSystemTime(), getFirstFreeEntry());
         return NULL;
     }
 }

@@ -224,6 +224,19 @@ void serialHandler(void) {
     serialWrite(c - 32); // to uppercase
     serialWriteString(getString(7)); // ": "
     switch(c) {
+        case 'r':
+            macInitialize(mac);
+            serialWriteString(getString(40)); // "MAC reinitialized!\n"
+            break;
+        case 'i':
+            serialWriteString(getString(15)); // "Pin is "
+            if (!macHasInterrupt()) {
+                serialWriteString(getString(41)); // "High"
+            } else {
+                serialWriteString(getString(42)); // "Low"
+            }
+            serialWrite('\n');
+            break;
         case 't': // Time
             convertTimestamp(getSystemTimeSeconds(), &n, &m, &l, &k, &j, &i);
             serialWriteString(timeToString(l)); // day

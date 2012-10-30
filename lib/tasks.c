@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <std.h>
 #include <tasks.h>
