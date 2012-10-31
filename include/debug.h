@@ -45,14 +45,11 @@
             debugPrint(__FILE__);                   \
             debugPrint(":");                        \
             debugPrint(timeToString(__LINE__));     \
-            debugPrint(" ");                        \
+            debugPrint(" in ");                     \
             debugPrint(__func__);                   \
-            debugPrint(": Assertion '");            \
+            debugPrint("(): Assertion '");          \
             debugPrint(#x);                         \
-            debugPrint("' failed.\n");              \
-            debugPrint("Reset in a Second.\n\n");   \
-            wdt_enable(WDTO_1S);                    \
-            while(1);                               \
+            debugPrint("' failed!\n");              \
         } else {                                    \
             wdt_enable(WDTO_15MS);                  \
             while(1);                               \

@@ -200,7 +200,8 @@ uint8_t sendArpRequest(IPv4Address ip) {
         debugPrint("Not enough memory for Packet struct!\n");
         return 0;
     }
-    p->d = (uint8_t *)mmalloc(MACPreambleSize + HEADERLENGTH + ARPPacketSize);
+    p->dLength = MACPreambleSize + HEADERLENGTH + ARPPacketSize;
+    p->d = (uint8_t *)mmalloc(p->dLength);
     if (p->d == NULL) {
         mfree(p, sizeof(Packet));
         return 0;
@@ -220,7 +221,6 @@ uint8_t sendArpRequest(IPv4Address ip) {
     p->d[13] = (ARP & 0x00FF); // ARP Packet
     p->d[MACPreambleSize + HEADERLENGTH] = 0;
     p->d[MACPreambleSize + HEADERLENGTH + 1] = 1; // Request
-    p->dLength = MACPreambleSize + HEADERLENGTH + ARPPacketSize;
     i = macSendPacket(p);
     mfree(p->d, p->dLength);
     mfree(p, sizeof(Packet));
