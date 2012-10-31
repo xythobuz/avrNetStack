@@ -36,8 +36,7 @@
 #include <net/controller.h>
 
 #define ARPTableTimeToLive 300000 // Keep unused Cache entries for 5 Minutes
-#define ARPTableTimeToLiveWaiting 60000 // Wait max. 1 minute for answers
-#define ARPTableTimeToRetry 1000 // Request new answer every second
+#define ARPTableTimeToRetry 5000 // Request new answer every second
 
 typedef struct {
     IPv4Address ip;

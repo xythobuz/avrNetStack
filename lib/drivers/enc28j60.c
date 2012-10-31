@@ -66,7 +66,7 @@
 #define TXEND 0x1FFF
 
 #define RECEIVED_OK (header[2] & (1 << 7))
-#define CRC_OK (header[2] & (1 << 4))
+#define CRC_OK (!(header[2] & (1 << 4)))
 #define ALWAYS_NO (!(header[3] & (1 << 7)))
 #define RECEIVESUCCESS (RECEIVED_OK && CRC_OK && ALWAYS_NO)
 

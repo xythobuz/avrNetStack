@@ -90,12 +90,9 @@ int8_t tooOldEntry(void) {
         if (!isZero(arpTable[i].mac, 6)) {
             // Normal full entry
             t = arpTable[i].time + ARPTableTimeToLive;
-        } else {
-            // Waiting for Reply
-            t = arpTable[i].time + ARPTableTimeToLiveWaiting;
-        }
-        if ((t <= time) && (arpTable[i].time != 0)) {
-            return i;
+            if ((t <= time) && (arpTable[i].time != 0)) {
+                return i;
+            }
         }
     }
     return -1;
@@ -393,6 +390,7 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
                 // Try again...
                 sendArpRequest(ip);
             }
+            arpTable[index].time = getSystemTime();
             return NULL;
         }
         arpTable[index].time = getSystemTime();
