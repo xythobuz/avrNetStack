@@ -76,9 +76,11 @@ void tasks(void) {
         if ((p->test == NULL) || (p->test() != 0)) {
             p->task();
 #if DEBUG >= 1
-            debugPrint("Executed ");
-            debugPrint(p->name);
-            debugPrint("\n");
+            if (p->name != NULL) {
+                debugPrint("Executed ");
+                debugPrint(p->name);
+                debugPrint("\n");
+            }
 #endif
         }
     }

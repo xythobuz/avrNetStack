@@ -50,6 +50,10 @@
             debugPrint("(): Assertion '");          \
             debugPrint(#x);                         \
             debugPrint("' failed!\n");              \
+            wdt_enable(WDTO_1S);                    \
+            while (!serialTxBufferEmpty())          \
+                wdt_reset();                        \
+            while(1);                               \
         } else {                                    \
             wdt_enable(WDTO_15MS);                  \
             while(1);                               \

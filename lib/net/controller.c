@@ -168,13 +168,11 @@ void networkLoop(void) {
 uint8_t networkHandler(void) {
     Packet *p;
 
-    while (macLinkIsUp() && (macPacketsReceived() > 0)) {
+    if (macLinkIsUp() && (macPacketsReceived() > 0)) {
         p = macGetPacket();
 
         if (p == NULL) {
-            debugPrint("Not enough memory to allocate Packet struct!\n");
-            debugPrint(timeToString(heapBytesAllocated));
-            debugPrint(" bytes should be allocated...\n");
+            debugPrint("Error while receiving!\n");
             return 1;
         }
 

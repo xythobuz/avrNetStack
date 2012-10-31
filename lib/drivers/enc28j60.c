@@ -65,6 +65,11 @@
 #define TXSTART 0x1800
 #define TXEND 0x1FFF
 
+#define RECEIVED_OK (header[2] & (1 << 7))
+#define CRC_OK (header[2] & (1 << 4))
+#define ALWAYS_NO (!(header[3] & (1 << 7)))
+#define RECEIVESUCCESS (RECEIVED_OK && CRC_OK && ALWAYS_NO)
+
 #if RXSTART > RXEND
 #error "ENC28J60 Receive Buffer Overlap not supported!"
 #endif
@@ -143,7 +148,7 @@ void discardPacket(void) {
     } else {
         nextPacketPointer--;
     }
-    writeControlRegister(0x08, (nextPacketPointer & 0xFF)); // set ERXRDPTH
+    writeControlRegister(0x08, (nextPacketPointer & 0xFF)); // set ERXRDPTL
     writeControlRegister(0x09, (nextPacketPointer & 0xFF00) >> 8); // set ERXRDPTH
     bitFieldSet(0x1E, (1 << 6)); // Set ECON2.PKTDEC
 }
@@ -171,7 +176,7 @@ uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
     CSDDR |= (1 << CSPIN); // Chip Select as Output
     CSPORT |= (1 << CSPIN); // Deselect
     INTDDR &= ~(1 << INTPIN); // Interrupt PIN
-    INTPORT |= (1 << INTPIN); // Enable Pull-Up
+    // INTPORT |= (1 << INTPIN); // Enable Pull-Up
 
     spiInit();
     macReset();
@@ -201,7 +206,7 @@ uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
     } else {
         phy = (nextPacketPointer - 1);
     }
-    writeControlRegister(0x08, (phy & 0xFF)); // set ERXRDPTH
+    writeControlRegister(0x08, (phy & 0xFF)); // set ERXRDPTL
     writeControlRegister(0x09, (phy & 0xFF00) >> 8); // set ERXRDPTH
 
     // Default Receive Filters are acceptable.
@@ -428,14 +433,6 @@ Packet *macGetPacket(void) { // Returns NULL or Packet with d == NULL on error
         return NULL;
     }
 
-    p = (Packet *)mmalloc(sizeof(Packet));
-    if (p == NULL) {
-        return NULL;
-    }
-
-    p->d = NULL;
-    p->dLength = 0;
-
     writeControlRegister(0x00, (uint8_t)(nextPacketPointer & 0xFF)); // Set ERDPTL
     writeControlRegister(0x01, (uint8_t)((nextPacketPointer & 0xFF00) >> 8)); // Set ERDPTH
 
@@ -466,22 +463,28 @@ Packet *macGetPacket(void) { // Returns NULL or Packet with d == NULL on error
     }
 #endif
 
-    if (header[2] & (1 << 7)) {
+    if (RECEIVESUCCESS) {
         // Received OK
         assert(fullLength > 0);
         assert(fullLength <= MaxPacketSize);
+
+        p = (Packet *)mmalloc(sizeof(Packet));
+        if (p == NULL) {
+            return NULL;
+        }
         p->dLength = fullLength;
         p->d = (uint8_t *)mmalloc(p->dLength * sizeof(uint8_t));
         if (p->d == NULL) {
             // discardPacket(); // Try again later
-            return p;
+            mfree(p, sizeof(Packet));
+            return NULL;
         }
         readBufferMemory(p->d, p->dLength); // Read payload
         discardPacket();
         return p;
     } else {
         discardPacket();
-        return p; // p->d is NULL
+        return NULL;
     }
 }
 
