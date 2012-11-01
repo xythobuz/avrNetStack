@@ -34,11 +34,11 @@
 #include <util/atomic.h>
 #include <util/delay.h>
 
-#define DEBUG 4
+#define DEBUG 3
 // 1 --> ENC28J60 Revision
 // 2 --> 1 + Received and Sent Packets
-// 3 --> 1 + 2 + Raw Sent Packet Dump
-// 4 --> 1 + 2 + 3 + Status Vectors
+// 3 --> 1 + 2 + Status Vectors
+// 4 --> 1 + 2 + 3 + Raw Sent Packet Dump
 // 5 --> 1 + 2 + 3 + 4 + PHSTAT Registers on LinkIsUp
 
 #include <std.h>
@@ -352,7 +352,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
 
     bitFieldSet(0x1F, 0x08); // ECON1.TXRTS --> start transmission
 
-#if DEBUG >= 3
+#if DEBUG >= 4
     dumpPacketRaw(p);
 #endif
 
@@ -372,7 +372,7 @@ uint8_t macSendPacket(Packet *p) { // 0 on success, 1 on error
     writeControlRegister(0x01, (uint8_t)((a & 0xFF00) >> 8)); // Set ERDPTH
     readBufferMemory(statusVector, 7); // Read status vector
 
-#if DEBUG >= 4
+#if DEBUG >= 3
     // Print status vector
     debugPrint("Transmit");
     debugPrint(" Status Vector: ");
@@ -453,7 +453,7 @@ Packet *macGetPacket(void) { // Returns NULL or Packet with d == NULL on error
     debugPrint(" bytes...\n");
 #endif
 
-#if DEBUG >= 4
+#if DEBUG >= 3
     debugPrint("Receive");
     debugPrint(" Status Vector: ");
     for (d = 0; d < 4; d++) {

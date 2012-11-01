@@ -40,24 +40,18 @@
 #include <net/ipv4.h>
 #include <net/arp.h>
 #include <net/utils.h>
-#include <serial.h> // debug output
+#include <serial.h>
 #include <net/controller.h>
 
 ARPTableEntry *arpTable = NULL;
 uint8_t arpTableSize = 0;
-/* const uint16_t hardwareType = 1; // Ethernet
- * const uint16_t protocolType = 0x0800; // IPv4
- * const uint8_t  hardwareAddressLength = 6; // MAC Length
- * const uint8_t  protocolAddressLength = 4; // IP Length */
-#define HEADERLENGTH 6
-uint8_t ArpPacketHeader[HEADERLENGTH] PROGMEM = {0x00, 0x01, 0x08, 0x00, 0x06, 0x04};
-uint8_t zero[6] PROGMEM = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 12 bytes in flash, who cares?
+
+#define HEADERLEN 6
+uint8_t ArpPacketHeader[HEADERLEN] PROGMEM = {0x00, 0x01, 0x08, 0x00, 0x06, 0x04};
 
 // ------------------------
 // |     Internal API     |
 // ------------------------
-
-#define isZero(x, y) isEqualFlash(x, zero, y)
 
 uint8_t isTableEntryFree(uint8_t i) {
     if (i < arpTableSize) {
@@ -197,7 +191,7 @@ uint8_t sendArpRequest(IPv4Address ip) {
         debugPrint("Not enough memory for Packet struct!\n");
         return 0;
     }
-    p->dLength = MACPreambleSize + HEADERLENGTH + ARPPacketSize;
+    p->dLength = MACPreambleSize + HEADERLEN + ARPPacketSize;
     p->d = (uint8_t *)mmalloc(p->dLength);
     if (p->d == NULL) {
         mfree(p, sizeof(Packet));
@@ -207,17 +201,17 @@ uint8_t sendArpRequest(IPv4Address ip) {
         p->d[i] = 0xFF; // Target MAC
         p->d[6 + i] = ownMacAddress[i];
         p->d[MACPreambleSize + i] = pgm_read_byte(&(ArpPacketHeader[i])); // ARP Header
-        p->d[MACPreambleSize + HEADERLENGTH + 2 + i] = ownMacAddress[i];
-        p->d[MACPreambleSize + HEADERLENGTH + 12 + i] = 0xFF;
+        p->d[MACPreambleSize + HEADERLEN + 2 + i] = ownMacAddress[i];
+        p->d[MACPreambleSize + HEADERLEN + 12 + i] = 0xFF;
         if (i < 4) {
-            p->d[MACPreambleSize + HEADERLENGTH + 8 + i] = ownIpAddress[i];
-            p->d[MACPreambleSize + HEADERLENGTH + 18 + i] = ip[i]; // Target IP
+            p->d[MACPreambleSize + HEADERLEN + 8 + i] = ownIpAddress[i];
+            p->d[MACPreambleSize + HEADERLEN + 18 + i] = ip[i]; // Target IP
         }
     }
     p->d[12] = (ARP & 0xFF00) >> 8;
     p->d[13] = (ARP & 0x00FF); // ARP Packet
-    p->d[MACPreambleSize + HEADERLENGTH] = 0;
-    p->d[MACPreambleSize + HEADERLENGTH + 1] = 1; // Request
+    p->d[MACPreambleSize + HEADERLEN] = 0;
+    p->d[MACPreambleSize + HEADERLEN + 1] = 1; // Request
     i = macSendPacket(p);
     mfree(p->d, p->dLength);
     mfree(p, sizeof(Packet));
@@ -255,7 +249,7 @@ uint8_t arpProcessPacket(Packet *p) {
     assert(arpTableSize > 0); // At least the broadcast MAC should be there
     assert(p->dLength >= (ARPOffset + ARPPacketSize)); // Has correct length?
 
-    if (!(isEqualFlash(p->d + MACPreambleSize, ArpPacketHeader, HEADERLENGTH) && (p->dLength >= (HEADERLENGTH + 22 + MACPreambleSize)))) {
+    if (!(isEqualFlash(p->d + MACPreambleSize, ArpPacketHeader, HEADERLEN) && (p->dLength >= (HEADERLEN + 22 + MACPreambleSize)))) {
         // Packet invalid
         debugPrint("ARP Packet not valid!\n");
         mfree(p->d, p->dLength);
@@ -263,27 +257,27 @@ uint8_t arpProcessPacket(Packet *p) {
         return 2;
     }
 
-    if (p->d[MACPreambleSize + HEADERLENGTH + 1] == 1) {
+    if (p->d[MACPreambleSize + HEADERLEN + 1] == 1) {
         // ARP Request. Check if we have stored the sender MAC.
-        if (findIpFromMac(p->d + MACPreambleSize + HEADERLENGTH + 2) == -1) {
+        if (findIpFromMac(p->d + MACPreambleSize + HEADERLEN + 2) == -1) {
             // Sender MAC is not stored. Store combination!
-            copyEntry(p->d + MACPreambleSize + HEADERLENGTH + 2, p->d + MACPreambleSize + HEADERLENGTH + 8, getSystemTime(), getFirstFreeEntry());
+            copyEntry(p->d + MACPreambleSize + HEADERLEN + 2, p->d + MACPreambleSize + HEADERLEN + 8, getSystemTime(), getFirstFreeEntry());
         }
         // Check if the request is for us. If so, issue an answer!
-        if (isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLENGTH + 18, 4)) {
+        if (isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLEN + 18, 4)) {
             debugPrint("ARP Request for us!");
-            p->d[MACPreambleSize + HEADERLENGTH + 1] = 2; // Reply
+            p->d[MACPreambleSize + HEADERLEN + 1] = 2; // Reply
             for (i = 0; i < 6; i++) {
-                p->d[MACPreambleSize + HEADERLENGTH + 12 + i] = p->d[MACPreambleSize + HEADERLENGTH + 2 + i]; // Back to sender
-                p->d[MACPreambleSize + HEADERLENGTH + 2 + i] = ownMacAddress[i]; // Comes from us
+                p->d[MACPreambleSize + HEADERLEN + 12 + i] = p->d[MACPreambleSize + HEADERLEN + 2 + i]; // Back to sender
+                p->d[MACPreambleSize + HEADERLEN + 2 + i] = ownMacAddress[i]; // Comes from us
                 p->d[i] = 255;
                 p->d[i + 6] = ownMacAddress[i];
                 p->d[12] = (ARP & 0xFF00) >> 8;
                 p->d[13] = (ARP & 0x00FF);
                 if (i < 4) {
-                    p->d[MACPreambleSize + HEADERLENGTH + 18 + i] = p->d[MACPreambleSize + HEADERLENGTH + 8 + i];
+                    p->d[MACPreambleSize + HEADERLEN + 18 + i] = p->d[MACPreambleSize + HEADERLEN + 8 + i];
 
-                    p->d[MACPreambleSize + HEADERLENGTH + 8 + i] = ownIpAddress[i];
+                    p->d[MACPreambleSize + HEADERLEN + 8 + i] = ownIpAddress[i];
                 }
             }
             debugPrint(" Sending Response...");
@@ -301,7 +295,7 @@ uint8_t arpProcessPacket(Packet *p) {
 #if DEBUG >= 2
             debugPrint("ARP Request for ");
             for (i = 0; i < 4; i++) {
-                debugPrint(timeToString(p->d[MACPreambleSize + HEADERLENGTH + 18 + i]));
+                debugPrint(timeToString(p->d[MACPreambleSize + HEADERLEN + 18 + i]));
                 if (i < 3) {
                     debugPrint(".");
                 }
@@ -313,30 +307,30 @@ uint8_t arpProcessPacket(Packet *p) {
         mfree(p->d, p->dLength);
         mfree(p, sizeof(Packet));
         return 0;
-    } else if (p->d[MACPreambleSize + HEADERLENGTH + 1] == 2) {
+    } else if (p->d[MACPreambleSize + HEADERLEN + 1] == 2) {
         debugPrint("Got ARP Reply\n");
         // ARP Reply. Store the information, if not already present
         // Each packet contains two MAC-IP Combinations. Sender & Target
-        if (findIpFromMac(p->d + MACPreambleSize + HEADERLENGTH + 2) == -1) {
-            if (!isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLENGTH + 8, 4)) {
+        if (findIpFromMac(p->d + MACPreambleSize + HEADERLEN + 2) == -1) {
+            if (!isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLEN + 8, 4)) {
                 // Sender MAC is not stored. Store combination!
-                i = findMacFromIp(p->d + MACPreambleSize + HEADERLENGTH + 8);
+                i = findMacFromIp(p->d + MACPreambleSize + HEADERLEN + 8);
                 if (i == -1) {
                     i = getFirstFreeEntry();
                 }
                 debugPrint("Sender unknown!\n");
-                copyEntry(p->d + MACPreambleSize + HEADERLENGTH + 2, p->d + MACPreambleSize + HEADERLENGTH + 8, getSystemTime(), i);
+                copyEntry(p->d + MACPreambleSize + HEADERLEN + 2, p->d + MACPreambleSize + HEADERLEN + 8, getSystemTime(), i);
             }
         }
-        if (findIpFromMac(p->d + MACPreambleSize + HEADERLENGTH + 12) == -1) {
-            if (!isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLENGTH + 18, 4)) {
+        if (findIpFromMac(p->d + MACPreambleSize + HEADERLEN + 12) == -1) {
+            if (!isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLEN + 18, 4)) {
                 // Target MAC is not stored. Store combination!
-                i = findMacFromIp(p->d + MACPreambleSize + HEADERLENGTH + 18);
+                i = findMacFromIp(p->d + MACPreambleSize + HEADERLEN + 18);
                 if (i == -1) {
                     i = getFirstFreeEntry();
                 }
                 debugPrint("Target unknown!\n");
-                copyEntry(p->d + MACPreambleSize + HEADERLENGTH + 12, p->d + MACPreambleSize + HEADERLENGTH + 18, getSystemTime(), i);
+                copyEntry(p->d + MACPreambleSize + HEADERLEN + 12, p->d + MACPreambleSize + HEADERLEN + 18, getSystemTime(), i);
             }
         }
         mfree(p->d, p->dLength);

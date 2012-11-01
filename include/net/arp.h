@@ -38,6 +38,7 @@
 #define ARPTableTimeToLive 300000 // Keep unused Cache entries for 5 Minutes
 #define ARPTableTimeToRetry 5000 // Request new answer every second
 
+// Defined here to allow "userspace" to inspect arp cache.
 typedef struct {
     IPv4Address ip;
     uint8_t     mac[6];

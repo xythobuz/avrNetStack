@@ -37,8 +37,18 @@
 #include <net/mac.h>
 #include <net/controller.h>
 
-uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint8_t l) {
-    uint8_t i;
+uint8_t isValue(uint8_t *x, uint16_t l, uint8_t c) {
+    uint16_t i;
+    for (i = 0; i < l; i++) {
+        if (x[i] != c) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint16_t l) {
+    uint16_t i;
     for (i = 0; i < l; i++) {
         if (d1[i] != pgm_read_byte(&(d2[i]))) {
             return 0;
@@ -47,8 +57,8 @@ uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint8_t l) {
     return 1;
 }
 
-uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint8_t l) {
-    uint8_t i;
+uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint16_t l) {
+    uint16_t i;
     for (i = 0; i < l; i++) {
         if (d1[i] != d2[i]) {
             return 0;

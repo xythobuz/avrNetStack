@@ -1,7 +1,7 @@
 <html><head>
-<title>ENC28J60 Transmit Status Vector Interpreter</title>
+<title>ENC28J60 Status Vector Interpreter</title>
 </head><body>
-<h1>ENC28J60 Transmit Status Vector Interpreter</h1>
+<h1>ENC28J60 Status Vector Interpreter</h1>
 <p>This small PHP Tool allows you to convert the ENC28J60 Status Vectors into a human-readable format. Some field will be marked green if their value seems okay, red if it's value indicates an error.</p>
 <form method="get">
 Status Vector Hexdump: <input type="text" name="v" value="<? echo $_GET['v']; ?>">
