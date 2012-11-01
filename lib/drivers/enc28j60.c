@@ -173,13 +173,13 @@ uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
     uint16_t phy = 0;
     uint8_t i;
 
-    CSDDR |= (1 << CSPIN); // Chip Select as Output
     CSPORT |= (1 << CSPIN); // Deselect
+    CSDDR |= (1 << CSPIN); // Chip Select as Output
     INTDDR &= ~(1 << INTPIN); // Interrupt PIN
-    // INTPORT |= (1 << INTPIN); // Enable Pull-Up
+    INTPORT |= (1 << INTPIN); // Enable Pull-Up
 
     spiInit();
-    macReset();
+    systemResetCommand();
 
     nextPacketPointer = RXSTART;// Start of receive buffer
 
@@ -213,7 +213,9 @@ uint8_t macInitialize(uint8_t *address) { // 0 if success, 1 on error
     // We get unicast and broadcast packets as long as the crc is correct.
 
     // Wait for OST
+    debugPrint("Waiting for OST...");
     while(!(readControlRegister(0x1D) & 0x01)); // Wait until ESTAT.CLKRDY == 1
+    debugPrint(" Done!\n");
 
     // Initialize MAC Settings
     // 1) Set MARXEN to recieve frames. Configure full-duplex mode.
