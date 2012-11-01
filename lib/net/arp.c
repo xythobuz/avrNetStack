@@ -44,134 +44,15 @@
 #include <net/controller.h>
 
 ARPTableEntry *arpTable = NULL;
-uint8_t arpTableSize = 0;
 
 #define HEADERLEN 6
 uint8_t ArpPacketHeader[HEADERLEN] PROGMEM = {0x00, 0x01, 0x08, 0x00, 0x06, 0x04};
 
+uint8_t macReturnBuffer[6];
+
 // ------------------------
 // |     Internal API     |
 // ------------------------
-
-uint8_t isTableEntryFree(uint8_t i) {
-    if (i < arpTableSize) {
-        if (isZero(arpTable[i].ip, 4) && isZero(arpTable[i].mac, 6)
-                && (arpTable[i].time == 0)) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-uint8_t oldestEntry(void) {
-    uint8_t i;
-    time_t min = UINT64_MAX;
-    uint8_t pos = 0;
-    for (i = 0; i < arpTableSize; i++) {
-        // It is not free, or else we would not need to delete it.
-        if ((arpTable[i].time < min) && (arpTable[i].time != 0)) {
-            min = arpTable[i].time;
-            pos = i;
-        }
-    }
-    return pos;
-}
-
-int8_t tooOldEntry(void) {
-    uint8_t i;
-    time_t t, time = getSystemTime();
-    for (i = 0; i < arpTableSize; i++) {
-        if (!isZero(arpTable[i].mac, 6)) {
-            // Normal full entry
-            t = arpTable[i].time + ARPTableTimeToLive;
-            if ((t <= time) && (arpTable[i].time != 0)) {
-                return i;
-            }
-        }
-    }
-    return -1;
-}
-
-int8_t getFirstFreeEntry(void) {
-    int8_t i;
-    ARPTableEntry *tp;
-    for (i = 0; i < arpTableSize; i++) {
-        if (isTableEntryFree(i)) {
-            return i;
-        }
-    }
-
-    i = tooOldEntry();
-    if (i != -1) {
-        return i;
-    }
-
-    if (arpTableSize < ARPMaxTableSize) {
-        // Allocate more space
-        arpTableSize++;
-        tp = (ARPTableEntry *)mrealloc(arpTable, arpTableSize * sizeof(ARPTableEntry), (arpTableSize - 1) * sizeof(ARPTableEntry));
-        if (tp != NULL) {
-            arpTable = tp;
-            return (arpTableSize - 1);
-        }
-    }
-
-    // No free space, so we throw out the oldest
-    return oldestEntry();
-}
-
-int8_t findIpFromMac(uint8_t *mac) {
-    uint8_t i;
-    for (i = 0; i < arpTableSize; i++) {
-        if (!isTableEntryFree(i)) {
-            if (isEqualMem(mac, arpTable[i].mac, 6)) {
-                return (int8_t)i;
-            }
-        }
-    }
-    return -1;
-}
-
-int8_t findMacFromIp(IPv4Address ip) {
-    uint8_t i;
-    for (i = 0; i < arpTableSize; i++) {
-        if (!isTableEntryFree(i)) {
-            if (isEqualMem(ip, arpTable[i].ip, 4)) {
-                return (int8_t)i;
-            }
-        }
-    }
-    return -1;
-}
-
-void copyEntry(uint8_t *mac, IPv4Address ip, time_t time, uint8_t index) {
-    uint8_t i;
-    if ((arpTable != NULL) && (arpTableSize > index)) {
-        for (i = 0; i < 6; i++) {
-            if (i < 4) {
-                arpTable[index].ip[i] = ip[i];
-            }
-            if (mac != NULL) {
-                arpTable[index].mac[i] = mac[i];
-            } else {
-                arpTable[index].mac[i] = 0x00;
-            }
-        }
-        arpTable[index].time = time;
-    }
-}
-
-uint8_t isIpInThisNetwork(uint8_t *d) {
-    uint8_t i;
-    for (i = 0; i < 4; i++) {
-        if (subnetmask[i] == 255) {
-            if (d[i] != defaultGateway[i]) {
-                return 0;
-            }
-        }
-    }
-    return 1;
-}
 
 uint8_t sendArpRequest(IPv4Address ip) {
     uint8_t i;
@@ -224,6 +105,77 @@ uint8_t sendArpRequest(IPv4Address ip) {
     }
 }
 
+uint8_t isIpInThisNetwork(uint8_t *d) {
+    uint8_t i;
+    for (i = 0; i < 4; i++) {
+        if (subnetmask[i] == 255) {
+            if (d[i] != defaultGateway[i]) {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+ARPTableEntry *findIpFromMac(uint8_t *mac) {
+    ARPTableEntry *p = arpTable;
+    while (p != NULL) {
+        if (isEqualMem(mac, p->mac, 6)) {
+            return p;
+        }
+        p = p->next;
+    }
+    return NULL;
+}
+
+ARPTableEntry *findMacFromIp(IPv4Address ip) {
+    ARPTableEntry *p = arpTable;
+    while (p != NULL) {
+        if (isEqualMem(ip, p->ip, 4)) {
+            return p;
+        }
+        p = p->next;
+    }
+    return NULL;
+}
+
+ARPTableEntry *newEntry(void) {
+    ARPTableEntry *p = (ARPTableEntry *)mmalloc(sizeof(ARPTableEntry));
+    if (p != NULL) {
+        p->next = arpTable;
+        arpTable = p;
+    }
+    return p;
+}
+
+void addMacIpPair(uint8_t *mac, uint8_t *ip) {
+    // Check if IP is already stored without MAC, copy MAC.
+    // Else, if the MAC is not stored, store it.
+    uint8_t i;
+
+    if (isEqualMem(mac, ownMacAddress, 6) || isEqualMem(ip, ownIpAddress, 4)) {
+        return;
+    }
+
+    if (findMacFromIp(ip) != NULL) {
+        ARPTableEntry *t = findMacFromIp(ip);
+        for (i = 0; i < 6; i++) {
+            t->mac[i] = mac[i];
+        }
+    } else if (findIpFromMac(mac) == NULL) {
+        ARPTableEntry *t = newEntry();
+        if (t != NULL) {
+            for (i = 0; i < 6; i++) {
+                t->mac[i] = mac[i];
+                if (i < 4) {
+                    t->ip[i] = ip[i];
+                }
+            }
+            t->time = getSystemTime();
+        }
+    }
+}
+
 // ------------------------
 // |     External API     |
 // ------------------------
@@ -233,20 +185,19 @@ void arpInit(void) {
     arpTable = (ARPTableEntry *)mmalloc(sizeof(ARPTableEntry));
     if (arpTable != NULL) {
         for (i = 0; i < 6; i++) {
-            arpTable[0].mac[i] = 0xFF;
+            arpTable->mac[i] = 0xFF;
             if (i < 4) {
-                arpTable[0].ip[i] = 0xFF;
+                arpTable->ip[i] = 0xFF;
             }
         }
-        arpTable[0].time = 0;
-        arpTableSize = 1;
+        arpTable->time = 0;
+        arpTable->next = NULL;
     }
 }
 
 uint8_t arpProcessPacket(Packet *p) {
     uint8_t i;
 
-    assert(arpTableSize > 0); // At least the broadcast MAC should be there
     assert(p->dLength >= (ARPOffset + ARPPacketSize)); // Has correct length?
 
     if (!(isEqualFlash(p->d + MACPreambleSize, ArpPacketHeader, HEADERLEN) && (p->dLength >= (HEADERLEN + 22 + MACPreambleSize)))) {
@@ -258,11 +209,11 @@ uint8_t arpProcessPacket(Packet *p) {
     }
 
     if (p->d[MACPreambleSize + HEADERLEN + 1] == 1) {
-        // ARP Request. Check if we have stored the sender MAC.
-        if (findIpFromMac(p->d + MACPreambleSize + HEADERLEN + 2) == -1) {
-            // Sender MAC is not stored. Store combination!
-            copyEntry(p->d + MACPreambleSize + HEADERLEN + 2, p->d + MACPreambleSize + HEADERLEN + 8, getSystemTime(), getFirstFreeEntry());
-        }
+        // ARP Request
+
+        // Sender MAC & IP
+        addMacIpPair(p->d + MACPreambleSize + HEADERLEN + 2, p->d + MACPreambleSize + HEADERLEN + 8);
+
         // Check if the request is for us. If so, issue an answer!
         if (isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLEN + 18, 4)) {
             debugPrint("ARP Request for us!");
@@ -292,6 +243,7 @@ uint8_t arpProcessPacket(Packet *p) {
             debugPrint(" Done!\n");
             return 0;
         } else {
+            // Request is not for us. Ignore!
 #if DEBUG >= 2
             debugPrint("ARP Request for ");
             for (i = 0; i < 4; i++) {
@@ -303,36 +255,17 @@ uint8_t arpProcessPacket(Packet *p) {
             debugPrint("\n");
 #endif
         }
-        // Request is not for us. Ignore!
+
         mfree(p->d, p->dLength);
         mfree(p, sizeof(Packet));
         return 0;
+
     } else if (p->d[MACPreambleSize + HEADERLEN + 1] == 2) {
         debugPrint("Got ARP Reply\n");
         // ARP Reply. Store the information, if not already present
         // Each packet contains two MAC-IP Combinations. Sender & Target
-        if (findIpFromMac(p->d + MACPreambleSize + HEADERLEN + 2) == -1) {
-            if (!isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLEN + 8, 4)) {
-                // Sender MAC is not stored. Store combination!
-                i = findMacFromIp(p->d + MACPreambleSize + HEADERLEN + 8);
-                if (i == -1) {
-                    i = getFirstFreeEntry();
-                }
-                debugPrint("Sender unknown!\n");
-                copyEntry(p->d + MACPreambleSize + HEADERLEN + 2, p->d + MACPreambleSize + HEADERLEN + 8, getSystemTime(), i);
-            }
-        }
-        if (findIpFromMac(p->d + MACPreambleSize + HEADERLEN + 12) == -1) {
-            if (!isEqualMem(ownIpAddress, p->d + MACPreambleSize + HEADERLEN + 18, 4)) {
-                // Target MAC is not stored. Store combination!
-                i = findMacFromIp(p->d + MACPreambleSize + HEADERLEN + 18);
-                if (i == -1) {
-                    i = getFirstFreeEntry();
-                }
-                debugPrint("Target unknown!\n");
-                copyEntry(p->d + MACPreambleSize + HEADERLEN + 12, p->d + MACPreambleSize + HEADERLEN + 18, getSystemTime(), i);
-            }
-        }
+        addMacIpPair(p->d + MACPreambleSize + HEADERLEN + 2, p->d + MACPreambleSize + HEADERLEN + 8);
+        addMacIpPair(p->d + MACPreambleSize + HEADERLEN + 12, p->d + MACPreambleSize + HEADERLEN + 18);
         mfree(p->d, p->dLength);
         mfree(p, sizeof(Packet));
         return 0;
@@ -346,14 +279,28 @@ uint8_t arpProcessPacket(Packet *p) {
     return 0;
 }
 
-uint8_t macReturnBuffer[6];
-
 // Searches in ARP Table. If entry is found, return non-alloced buffer
 // with mac address and update the time of the entry.
-// If there is no entry, issue arp packet and return NULL. Try again later.
 uint8_t *arpGetMacFromIp(IPv4Address ip) {
-    uint8_t i, a;
-    int8_t index = findMacFromIp(ip);
+    // Clear old entries
+    ARPTableEntry *p = arpTable;
+    ARPTableEntry *prev = NULL;
+    while (p != NULL) {
+        if ((p->time + ARPTableTimeToLive) <= getSystemTime()) {
+            if (prev == NULL) {
+                arpTable = p->next;
+                mfree(p, sizeof(ARPTableEntry));
+                p = arpTable;
+            } else {
+                prev->next = p->next;
+                mfree(p, sizeof(ARPTableEntry));
+                p = prev->next;
+            }
+        } else {
+            prev = p;
+            p = p->next;
+        }
+    }
 
     if (!isIpInThisNetwork(ip)) {
 #if DEBUG >= 1
@@ -369,31 +316,40 @@ uint8_t *arpGetMacFromIp(IPv4Address ip) {
         return arpGetMacFromIp(defaultGateway);
     }
 
-    if (index != -1) {
-        a = 0;
-        for (i = 0; i < 6; i++) {
-            macReturnBuffer[i] = arpTable[index].mac[i];
-            if (macReturnBuffer[i] != 0x00) {
-                a++;
-            }
-        }
-        if (a == 0) {
-            // Not yet found but already requested. Return NULL!
-            debugPrint("MAC already requested, waiting for response...\n");
-            if ((arpTable[index].time + ARPTableTimeToRetry) < getSystemTime()) {
-                // Try again...
+    p = findMacFromIp(ip);
+    if (p != NULL) {
+        if (isZero(p->mac, 6)) {
+            // We're waiting for an answer
+            if ((p->time + ARPTableTimeToRetry) <= getSystemTime()) {
+                // Waiting too long, re-issue request
                 sendArpRequest(ip);
+                return NULL;
+            } else {
+                // Requested, but not yet answered
+                return NULL;
             }
-            arpTable[index].time = getSystemTime();
+        } else {
+            // Answer is present
+            for (uint8_t i = 0; i < 6; i++) {
+                macReturnBuffer[i] = p->mac[i];
+            }
+            p->time = getSystemTime();
+            return macReturnBuffer;
+        }
+    } else {
+        // No entry present. Create it and request ARP Reply
+        p = newEntry();
+        if (p == NULL) {
             return NULL;
         }
-        arpTable[index].time = getSystemTime();
-        return macReturnBuffer;
-    } else {
-        // No entry found. Issue ARP Request
-        if (sendArpRequest(ip)) {
-            copyEntry(NULL, ip, getSystemTime(), getFirstFreeEntry());
+        for (uint8_t i = 0; i < 6; i++) {
+            p->mac[i] = 0;
+            if (i < 4) {
+                p->ip[i] = ip[i];
+            }
         }
+        p->time = getSystemTime();
+        sendArpRequest(ip);
         return NULL;
     }
 }

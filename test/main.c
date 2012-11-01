@@ -121,23 +121,25 @@ int main(void) {
 }
 
 void printArpTable(void) {
-    uint8_t i, j;
+    uint8_t i;
+    ARPTableEntry *p = arpTable;
     serialWriteString(getString(12));
-    for (i = 0; i < arpTableSize; i++) {
-        for (j = 0; j < 6; j++) {
-            serialWriteString(hex2ToString(arpTable[i].mac[j]));
-            if (j < 5) {
+    while (p != NULL) {
+        for (i = 0; i < 6; i++) {
+            serialWriteString(hex2ToString(p->mac[i]));
+            if (i < 5) {
                 serialWrite('-');
             }
         }
         serialWriteString(getString(13));
-        for (j = 0; j < 4; j++) {
-            serialWriteString(timeToString(arpTable[i].ip[j]));
-            if (j < 3) {
+        for (i = 0; i < 4; i++) {
+            serialWriteString(timeToString(p->ip[i]));
+            if (i < 3) {
                 serialWrite('.');
             }
         }
         serialWrite('\n');
+        p = p->next;
     }
 }
 

@@ -36,14 +36,16 @@
 #include <net/controller.h>
 
 #define ARPTableTimeToLive 300000 // Keep unused Cache entries for 5 Minutes
-#define ARPTableTimeToRetry 5000 // Request new answer every second
+#define ARPTableTimeToRetry 5000 // Request new answer every 5 seconds
 
 // Defined here to allow "userspace" to inspect arp cache.
-typedef struct {
-    IPv4Address ip;
-    uint8_t     mac[6];
-    time_t      time;
-} ARPTableEntry;
+typedef struct ARPTableEntry ARPTableEntry;
+struct ARPTableEntry {
+    IPv4Address   ip;
+    uint8_t       mac[6];
+    time_t        time;
+    ARPTableEntry *next;
+};
 
 #define ARPPacketSize 22 // Without header
 #define ARPOffset MACPreambleSize + 6
@@ -54,7 +56,6 @@ typedef struct {
 #define ARPDestinationIpOffset 18
 
 extern ARPTableEntry *arpTable;
-extern uint8_t arpTableSize;
 
 void arpInit(void);
 uint8_t arpProcessPacket(Packet *p); // Processes all received ARP Packets
