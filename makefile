@@ -26,6 +26,7 @@
 
 # ------------------------------
 IC = enc28j60
+#IC = encTest
 #IC = mrf24wb0ma
 # ------------------------------
 
@@ -56,6 +57,9 @@ SRC += lib/net/ntp.c
 ifeq ($(IC),mrf24wb0ma)
 SRC += lib/drivers/asynclabs/g2100.c
 endif
+ifeq ($(IC),encTest)
+SRC += lib/drivers/encTestCode.c
+endif
 
 TESTSRC = test/main.c
 TESTSRC += test/strings.c
@@ -77,6 +81,9 @@ test: test.hex
 
 program: test.hex
 	yasab /dev/tty.usbserial-A100QOUE test.hex q
+
+flash: test.hex
+	avrdude -p $(MCU) -c stk500v2 -P /dev/tty.usbmodem641 -e -U test.hex
 
 all: libavrNetStack.a
 

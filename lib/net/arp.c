@@ -46,7 +46,7 @@
 ARPTableEntry *arpTable = NULL;
 
 #define HEADERLEN 6
-uint8_t ArpPacketHeader[HEADERLEN] PROGMEM = {0x00, 0x01, 0x08, 0x00, 0x06, 0x04};
+const uint8_t ArpPacketHeader[HEADERLEN] PROGMEM = {0x00, 0x01, 0x08, 0x00, 0x06, 0x04};
 
 uint8_t macReturnBuffer[6];
 

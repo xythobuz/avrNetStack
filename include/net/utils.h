@@ -38,7 +38,7 @@
 #define isZero(x, y) isValue(x, y, 0)
 
 uint8_t isValue(uint8_t *x, uint16_t l, uint8_t c);
-uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint16_t l);
+uint8_t isEqualFlash(const uint8_t *d1, const uint8_t *d2, uint16_t l);
 uint8_t isEqualMem(uint8_t *d1, uint8_t *d2, uint16_t l);
 void dumpPacketRaw(Packet *p);
 

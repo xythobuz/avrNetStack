@@ -47,7 +47,7 @@ uint8_t isValue(uint8_t *x, uint16_t l, uint8_t c) {
     return 1;
 }
 
-uint8_t isEqualFlash(uint8_t *d1, uint8_t *d2, uint16_t l) {
+uint8_t isEqualFlash(const uint8_t *d1, const uint8_t *d2, uint16_t l) {
     uint16_t i;
     for (i = 0; i < l; i++) {
         if (d1[i] != pgm_read_byte(&(d2[i]))) {

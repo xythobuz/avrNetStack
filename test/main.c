@@ -87,7 +87,7 @@ int main(void) {
 
     sei(); // Enable Interrupts so we get UART data before entering networkInit
 
-    wdt_enable(WDTO_1S);
+    wdt_enable(WDTO_2S);
 
     networkInit(mac, defIp, defSubnet, defGateway);
 

@@ -82,7 +82,7 @@ const char string42[] PROGMEM = "Low";
 // Last index + 1
 #define STRINGNUM 43
 
-PGM_P stringTable[STRINGNUM] PROGMEM = {
+PGM_P const stringTable[STRINGNUM] PROGMEM = {
     string0, string1, string2, string3, string4,
     string5, string6, string7, string8, string9,
     string10, string11, string12, string13, string14,

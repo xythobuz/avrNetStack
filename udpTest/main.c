@@ -41,11 +41,8 @@
 
 #define BUFFSIZE 128
 char buffer[BUFFSIZE];
-
 int s;
 
-void usage(char *e);
-void processArgs(int argc, char **argv, int *port);
 void intHandler(int dummy);
 
 int main(int argc, char **argv) {
